@@ -128,3 +128,20 @@ Background support:
 - the remaining files in `docs/` are topic reviews, cautions, and detailed
   mechanism notes that back the active library, but are not required for a
   first-pass handoff.
+
+## Development
+
+Recommended local workflow:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest
+python scripts/run_smoke.py
+python scripts/run_ecology_probe.py
+```
+
+Repository workflow:
+
+- contribution guide: `CONTRIBUTING.md`
+- CI workflow: `.github/workflows/ci.yml`
+- PR template: `.github/pull_request_template.md`
