@@ -81,6 +81,8 @@ They are no longer the shortest current control path.
 - `ant_sandbox_build_plan_v1.md`: milestone order for the new sandbox branch
 - `ant_sandbox_m0_substrate_spec_v1.md`: first substrate spec for local-space
   world initialization
+- `ant_sandbox_m1_foraging_slice_2026-04-21.md`: first behavior slice for
+  local movement, pickup, return, and unload
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note

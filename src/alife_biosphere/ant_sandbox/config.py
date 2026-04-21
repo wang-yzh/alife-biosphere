@@ -32,15 +32,31 @@ class FoodPatchConfig:
 @dataclass(frozen=True)
 class AntAgentConfig:
     ant_count: int = 32
+    step_size: int = 1
+    wander_turn_jitter: float = 0.55
+    food_sense_radius: int = 24
+    food_pickup_radius: int = 1
+    nest_drop_radius: int = 3
 
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
             raise ValueError("ant_count must be positive")
+        if self.step_size <= 0:
+            raise ValueError("step_size must be positive")
+        if self.wander_turn_jitter < 0:
+            raise ValueError("wander_turn_jitter must be non-negative")
+        if self.food_sense_radius <= 0:
+            raise ValueError("food_sense_radius must be positive")
+        if self.food_pickup_radius < 0:
+            raise ValueError("food_pickup_radius must be non-negative")
+        if self.nest_drop_radius < 0:
+            raise ValueError("nest_drop_radius must be non-negative")
 
 
 @dataclass(frozen=True)
 class AntSandboxConfig:
     seed: int = 7
+    ticks: int = 180
     width: int = 64
     height: int = 48
     nest: NestConfig = field(default_factory=NestConfig)
@@ -53,6 +69,8 @@ class AntSandboxConfig:
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)
 
     def __post_init__(self) -> None:
+        if self.ticks <= 0:
+            raise ValueError("ticks must be positive")
         if self.width <= 0 or self.height <= 0:
             raise ValueError("width and height must be positive")
         if not self.food_patches:
