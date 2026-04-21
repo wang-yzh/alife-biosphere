@@ -24,6 +24,9 @@ def test_disturbance_recovery_summary_tracks_collapses_and_recovery() -> None:
     assert summary["disturbance_status_counts"]["collapsed_and_recovered"] >= 1
     assert sum(summary["disturbance_status_counts"].values()) == summary["disturbance_count"]
     assert summary["lineage_recovery_mode_counts"]
+    assert summary["recovery_source_mode_counts"]
+    assert summary["recovery_source_habitat_counts"]
+    assert summary["recovery_source_family_counts"]
     assert "frontier_a" in summary["disturbance_by_habitat"]
     assert summary["disturbance_summaries"]
     assert any(
@@ -31,6 +34,12 @@ def test_disturbance_recovery_summary_tracks_collapses_and_recovery() -> None:
         for item in summary["disturbance_summaries"]
         if item["lineage_recovery_mode"] is not None
     )
+    assert any(
+        item["recovery_source_mode"] in {"single_habitat_source", "multi_habitat_source"}
+        for item in summary["disturbance_summaries"]
+        if item["recovery_source_mode"] is not None
+    )
+    assert any(item["source_habitats"] for item in summary["disturbance_summaries"])
 
 
 def test_disturbance_recovery_summary_handles_runs_without_disturbance() -> None:
@@ -38,4 +47,8 @@ def test_disturbance_recovery_summary_handles_runs_without_disturbance() -> None
     summary = summarize_disturbance_recovery(result, recolonization_window=8)
     assert summary["disturbance_count"] == 0
     assert summary["disturbance_status_counts"] == {}
+    assert summary["lineage_recovery_mode_counts"] == {}
+    assert summary["recovery_source_habitat_counts"] == {}
+    assert summary["recovery_source_family_counts"] == {}
+    assert summary["recovery_source_mode_counts"] == {}
     assert isinstance(summary["final_empty_habitats"], list)

@@ -22,6 +22,7 @@ Added in this pass:
 - disturbance / collapse / recolonization summary derivation
 - lineage-aware habitat occupancy in `tick_summary`
 - lineage-sensitive recolonization classification
+- rescue-source habitat and family classification
 - disturbance status classification:
   - `collapsed_and_recovered`
   - `collapsed_delayed_recovery`
@@ -32,6 +33,10 @@ Added in this pass:
   - `same_lineage_return`
   - `replacement_recovery`
   - `mixed_recovery`
+- recovery source mode classification:
+  - `single_habitat_source`
+  - `multi_habitat_source`
+  - `unknown_source`
 - `outputs/ecology_probe/disturbance_recovery_summary.json`
 - reporting tests in `tests/test_reporting.py`
 
@@ -69,6 +74,12 @@ Current lineage recovery mode counts:
 replacement_recovery=3
 ```
 
+Current recovery source mode counts:
+
+```text
+single_habitat_source=3
+```
+
 ## What This Supports
 
 This slice supports the narrower claim that:
@@ -78,12 +89,14 @@ This slice supports the narrower claim that:
 - some disturbances are followed by local recovery within a short window
 - recovery can now be classified by whether the returning occupants belong to
   the same lineage or a replacement lineage
+- recovery can now be traced back to source habitats and source habitat
+  families from the move log
 
 ## What It Does Not Support
 
 This slice does not yet support claims about:
 
-- rescue-source classification
+- robust rescue-source classification across many seeds
 - robust recolonization under many seeds
 - stable long-run ecosystem persistence
 - habitat-memory-driven recovery
@@ -93,5 +106,5 @@ This slice does not yet support claims about:
 The next useful extension is:
 
 - habitat-specific recovery lag metrics
-- rescue-source and lineage-source summaries
+- stronger source/sink role summaries across many runs
 - better distinction between transient vacancy and true local crash

@@ -35,6 +35,10 @@ def _disturbances(events: list[Event]) -> list[Event]:
     return [event for event in events if event.event_type == "disturbance"]
 
 
+def _moves(events: list[Event]) -> list[Event]:
+    return [event for event in events if event.event_type == "move"]
+
+
 def summarize_disturbance_recovery(
     result: SimulationResult,
     recolonization_window: int = 8,
@@ -42,6 +46,7 @@ def summarize_disturbance_recovery(
     events = result.events
     tick_summaries = _tick_summaries(events)
     disturbances = _disturbances(events)
+    move_events = _moves(events)
     if not tick_summaries:
         return {
             "disturbance_count": 0,
@@ -49,6 +54,9 @@ def summarize_disturbance_recovery(
             "recolonization_count": 0,
             "disturbance_by_habitat": {},
             "disturbance_status_counts": {},
+            "recovery_source_habitat_counts": {},
+            "recovery_source_family_counts": {},
+            "recovery_source_mode_counts": {},
             "collapse_events": [],
             "recolonization_events": [],
             "disturbance_summaries": [],
@@ -58,6 +66,9 @@ def summarize_disturbance_recovery(
     summary_by_tick = {event.tick: event.payload for event in tick_summaries}
     sorted_ticks = sorted(summary_by_tick)
     habitat_ids = sorted(next(iter(summary_by_tick.values()))["occupancy_by_habitat"])
+    family_by_habitat = {
+        habitat_id: habitat.habitat_family for habitat_id, habitat in result.world.habitats.items()
+    }
 
     collapse_events: list[OccupancyTransition] = []
     recolonization_events: list[OccupancyTransition] = []
@@ -96,6 +107,9 @@ def summarize_disturbance_recovery(
 
     status_counts: Counter[str] = Counter()
     lineage_recovery_mode_counts: Counter[str] = Counter()
+    recovery_source_mode_counts: Counter[str] = Counter()
+    recovery_source_habitat_counts: Counter[str] = Counter()
+    recovery_source_family_counts: Counter[str] = Counter()
     disturbance_summaries: list[dict[str, object]] = []
     final_tick = sorted_ticks[-1]
 
@@ -164,10 +178,46 @@ def summarize_disturbance_recovery(
             lineage_recovery_mode = "empty_recovery"
         if lineage_recovery_mode is not None:
             lineage_recovery_mode_counts[lineage_recovery_mode] += 1
+        source_move_events = []
+        if effective_recovery is not None:
+            source_move_events = [
+                event
+                for event in move_events
+                if event.tick == effective_recovery.tick and event.habitat_id == habitat_id
+            ]
+        source_habitats = sorted(
+            {
+                str(event.payload["from_habitat_id"])
+                for event in source_move_events
+                if "from_habitat_id" in event.payload
+            }
+        )
+        source_families = sorted({family_by_habitat[source_habitat] for source_habitat in source_habitats})
+        source_lineages = sorted(
+            {
+                result.world.organisms[event.organism_id].lineage_id
+                for event in source_move_events
+                if event.organism_id is not None and event.organism_id in result.world.organisms
+            }
+        )
+        if effective_recovery is None:
+            recovery_source_mode = None
+        elif not source_habitats:
+            recovery_source_mode = "unknown_source"
+        elif len(source_habitats) == 1:
+            recovery_source_mode = "single_habitat_source"
+        else:
+            recovery_source_mode = "multi_habitat_source"
+        if recovery_source_mode is not None:
+            recovery_source_mode_counts[recovery_source_mode] += 1
+        for source_habitat in source_habitats:
+            recovery_source_habitat_counts[source_habitat] += 1
+            recovery_source_family_counts[family_by_habitat[source_habitat]] += 1
         disturbance_summaries.append(
             {
                 "tick": disturbance.tick,
                 "habitat_id": habitat_id,
+                "habitat_family": family_by_habitat[habitat_id],
                 "resource_loss": disturbance.payload.get("resource_loss"),
                 "hazard_pulse": disturbance.payload.get("hazard_pulse"),
                 "pre_occupancy": pre_occupancy,
@@ -181,6 +231,10 @@ def summarize_disturbance_recovery(
                 "recovery_lineages": sorted(recovery_lineages),
                 "shared_lineages": shared_lineages,
                 "replacement_lineages": replacement_lineages,
+                "recovery_source_mode": recovery_source_mode,
+                "source_habitats": source_habitats,
+                "source_families": source_families,
+                "source_lineages": source_lineages,
             }
         )
 
@@ -213,6 +267,9 @@ def summarize_disturbance_recovery(
         "disturbance_by_habitat": dict(disturbance_by_habitat),
         "disturbance_status_counts": dict(status_counts),
         "lineage_recovery_mode_counts": dict(lineage_recovery_mode_counts),
+        "recovery_source_habitat_counts": dict(recovery_source_habitat_counts),
+        "recovery_source_family_counts": dict(recovery_source_family_counts),
+        "recovery_source_mode_counts": dict(recovery_source_mode_counts),
         "collapse_events": [event.to_dict() for event in collapse_events],
         "recolonization_events": [event.to_dict() for event in recolonization_events],
         "disturbance_summaries": disturbance_summaries,
