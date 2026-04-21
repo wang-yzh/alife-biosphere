@@ -83,6 +83,8 @@ They are no longer the shortest current control path.
   world initialization
 - `ant_sandbox_m1_foraging_slice_2026-04-21.md`: first behavior slice for
   local movement, pickup, return, and unload
+- `ant_sandbox_m2_pheromone_slice_2026-04-21.md`: first trace-field and
+  pheromone-effectiveness slice
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note

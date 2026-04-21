@@ -34,9 +34,16 @@ class AntAgentConfig:
     ant_count: int = 32
     step_size: int = 1
     wander_turn_jitter: float = 0.55
-    food_sense_radius: int = 24
+    food_sense_radius: int = 16
+    nest_sense_radius: int = 8
     food_pickup_radius: int = 1
     nest_drop_radius: int = 3
+    pheromone_enabled: bool = True
+    pheromone_sense_radius: int = 6
+    pheromone_weight: float = 4.5
+    trail_deposit: float = 1.4
+    home_trail_deposit: float = 0.8
+    trail_decay: float = 0.03
 
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
@@ -47,10 +54,22 @@ class AntAgentConfig:
             raise ValueError("wander_turn_jitter must be non-negative")
         if self.food_sense_radius <= 0:
             raise ValueError("food_sense_radius must be positive")
+        if self.nest_sense_radius <= 0:
+            raise ValueError("nest_sense_radius must be positive")
         if self.food_pickup_radius < 0:
             raise ValueError("food_pickup_radius must be non-negative")
         if self.nest_drop_radius < 0:
             raise ValueError("nest_drop_radius must be non-negative")
+        if self.pheromone_sense_radius < 0:
+            raise ValueError("pheromone_sense_radius must be non-negative")
+        if self.pheromone_weight < 0:
+            raise ValueError("pheromone_weight must be non-negative")
+        if self.trail_deposit < 0:
+            raise ValueError("trail_deposit must be non-negative")
+        if self.home_trail_deposit < 0:
+            raise ValueError("home_trail_deposit must be non-negative")
+        if self.trail_decay < 0:
+            raise ValueError("trail_decay must be non-negative")
 
 
 @dataclass(frozen=True)

@@ -48,6 +48,8 @@ class AntSandboxWorld:
     tick: int = 0
     occupied_cells: set[tuple[int, int]] = field(default_factory=set)
     events: list[Event] = field(default_factory=list)
+    food_trail: dict[tuple[int, int], float] = field(default_factory=dict)
+    home_trail: dict[tuple[int, int], float] = field(default_factory=dict)
 
     def emit(self, event: Event) -> None:
         self.events.append(event)
@@ -82,6 +84,8 @@ class AntSandboxWorld:
             "nest": asdict(self.nest),
             "food_patches": [asdict(patch) for patch in self.food_patches],
             "ants": [asdict(ant) for ant in self.ants],
+            "food_trail": {f"{x},{y}": value for (x, y), value in self.food_trail.items()},
+            "home_trail": {f"{x},{y}": value for (x, y), value in self.home_trail.items()},
         }
 
 

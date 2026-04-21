@@ -1,4 +1,4 @@
-from alife_biosphere.ant_sandbox import AntSandboxConfig
+from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 
 
@@ -20,3 +20,11 @@ def test_ant_sandbox_produces_foraging_loop_events() -> None:
 def test_ant_sandbox_keeps_ants_in_bounds() -> None:
     result = run_simulation(AntSandboxConfig())
     assert all(0 <= ant.x < result.world.width and 0 <= ant.y < result.world.height for ant in result.world.ants)
+
+
+def test_ant_sandbox_with_pheromones_beats_no_pheromones() -> None:
+    with_pheromones = run_simulation(AntSandboxConfig(ants=AntAgentConfig(pheromone_enabled=True)))
+    without_pheromones = run_simulation(AntSandboxConfig(ants=AntAgentConfig(pheromone_enabled=False)))
+    assert with_pheromones.world.nest.stored_food >= without_pheromones.world.nest.stored_food
+    assert sum(1 for event in with_pheromones.events if event.event_type == "trail_deposit") > 0
+    assert sum(1 for event in without_pheromones.events if event.event_type == "trail_deposit") == 0
