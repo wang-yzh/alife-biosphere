@@ -71,6 +71,10 @@ They are no longer the shortest current control path.
   the first real-time self-refreshing sandbox window
 - `m4_habitat_memory_slice_2026-04-21.md`: short implementation note for the
   first habitat-memory and recovery-lag slice
+- `ant_sandbox_hard_metrics_v1.md`: hard gates for deciding whether the system
+  is actually becoming an ant sandbox
+- `ant_sandbox_gap_audit_v1.md`: current code audit against those ant-sandbox
+  gates
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note
