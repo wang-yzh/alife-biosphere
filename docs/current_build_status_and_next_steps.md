@@ -106,6 +106,7 @@ The repository now has:
 - an M1 ecology kernel
 - a first M2 reproduction and lineage slice
 - a first M3 disturbance / recovery summary slice
+- a first M4 habitat-memory slice
 
 Current implemented files:
 
@@ -142,6 +143,8 @@ It can already:
 - record life stages, reproduction readiness, births, and deaths
 - apply deterministic disturbance hooks
 - derive disturbance / collapse / recolonization summaries
+- feed habitat history back into hazard, regeneration, and recolonization
+  pressure
 - emit append-only events
 - run a smoke simulation
 - run an ecology probe
@@ -231,6 +234,15 @@ delayed_recovery_count=1
 lineage_count=4
 ```
 
+Current habitat-memory highlights from the same probe:
+
+```text
+frontier_a.max_recovery_lag=12
+wild_b.max_recovery_lag=10
+nursery_b.peak_memory_field=0.3422
+frontier_a.peak_memory_field=0.3227
+```
+
 ## Current Module Intent
 
 ### `config.py`
@@ -312,18 +324,18 @@ Exit condition:
 disturbance outcomes can be explained without reading raw events by hand
 ```
 
-### Step 2. Build habitat history into real ecological memory
+### Step 2. Push habitat memory across longer runs
 
 Add:
 
-- occupancy-dependent habitat modification
-- recovery lag accumulation
-- stronger link between prior depletion and later viability
+- longer-run probes
+- multi-seed memory summaries
+- checks for whether memory changes persistence and source/sink structure
 
 Exit condition:
 
 ```text
-later habitat outcomes depend materially on what happened there before
+habitat memory remains visible and consequential outside one short probe
 ```
 
 ### Step 3. Push longer-run ecology probes

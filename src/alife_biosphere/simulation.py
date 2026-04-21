@@ -82,6 +82,7 @@ def _habitat_score(
     habitat,
     organism,
     current_habitat_id: str,
+    recolonization_memory_penalty: float,
 ) -> float:
     resource_score = habitat.resource_level / habitat.max_resource_level
     hazard_cost = habitat.hazard_level + max(0.0, habitat.climate_state) * 0.1
@@ -97,6 +98,8 @@ def _habitat_score(
         score += 0.15
     if habitat.habitat_id == current_habitat_id:
         score += 0.05
+    elif len(habitat.occupants) == 0:
+        score -= habitat.colonization_pressure() * recolonization_memory_penalty
     return score
 
 
@@ -114,16 +117,31 @@ def _attempt_movement(
         return False
     if not current.neighbors:
         return False
-    current_score = _habitat_score(current, organism, current.habitat_id)
+    current_score = _habitat_score(
+        current,
+        organism,
+        current.habitat_id,
+        config.recolonization_memory_penalty,
+    )
     best_neighbor_id = max(
         current.neighbors,
         key=lambda neighbor_id: (
-            _habitat_score(world.habitats[neighbor_id], organism, current.habitat_id),
+            _habitat_score(
+                world.habitats[neighbor_id],
+                organism,
+                current.habitat_id,
+                config.recolonization_memory_penalty,
+            ),
             neighbor_id,
         ),
     )
     best_neighbor = world.habitats[best_neighbor_id]
-    best_score = _habitat_score(best_neighbor, organism, current.habitat_id)
+    best_score = _habitat_score(
+        best_neighbor,
+        organism,
+        current.habitat_id,
+        config.recolonization_memory_penalty,
+    )
     wants_move = (
         best_score > current_score + 0.25
         or current.occupancy_pressure > 0.0
@@ -153,10 +171,33 @@ def _attempt_movement(
             )
         )
         return False
+    target_was_empty = len(best_neighbor.occupants) == 0
+    colonization_pressure = best_neighbor.colonization_pressure() if target_was_empty else 0.0
+    if target_was_empty and organism.integrity <= 0.20 + 0.18 * colonization_pressure:
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="move_blocked",
+                organism_id=organism.organism_id,
+                habitat_id=organism.habitat_id,
+                payload={
+                    "reason": "recolonization_risk",
+                    "target_habitat_id": best_neighbor_id,
+                    "colonization_pressure": round(colonization_pressure, 4),
+                },
+            )
+        )
+        return False
     origin_id = organism.habitat_id
     world.move_organism(organism.organism_id, best_neighbor_id)
     organism.energy = max(0.0, organism.energy - config.movement_cost)
     organism.integrity = max(0.0, organism.integrity - config.migration_integrity_risk)
+    if target_was_empty:
+        organism.energy = max(0.0, organism.energy - config.recolonization_energy_cost * colonization_pressure)
+        organism.integrity = max(
+            0.0,
+            organism.integrity - config.recolonization_integrity_cost * colonization_pressure,
+        )
     organism.movement_cooldown = config.organism.movement_cooldown_ticks
     if organism.integrity <= 0.0:
         organism.die("migration_failure")
@@ -169,6 +210,23 @@ def _attempt_movement(
             payload={"from_habitat_id": origin_id, "to_habitat_id": best_neighbor_id},
         )
     )
+    if target_was_empty:
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="recolonization" if organism.alive else "recolonization_failed",
+                organism_id=organism.organism_id,
+                habitat_id=best_neighbor_id,
+                payload={
+                    "from_habitat_id": origin_id,
+                    "to_habitat_id": best_neighbor_id,
+                    "colonization_pressure": round(colonization_pressure, 4),
+                    "memory_field": round(best_neighbor.memory_field, 4),
+                    "recovery_lag": best_neighbor.recovery_lag,
+                    "lineage_id": organism.lineage_id,
+                },
+            )
+        )
     return True
 
 

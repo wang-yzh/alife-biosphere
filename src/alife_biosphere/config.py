@@ -169,6 +169,9 @@ class WorldConfig:
     )
     movement_cost: float = 0.8
     migration_integrity_risk: float = 0.04
+    recolonization_memory_penalty: float = 0.35
+    recolonization_energy_cost: float = 0.8
+    recolonization_integrity_cost: float = 0.08
     occupancy_stress_scale: float = 1.0
     crowding_energy_penalty: float = 0.35
     maturity_age: int = 3
@@ -200,6 +203,12 @@ class WorldConfig:
             raise ValueError("movement_cost must be non-negative")
         if self.migration_integrity_risk < 0:
             raise ValueError("migration_integrity_risk must be non-negative")
+        if self.recolonization_memory_penalty < 0:
+            raise ValueError("recolonization_memory_penalty must be non-negative")
+        if self.recolonization_energy_cost < 0:
+            raise ValueError("recolonization_energy_cost must be non-negative")
+        if self.recolonization_integrity_cost < 0:
+            raise ValueError("recolonization_integrity_cost must be non-negative")
         if self.occupancy_stress_scale < 0:
             raise ValueError("occupancy_stress_scale must be non-negative")
         if self.crowding_energy_penalty < 0:

@@ -105,3 +105,4 @@ def test_habitat_memory_summary_surfaces_nonzero_memory() -> None:
     assert summary["top_recovery_lag_habitats"]
     assert any(values["peak_memory_field"] > 0.0 for values in summary["per_habitat"].values())
     assert any(values["max_recovery_lag"] > 0 for values in summary["per_habitat"].values())
+    assert any(values["recolonization_success_count"] > 0 for values in summary["per_habitat"].values())

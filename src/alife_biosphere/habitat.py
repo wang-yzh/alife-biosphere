@@ -55,6 +55,13 @@ class Habitat:
     def set_neighbors(self, neighbors: tuple[str, ...]) -> None:
         self.neighbors = neighbors
 
+    def colonization_pressure(self) -> float:
+        return _clamp(
+            0.65 * self.memory_field + 0.35 * min(self.recovery_lag / 12.0, 1.0),
+            0.0,
+            1.0,
+        )
+
     def recompute_pressure(self, occupancy_stress_scale: float) -> None:
         occupant_count = len(self.occupants)
         occupancy_ratio = occupant_count / self.capacity

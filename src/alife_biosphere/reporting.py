@@ -39,6 +39,14 @@ def _moves(events: list[Event]) -> list[Event]:
     return [event for event in events if event.event_type == "move"]
 
 
+def _recolonizations(events: list[Event]) -> list[Event]:
+    return [
+        event
+        for event in events
+        if event.event_type in {"recolonization", "recolonization_failed"}
+    ]
+
+
 def summarize_disturbance_recovery(
     result: SimulationResult,
     recolonization_window: int = 8,
@@ -424,6 +432,7 @@ def summarize_source_sink_roles(
 
 def summarize_habitat_memory(result: SimulationResult) -> dict[str, object]:
     tick_summaries = _tick_summaries(result.events)
+    recolonization_events = _recolonizations(result.events)
     if not tick_summaries:
         return {
             "per_habitat": {},
@@ -439,6 +448,14 @@ def summarize_habitat_memory(result: SimulationResult) -> dict[str, object]:
         hazard_series = [event.payload["hazard_by_habitat"][habitat_id] for event in tick_summaries]
         regen_series = [event.payload["regeneration_by_habitat"][habitat_id] for event in tick_summaries]
         occupancy_series = [event.payload["occupancy_by_habitat"][habitat_id] for event in tick_summaries]
+        recol_success = [
+            event for event in recolonization_events
+            if event.habitat_id == habitat_id and event.event_type == "recolonization"
+        ]
+        recol_failure = [
+            event for event in recolonization_events
+            if event.habitat_id == habitat_id and event.event_type == "recolonization_failed"
+        ]
         per_habitat[habitat_id] = {
             "final_memory_field": round(memory_series[-1], 4),
             "peak_memory_field": round(max(memory_series), 4),
@@ -449,6 +466,20 @@ def summarize_habitat_memory(result: SimulationResult) -> dict[str, object]:
             "min_regeneration": round(min(regen_series), 4),
             "occupied_ticks": sum(1 for value in occupancy_series if value > 0),
             "empty_ticks": sum(1 for value in occupancy_series if value == 0),
+            "recolonization_success_count": len(recol_success),
+            "recolonization_failure_count": len(recol_failure),
+            "avg_recolonization_pressure_success": round(
+                sum(float(event.payload["colonization_pressure"]) for event in recol_success) / len(recol_success),
+                4,
+            )
+            if recol_success
+            else 0.0,
+            "avg_recolonization_pressure_failure": round(
+                sum(float(event.payload["colonization_pressure"]) for event in recol_failure) / len(recol_failure),
+                4,
+            )
+            if recol_failure
+            else 0.0,
         }
 
     top_memory_habitats = sorted(

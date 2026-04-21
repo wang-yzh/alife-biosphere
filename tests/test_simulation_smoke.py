@@ -19,6 +19,7 @@ def test_smoke_run_emits_events() -> None:
     assert "move" in event_types
     assert "crowding_damage" in event_types
     assert "reproduction_ready" in event_types
+    assert "recolonization" in event_types
     assert "tick_summary" in event_types
 
 

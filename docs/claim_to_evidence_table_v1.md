@@ -32,6 +32,7 @@ The goal is to separate:
 | `C-009` | The project has evidence for higher-level individuality. | `unsupported_yet` | none; the project only has a claim standard | group-level reproduction, fitness decoupling, and controlled evidence |
 | `C-010` | Warning metrics are currently reliable indicators in this project. | `unsupported_yet` | none; only warning-design rationale exists | warning outputs, retrospective scoring, false-alarm and miss accounting |
 | `C-011` | The current probe can classify simple disturbance outcomes such as collapsed-and-recovered, delayed recovery, and already-empty habitats from the event log. | `supported_now` | `src/alife_biosphere/reporting.py`; `outputs/ecology_probe/disturbance_recovery_summary.json`; `tests/test_reporting.py` | richer rescue-source inference and stronger recovery semantics under more varied runs |
+| `C-012` | Habitat history now affects current hazard, regeneration, and recolonization pressure in the executable world. | `supported_now` | `src/alife_biosphere/habitat.py`; `src/alife_biosphere/simulation.py`; `outputs/ecology_probe/habitat_memory_summary.json`; `tests/test_world_invariants.py`; `tests/test_reporting.py` | stronger multi-seed evidence that these memory effects remain consequential beyond the current short probe |
 
 ## Current Reading
 
