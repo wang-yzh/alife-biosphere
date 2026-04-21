@@ -65,6 +65,8 @@ They are no longer the shortest current control path.
   the first disturbance / recovery summary slice
 - `m3_source_sink_role_overview_2026-04-21.md`: short implementation note for
   the first multi-run source/sink role overview
+- `minimal_observer_slice_2026-04-21.md`: short implementation note for the
+  first self-contained sandbox observer export
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note
