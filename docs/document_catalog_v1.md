@@ -89,6 +89,8 @@ They are no longer the shortest current control path.
   slice for births, deaths, and replenishment
 - `ant_sandbox_m4_role_slice_2026-04-21.md`: first behavior-summary and
   clustering slice for role differentiation
+- `ant_sandbox_observer_slice_2026-04-22.md`: dedicated world-first observer
+  and live window for the ant-sandbox branch
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note
