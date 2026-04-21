@@ -1,5 +1,6 @@
 from alife_biosphere.config import SimulationConfig, WorldConfig
 from alife_biosphere.reporting import summarize_disturbance_recovery
+from alife_biosphere.reporting import summarize_source_sink_roles
 from alife_biosphere.simulation import run_simulation
 
 
@@ -52,3 +53,32 @@ def test_disturbance_recovery_summary_handles_runs_without_disturbance() -> None
     assert summary["recovery_source_family_counts"] == {}
     assert summary["recovery_source_mode_counts"] == {}
     assert isinstance(summary["final_empty_habitats"], list)
+
+
+def test_source_sink_role_summary_aggregates_across_runs() -> None:
+    results = [
+        run_simulation(
+            SimulationConfig(
+                world=WorldConfig(
+                    seed=seed,
+                    ticks=40,
+                    founder_count=10,
+                    disturbance_interval=8,
+                    disturbance_resource_shock=2.0,
+                    disturbance_hazard_pulse=0.12,
+                    senescence_age=24,
+                    max_age=50,
+                )
+            )
+        )
+        for seed in (7, 11, 13)
+    ]
+    summary = summarize_source_sink_roles(results, recolonization_window=8)
+    assert summary["run_count"] == 3
+    assert "per_habitat" in summary
+    assert "per_family" in summary
+    assert summary["top_source_habitats"]
+    assert summary["top_sink_habitats"]
+    assert summary["per_habitat"]["refuge"]["source_recovery_count"] >= 0
+    assert summary["per_habitat"]["frontier_a"]["sink_collapse_count"] >= 0
+    assert summary["per_family"]["refuge"]["source_recovery_count"] >= 0

@@ -276,3 +276,147 @@ def summarize_disturbance_recovery(
         "final_empty_habitats": final_empty_habitats,
         "longest_empty_span_by_habitat": longest_empty_span_by_habitat,
     }
+
+
+def summarize_source_sink_roles(
+    results: list[SimulationResult],
+    recolonization_window: int = 8,
+) -> dict[str, object]:
+    if not results:
+        return {
+            "run_count": 0,
+            "per_habitat": {},
+            "per_family": {},
+            "top_source_habitats": [],
+            "top_sink_habitats": [],
+        }
+
+    family_by_habitat = {
+        habitat_id: habitat.habitat_family
+        for habitat_id, habitat in results[0].world.habitats.items()
+    }
+    habitat_ids = sorted(family_by_habitat)
+    source_counts: Counter[str] = Counter()
+    disturbance_target_counts: Counter[str] = Counter()
+    sink_collapse_counts: Counter[str] = Counter()
+    sink_recovery_counts: Counter[str] = Counter()
+    sink_failure_counts: Counter[str] = Counter()
+    already_empty_target_counts: Counter[str] = Counter()
+
+    for result in results:
+        recovery_summary = summarize_disturbance_recovery(
+            result,
+            recolonization_window=recolonization_window,
+        )
+        for habitat_id, count in recovery_summary["disturbance_by_habitat"].items():
+            disturbance_target_counts[habitat_id] += int(count)
+        for item in recovery_summary["disturbance_summaries"]:
+            habitat_id = str(item["habitat_id"])
+            status = str(item["status"])
+            if status in {"collapsed_and_recovered", "collapsed_delayed_recovery", "collapsed_unrecovered"}:
+                sink_collapse_counts[habitat_id] += 1
+            if status in {"collapsed_and_recovered", "collapsed_delayed_recovery"}:
+                sink_recovery_counts[habitat_id] += 1
+            if status == "collapsed_unrecovered":
+                sink_failure_counts[habitat_id] += 1
+            if status == "already_empty":
+                already_empty_target_counts[habitat_id] += 1
+            for source_habitat in item["source_habitats"]:
+                source_counts[str(source_habitat)] += 1
+
+    per_habitat: dict[str, dict[str, object]] = {}
+    family_source_counts: Counter[str] = Counter()
+    family_sink_counts: Counter[str] = Counter()
+    family_recovery_counts: Counter[str] = Counter()
+
+    for habitat_id in habitat_ids:
+        family = family_by_habitat[habitat_id]
+        source_recovery_count = source_counts[habitat_id]
+        sink_collapse_count = sink_collapse_counts[habitat_id]
+        sink_recovery_count = sink_recovery_counts[habitat_id]
+        sink_failure_count = sink_failure_counts[habitat_id]
+        disturbance_target_count = disturbance_target_counts[habitat_id]
+        already_empty_target_count = already_empty_target_counts[habitat_id]
+        balance = source_recovery_count - sink_collapse_count
+        if source_recovery_count > sink_collapse_count:
+            dominant_role = "source_leaning"
+        elif sink_collapse_count > source_recovery_count:
+            dominant_role = "sink_leaning"
+        elif source_recovery_count == 0 and sink_collapse_count == 0:
+            dominant_role = "inactive"
+        else:
+            dominant_role = "balanced"
+        recovery_ratio = (
+            0.0
+            if sink_collapse_count == 0
+            else round(sink_recovery_count / sink_collapse_count, 4)
+        )
+        per_habitat[habitat_id] = {
+            "habitat_family": family,
+            "source_recovery_count": source_recovery_count,
+            "disturbance_target_count": disturbance_target_count,
+            "sink_collapse_count": sink_collapse_count,
+            "sink_recovery_count": sink_recovery_count,
+            "sink_failure_count": sink_failure_count,
+            "already_empty_target_count": already_empty_target_count,
+            "source_sink_balance": balance,
+            "sink_recovery_ratio": recovery_ratio,
+            "dominant_role": dominant_role,
+        }
+        family_source_counts[family] += source_recovery_count
+        family_sink_counts[family] += sink_collapse_count
+        family_recovery_counts[family] += sink_recovery_count
+
+    per_family: dict[str, dict[str, object]] = {}
+    for family in sorted(set(family_by_habitat.values())):
+        source_recovery_count = family_source_counts[family]
+        sink_collapse_count = family_sink_counts[family]
+        sink_recovery_count = family_recovery_counts[family]
+        if source_recovery_count > sink_collapse_count:
+            dominant_role = "source_leaning"
+        elif sink_collapse_count > source_recovery_count:
+            dominant_role = "sink_leaning"
+        elif source_recovery_count == 0 and sink_collapse_count == 0:
+            dominant_role = "inactive"
+        else:
+            dominant_role = "balanced"
+        per_family[family] = {
+            "source_recovery_count": source_recovery_count,
+            "sink_collapse_count": sink_collapse_count,
+            "sink_recovery_count": sink_recovery_count,
+            "source_sink_balance": source_recovery_count - sink_collapse_count,
+            "dominant_role": dominant_role,
+        }
+
+    top_source_habitats = sorted(
+        (
+            {
+                "habitat_id": habitat_id,
+                "count": values["source_recovery_count"],
+                "habitat_family": values["habitat_family"],
+            }
+            for habitat_id, values in per_habitat.items()
+            if values["source_recovery_count"] > 0
+        ),
+        key=lambda item: (-int(item["count"]), str(item["habitat_id"])),
+    )
+    top_sink_habitats = sorted(
+        (
+            {
+                "habitat_id": habitat_id,
+                "count": values["sink_collapse_count"],
+                "habitat_family": values["habitat_family"],
+            }
+            for habitat_id, values in per_habitat.items()
+            if values["sink_collapse_count"] > 0
+        ),
+        key=lambda item: (-int(item["count"]), str(item["habitat_id"])),
+    )
+
+    return {
+        "run_count": len(results),
+        "per_habitat": per_habitat,
+        "per_family": per_family,
+        "top_source_habitats": top_source_habitats,
+        "top_sink_habitats": top_sink_habitats,
+    }

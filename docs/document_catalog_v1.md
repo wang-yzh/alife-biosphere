@@ -63,6 +63,8 @@ They are no longer the shortest current control path.
   for the first ecology-kernel and lineage slice
 - `m3_disturbance_recovery_slice_2026-04-21.md`: short implementation note for
   the first disturbance / recovery summary slice
+- `m3_source_sink_role_overview_2026-04-21.md`: short implementation note for
+  the first multi-run source/sink role overview
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note
