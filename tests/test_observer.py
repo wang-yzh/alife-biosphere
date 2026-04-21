@@ -15,6 +15,8 @@ def test_observer_payload_contains_graph_and_frames() -> None:
     assert len(payload["frames"]) == config.world.ticks
     assert "lineages_by_habitat" not in payload["frames"][0]
     assert "habitats" in payload["frames"][0]
+    assert "organisms" in payload["frames"][0]
+    assert payload["frames"][0]["organisms"]
     assert payload["frames"][0]["tick"] == 1
 
 
@@ -26,5 +28,7 @@ def test_observer_html_embeds_payload() -> None:
     assert "<svg id=\"map\"" in html
     assert "observer-data" in html
     assert "nursery_a" in html
+    assert "organism" in html
+    assert "birth-ring" in html
     assert "Alife Biosphere Observer" not in html
     assert "Observer" in html

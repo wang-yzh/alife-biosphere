@@ -18,6 +18,14 @@ Yes.
 The project now has a live observer export that rewrites one self-refreshing
 HTML file as the simulation advances.
 
+The live window was later upgraded away from a laboratory dashboard feel
+toward a world-first presentation:
+
+- region-like habitat areas
+- visible organism dots
+- direct birth, death, move, and disturbance cues
+- compact secondary stats rather than a dominant metrics table
+
 ## What Changed
 
 Added in this pass:
@@ -50,6 +58,7 @@ The page will refresh itself while the script advances the simulation.
 - current occupancy by habitat
 - current lineage presence by habitat
 - current disturbance pulses
+- visible organism dots moving through habitats
 - current alive count, births, moves, and lineage count
 
 ## Why This Matters

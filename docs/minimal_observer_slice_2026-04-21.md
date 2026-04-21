@@ -16,6 +16,14 @@ summaries?
 
 This slice adds a self-contained HTML observer export.
 
+The observer was later upgraded away from a dashboard-first style toward a
+world-first style:
+
+- habitat regions instead of abstract node circles
+- visible organism dots inside habitats
+- births, deaths, moves, and disturbance as direct visual events
+- statistics moved to a secondary panel
+
 Added in this pass:
 
 - `src/alife_biosphere/observer.py`
@@ -32,8 +40,9 @@ The observer currently visualizes:
 - habitat family coloring
 - occupancy by habitat over time
 - lineage presence by habitat over time
-- disturbance ticks
-- births, moves, and alive counts per tick
+- disturbance pulses
+- visible organism dots
+- births, moves, deaths, and alive counts per tick
 
 ## What To Run
 
