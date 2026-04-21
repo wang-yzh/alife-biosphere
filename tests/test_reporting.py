@@ -1,5 +1,6 @@
 from alife_biosphere.config import SimulationConfig, WorldConfig
 from alife_biosphere.reporting import summarize_disturbance_recovery
+from alife_biosphere.reporting import summarize_habitat_memory
 from alife_biosphere.reporting import summarize_source_sink_roles
 from alife_biosphere.simulation import run_simulation
 
@@ -82,3 +83,25 @@ def test_source_sink_role_summary_aggregates_across_runs() -> None:
     assert summary["per_habitat"]["refuge"]["source_recovery_count"] >= 0
     assert summary["per_habitat"]["frontier_a"]["sink_collapse_count"] >= 0
     assert summary["per_family"]["refuge"]["source_recovery_count"] >= 0
+
+
+def test_habitat_memory_summary_surfaces_nonzero_memory() -> None:
+    result = run_simulation(
+        SimulationConfig(
+            world=WorldConfig(
+                ticks=40,
+                founder_count=10,
+                disturbance_interval=8,
+                disturbance_resource_shock=2.0,
+                disturbance_hazard_pulse=0.12,
+                senescence_age=24,
+                max_age=50,
+            )
+        )
+    )
+    summary = summarize_habitat_memory(result)
+    assert "per_habitat" in summary
+    assert summary["top_memory_habitats"]
+    assert summary["top_recovery_lag_habitats"]
+    assert any(values["peak_memory_field"] > 0.0 for values in summary["per_habitat"].values())
+    assert any(values["max_recovery_lag"] > 0 for values in summary["per_habitat"].values())

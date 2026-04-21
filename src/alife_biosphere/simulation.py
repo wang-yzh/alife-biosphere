@@ -461,6 +461,22 @@ def step_world(world: World, config: WorldConfig, tick: int) -> dict[str, object
             habitat_id: round(habitat.occupancy_pressure, 4)
             for habitat_id, habitat in world.habitats.items()
         },
+        "memory_field_by_habitat": {
+            habitat_id: round(habitat.memory_field, 4)
+            for habitat_id, habitat in world.habitats.items()
+        },
+        "recovery_lag_by_habitat": {
+            habitat_id: habitat.recovery_lag
+            for habitat_id, habitat in world.habitats.items()
+        },
+        "hazard_by_habitat": {
+            habitat_id: round(habitat.hazard_level, 4)
+            for habitat_id, habitat in world.habitats.items()
+        },
+        "regeneration_by_habitat": {
+            habitat_id: round(habitat.regeneration_rate, 4)
+            for habitat_id, habitat in world.habitats.items()
+        },
         "lineage_count": len(
             {
                 organism.lineage_id

@@ -420,3 +420,59 @@ def summarize_source_sink_roles(
         "top_source_habitats": top_source_habitats,
         "top_sink_habitats": top_sink_habitats,
     }
+
+
+def summarize_habitat_memory(result: SimulationResult) -> dict[str, object]:
+    tick_summaries = _tick_summaries(result.events)
+    if not tick_summaries:
+        return {
+            "per_habitat": {},
+            "top_memory_habitats": [],
+            "top_recovery_lag_habitats": [],
+        }
+
+    habitat_ids = sorted(tick_summaries[0].payload["memory_field_by_habitat"])
+    per_habitat: dict[str, dict[str, object]] = {}
+    for habitat_id in habitat_ids:
+        memory_series = [event.payload["memory_field_by_habitat"][habitat_id] for event in tick_summaries]
+        recovery_series = [event.payload["recovery_lag_by_habitat"][habitat_id] for event in tick_summaries]
+        hazard_series = [event.payload["hazard_by_habitat"][habitat_id] for event in tick_summaries]
+        regen_series = [event.payload["regeneration_by_habitat"][habitat_id] for event in tick_summaries]
+        occupancy_series = [event.payload["occupancy_by_habitat"][habitat_id] for event in tick_summaries]
+        per_habitat[habitat_id] = {
+            "final_memory_field": round(memory_series[-1], 4),
+            "peak_memory_field": round(max(memory_series), 4),
+            "max_recovery_lag": max(recovery_series),
+            "final_hazard": round(hazard_series[-1], 4),
+            "peak_hazard": round(max(hazard_series), 4),
+            "final_regeneration": round(regen_series[-1], 4),
+            "min_regeneration": round(min(regen_series), 4),
+            "occupied_ticks": sum(1 for value in occupancy_series if value > 0),
+            "empty_ticks": sum(1 for value in occupancy_series if value == 0),
+        }
+
+    top_memory_habitats = sorted(
+        (
+            {
+                "habitat_id": habitat_id,
+                "peak_memory_field": values["peak_memory_field"],
+            }
+            for habitat_id, values in per_habitat.items()
+        ),
+        key=lambda item: (-float(item["peak_memory_field"]), str(item["habitat_id"])),
+    )
+    top_recovery_lag_habitats = sorted(
+        (
+            {
+                "habitat_id": habitat_id,
+                "max_recovery_lag": values["max_recovery_lag"],
+            }
+            for habitat_id, values in per_habitat.items()
+        ),
+        key=lambda item: (-int(item["max_recovery_lag"]), str(item["habitat_id"])),
+    )
+    return {
+        "per_habitat": per_habitat,
+        "top_memory_habitats": top_memory_habitats,
+        "top_recovery_lag_habitats": top_recovery_lag_habitats,
+    }

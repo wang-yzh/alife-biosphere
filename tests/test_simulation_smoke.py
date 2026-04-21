@@ -30,12 +30,17 @@ def test_tick_summary_contains_ecology_probe_fields() -> None:
     assert "occupancy_by_habitat" in final_payload
     assert "lineages_by_habitat" in final_payload
     assert "occupancy_pressure_by_habitat" in final_payload
+    assert "memory_field_by_habitat" in final_payload
+    assert "recovery_lag_by_habitat" in final_payload
+    assert "hazard_by_habitat" in final_payload
+    assert "regeneration_by_habitat" in final_payload
     assert "movement_count" in final_payload
     assert "birth_count" in final_payload
     assert "reproduction_ready_count" in final_payload
     assert "lineage_count" in final_payload
     assert len(final_payload["occupancy_by_habitat"]) == 7
     assert len(final_payload["lineages_by_habitat"]) == 7
+    assert len(final_payload["memory_field_by_habitat"]) == 7
 
 
 def test_reproduction_produces_births_and_lineage_links() -> None:
