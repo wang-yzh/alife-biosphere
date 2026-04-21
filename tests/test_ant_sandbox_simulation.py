@@ -1,6 +1,7 @@
 from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig
 from alife_biosphere.ant_sandbox.reporting import summarize_behavior_roles
 from alife_biosphere.ant_sandbox.simulation import run_simulation
+from alife_biosphere.ant_sandbox.validation import summarize_validation_status, ValidationCase
 
 
 def test_ant_sandbox_run_is_deterministic() -> None:
@@ -70,6 +71,43 @@ def test_ant_sandbox_role_summary_produces_multiple_clusters() -> None:
     assert len(summary["cluster_summaries"]) == 3
     assert sum(cluster["member_count"] for cluster in summary["cluster_summaries"]) == len(summary["per_ant"])
     assert len(summary["role_distribution"]) >= 2
+
+
+def test_validation_status_evaluates_expected_metric_states() -> None:
+    cases = [
+        ValidationCase(
+            seed=7,
+            base_nest_food=10,
+            base_unloads=10,
+            pheromone_on_nest_food=10,
+            pheromone_off_nest_food=7,
+            persistence_births=5,
+            persistence_deaths=36,
+            persistence_alive_min=1,
+            persistence_alive_max=36,
+            role_label_count=2,
+            disturbance_recovery_ratio=3.0,
+        ),
+        ValidationCase(
+            seed=11,
+            base_nest_food=11,
+            base_unloads=11,
+            pheromone_on_nest_food=12,
+            pheromone_off_nest_food=8,
+            persistence_births=4,
+            persistence_deaths=30,
+            persistence_alive_min=2,
+            persistence_alive_max=35,
+            role_label_count=2,
+            disturbance_recovery_ratio=2.5,
+        ),
+    ]
+    summary = summarize_validation_status(cases)
+    assert summary["metric_status"]["M2_foraging_loop"] == "pass"
+    assert summary["metric_status"]["M3_pheromone_effectiveness"] == "pass"
+    assert summary["metric_status"]["M4_colony_persistence"] == "pass"
+    assert summary["metric_status"]["M5_role_differentiation"] == "pass"
+    assert summary["metric_status"]["M6_disturbance_recovery"] == "pass"
 
 
 def test_ant_sandbox_disturbance_keeps_some_function_after_shock() -> None:
