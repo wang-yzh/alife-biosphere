@@ -70,3 +70,33 @@ def test_ant_sandbox_role_summary_produces_multiple_clusters() -> None:
     assert len(summary["cluster_summaries"]) == 3
     assert sum(cluster["member_count"] for cluster in summary["cluster_summaries"]) == len(summary["per_ant"])
     assert len(summary["role_distribution"]) >= 2
+
+
+def test_ant_sandbox_disturbance_keeps_some_function_after_shock() -> None:
+    result = run_simulation(
+        AntSandboxConfig(
+            ticks=300,
+            disturbance_tick=150,
+            disturbance_food_shift=True,
+            disturbance_food_shift_dx=-8,
+            disturbance_food_shift_dy=6,
+            disturbance_kill_radius=4,
+            ants=AntAgentConfig(
+                max_age=200,
+                max_population=44,
+                spawn_food_cost=3,
+                spawn_interval=6,
+                pheromone_enabled=True,
+            ),
+        )
+    )
+    event_types = {event.event_type for event in result.events}
+    assert "disturbance" in event_types
+    assert "food_shift" in event_types
+    tick_summaries = [event.payload for event in result.events if event.event_type == "tick_summary"]
+    pre = tick_summaries[110:150]
+    post = tick_summaries[200:240]
+    pre_unloads = sum(item["unloads"] for item in pre)
+    post_unloads = sum(item["unloads"] for item in post)
+    assert pre_unloads > 0
+    assert post_unloads > 0

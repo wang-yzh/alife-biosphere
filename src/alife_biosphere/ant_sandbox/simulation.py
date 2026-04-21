@@ -215,6 +215,53 @@ def _unload_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
     return True
 
 
+def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> None:
+    if config.disturbance_tick <= 0 or tick != config.disturbance_tick:
+        return
+    if config.disturbance_food_shift:
+        for patch in world.food_patches:
+            patch.x = _clamp(patch.x + config.disturbance_food_shift_dx, 0, world.width - 1)
+            patch.y = _clamp(patch.y + config.disturbance_food_shift_dy, 0, world.height - 1)
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="food_shift",
+                organism_id=None,
+                habitat_id=None,
+                payload={
+                    "dx": config.disturbance_food_shift_dx,
+                    "dy": config.disturbance_food_shift_dy,
+                },
+            )
+        )
+    if config.disturbance_kill_radius > 0:
+        killed = 0
+        for ant in world.ants:
+            if not ant.alive:
+                continue
+            if _distance(ant.x, ant.y, world.nest.x, world.nest.y) <= config.disturbance_kill_radius:
+                ant.alive = False
+                world.emit(
+                    Event(
+                        tick=tick,
+                        event_type="ant_death",
+                        organism_id=ant.ant_id,
+                        habitat_id="world",
+                        payload={"x": ant.x, "y": ant.y, "age": ant.age, "reason": "disturbance"},
+                    )
+                )
+                killed += 1
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="disturbance",
+                organism_id=None,
+                habitat_id=None,
+                payload={"killed": killed, "kill_radius": config.disturbance_kill_radius},
+            )
+        )
+
+
 def _decay_trails(world: AntSandboxWorld, config: AntSandboxConfig) -> None:
     decay = max(0.0, 1.0 - config.ants.trail_decay)
     world.food_trail = {
@@ -305,6 +352,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     unloads = 0
     deaths = 0
     births = 0
+    _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
     _regrow_food(world)
     world.occupied_cells = {(ant.x, ant.y) for ant in world.ants if ant.alive}

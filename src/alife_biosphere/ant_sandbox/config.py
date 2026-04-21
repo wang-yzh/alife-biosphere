@@ -106,6 +106,11 @@ class AntSandboxConfig:
         )
     )
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)
+    disturbance_tick: int = 0
+    disturbance_food_shift: bool = False
+    disturbance_food_shift_dx: int = 0
+    disturbance_food_shift_dy: int = 0
+    disturbance_kill_radius: int = 0
 
     def __post_init__(self) -> None:
         if self.ticks <= 0:
@@ -114,6 +119,10 @@ class AntSandboxConfig:
             raise ValueError("width and height must be positive")
         if not self.food_patches:
             raise ValueError("at least one food patch is required")
+        if self.disturbance_tick < 0:
+            raise ValueError("disturbance_tick must be non-negative")
+        if self.disturbance_kill_radius < 0:
+            raise ValueError("disturbance_kill_radius must be non-negative")
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
