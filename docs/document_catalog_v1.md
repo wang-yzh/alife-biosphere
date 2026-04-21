@@ -61,6 +61,8 @@ They are no longer the shortest current control path.
 - `m1_biosphere_kernel_spec.md`: predecessor M1 spec
 - `m1_ecology_and_m2_lineage_slice_2026-04-21.md`: short implementation note
   for the first ecology-kernel and lineage slice
+- `m3_disturbance_recovery_slice_2026-04-21.md`: short implementation note for
+  the first disturbance / recovery summary slice
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note

@@ -60,6 +60,7 @@ These are still useful, but they are not the shortest entry path:
 - `build_plan_v1.md`
 - `m1_biosphere_kernel_spec.md`
 - `m1_ecology_and_m2_lineage_slice_2026-04-21.md`
+- `m3_disturbance_recovery_slice_2026-04-21.md`
 - `inheritance_architecture_v0.md`
 - `adaptive_cycle_and_trust_mechanisms_v1.md`
 - `connectedness_and_trust_channel_design_v1.md`

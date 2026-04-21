@@ -101,7 +101,11 @@ dives and citation backup.
 
 ## What Exists Right Now
 
-The repository now has an initial M0 scaffold.
+The repository now has:
+
+- an M1 ecology kernel
+- a first M2 reproduction and lineage slice
+- a first M3 disturbance / recovery summary slice
 
 Current implemented files:
 
@@ -115,51 +119,61 @@ src/alife_biosphere/organism.py
 src/alife_biosphere/events.py
 src/alife_biosphere/world.py
 src/alife_biosphere/simulation.py
+src/alife_biosphere/reporting.py
 src/alife_biosphere/io.py
 scripts/run_smoke.py
+scripts/run_ecology_probe.py
 tests/
 ```
 
-## What The M0 Scaffold Already Does
+## What The Current Kernel Already Does
 
-The current scaffold is intentionally small.
+The current implementation is still small, but it is no longer only a bare
+scaffold.
 
 It can already:
 
 - define typed simulation and world config
-- create a deterministic small world
-- create founder organisms
-- update habitats with bounded regeneration
-- apply simple organism metabolism
-- perform simple harvesting
+- create a deterministic 7-habitat graph world
+- create founder organisms and offspring
+- update habitats with bounded regeneration and climate noise
+- compute occupancy pressure and depletion traces
+- apply movement costs, hazard damage, and crowding damage
+- record life stages, reproduction readiness, births, and deaths
+- apply deterministic disturbance hooks
+- derive disturbance / collapse / recolonization summaries
 - emit append-only events
 - run a smoke simulation
+- run an ecology probe
 - write config, summary, and event outputs to disk
 - run basic tests
 
-This means the repo now has a real executable kernel instead of only design
-documents.
+This means the repo now has a real executable ecology kernel instead of only
+design documents.
 
-## What The M0 Scaffold Does Not Do Yet
+## What The Current Code Still Does Not Do Yet
 
-The current scaffold does not yet implement the actual research mechanisms.
+The current code still does not yet implement several later-stage mechanisms or
+prove the stronger ecosystem claims.
 
 Still missing:
 
-- habitat graph edges and migration
-- reproduction
-- lineage graph
 - mutation
-- life stages
+- robust rescue after deeper local collapse
+- stable long-run coexistence
+- niche or species inference
+- habitat-driven diversification over long horizons
 - protocol discovery
 - somatic learning
 - inheritance packets
 - cultural archive
-- species or niche inference
-- coevolving habitats
+- antagonists
+- richer group structure
+- coevolving habitats in the strong sense
 
 This is expected.
-The current code should be treated as foundation, not as a scientific result.
+The current code should be treated as a growing experimental world, not as a
+finished ecological result.
 
 ## Verified Current Status
 
@@ -172,7 +186,7 @@ Current local verification:
 Result at the time of writing:
 
 ```text
-7 passed
+15 passed
 ```
 
 Smoke script:
@@ -184,14 +198,38 @@ Smoke script:
 Observed summary:
 
 ```text
-{'ticks': 20, 'alive': 8, 'dead': 0, 'events': 127}
+{'ticks': 20, 'alive': 13, 'dead': 0, 'events': 737}
 ```
 
 This verifies that:
 
 - the package layout works
-- the basic simulation loop runs
+- the ecology kernel runs deterministically
 - tests import correctly under the shared environment
+
+Ecology probe:
+
+```text
+/Users/qlqwpy/Documents/游乐园/.venv/bin/python scripts/run_ecology_probe.py
+```
+
+Observed summary:
+
+```text
+{'ticks': 40, 'alive': 5, 'dead': 9, 'events': 1239}
+```
+
+Observed derived highlights:
+
+```text
+birth_events=4
+death_events=9
+disturbance_events=5
+move_events=100
+successful_recovery_count=2
+delayed_recovery_count=1
+lineage_count=4
+```
 
 ## Current Module Intent
 
@@ -222,6 +260,10 @@ Owns top-level state: habitats, organisms, tick count, and event storage.
 ### `simulation.py`
 
 Owns deterministic stepping and run summary logic.
+
+### `reporting.py`
+
+Owns derived disturbance / collapse / recolonization summaries.
 
 ### `io.py`
 
@@ -254,62 +296,57 @@ That document freezes:
 
 ## Recommended Next Build Order
 
-The next work should be narrow and disciplined.
+The next work should stay narrow and disciplined.
 
-### Step 1. Build the ecology kernel
+### Step 1. Strengthen M3 recovery interpretation
 
 Add:
 
-- habitat graph connectivity
-- occupancy pressure
-- bounded movement between habitats
-- habitat-level stress effects
+- clearer rescue and failure summaries
+- habitat-specific recovery lag reporting
+- lineage-sensitive recolonization summaries
 
 Exit condition:
 
 ```text
-organisms can distribute unevenly across habitats
-without numerical instability
+disturbance outcomes can be explained without reading raw events by hand
 ```
 
-### Step 2. Add reproduction and lineage
+### Step 2. Build habitat history into real ecological memory
 
 Add:
 
-- offspring creation
-- parent-child recording
-- lineage tracking
-- founder and bottleneck summaries
+- occupancy-dependent habitat modification
+- recovery lag accumulation
+- stronger link between prior depletion and later viability
 
 Exit condition:
 
 ```text
-birth and death produce real turnover instead of fixed founders
+later habitat outcomes depend materially on what happened there before
 ```
 
-### Step 3. Add disturbance and recovery
+### Step 3. Push longer-run ecology probes
 
 Add:
 
-- local crashes
-- regional stress
-- recolonization windows
-- recovery summaries
+- longer runs
+- coexistence summaries
+- lineage spread and local dominance summaries
 
 Exit condition:
 
 ```text
-some runs can lose local populations and recover without hidden resets
+the world can show partial persistence and differentiation without immediately
+collapsing to one generic state
 ```
 
-Only after these three steps should we move on to:
+Only after those steps should the main line move hard on:
 
-- habitat memory
-- longer-run niche diagnostics
-- optional higher-order mechanisms such as inheritance, signaling, or archive
-
-That ordering matters because otherwise we would build memory systems before
-the world has a stable life cycle to attach them to.
+- compact inheritance
+- signaling
+- archive systems
+- other optional higher-order mechanisms
 
 ## Current Engineering Rule
 
@@ -329,7 +366,8 @@ If someone asks what state the project is in right now, the honest short answer
 is:
 
 ```text
-The project now has a clean design base and a minimal executable scaffold. It
-does not yet have a sustained ecology, but it now has enough structure to
-start building one in a controlled way.
+The project now has a clean design base and an executable ecology kernel with
+early reproduction, lineage continuity, disturbance hooks, and recovery
+summaries. It does not yet have a robust long-run ecosystem, but it now has
+enough structure to study how one might form.
 ```

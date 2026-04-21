@@ -1,0 +1,193 @@
+from __future__ import annotations
+
+from collections import Counter
+from dataclasses import dataclass
+
+from .events import Event
+from .simulation import SimulationResult
+
+
+@dataclass(frozen=True)
+class OccupancyTransition:
+    habitat_id: str
+    tick: int
+    occupancy: int
+    previous_occupancy: int
+    empty_duration_ticks: int | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "habitat_id": self.habitat_id,
+            "tick": self.tick,
+            "occupancy": self.occupancy,
+            "previous_occupancy": self.previous_occupancy,
+        }
+        if self.empty_duration_ticks is not None:
+            payload["empty_duration_ticks"] = self.empty_duration_ticks
+        return payload
+
+
+def _tick_summaries(events: list[Event]) -> list[Event]:
+    return [event for event in events if event.event_type == "tick_summary"]
+
+
+def _disturbances(events: list[Event]) -> list[Event]:
+    return [event for event in events if event.event_type == "disturbance"]
+
+
+def summarize_disturbance_recovery(
+    result: SimulationResult,
+    recolonization_window: int = 8,
+) -> dict[str, object]:
+    events = result.events
+    tick_summaries = _tick_summaries(events)
+    disturbances = _disturbances(events)
+    if not tick_summaries:
+        return {
+            "disturbance_count": 0,
+            "collapse_count": 0,
+            "recolonization_count": 0,
+            "disturbance_by_habitat": {},
+            "disturbance_status_counts": {},
+            "collapse_events": [],
+            "recolonization_events": [],
+            "disturbance_summaries": [],
+            "final_empty_habitats": [],
+        }
+
+    summary_by_tick = {event.tick: event.payload for event in tick_summaries}
+    sorted_ticks = sorted(summary_by_tick)
+    habitat_ids = sorted(next(iter(summary_by_tick.values()))["occupancy_by_habitat"])
+
+    collapse_events: list[OccupancyTransition] = []
+    recolonization_events: list[OccupancyTransition] = []
+    collapse_lookup: dict[str, list[OccupancyTransition]] = {habitat_id: [] for habitat_id in habitat_ids}
+    recol_lookup: dict[str, list[OccupancyTransition]] = {habitat_id: [] for habitat_id in habitat_ids}
+
+    for habitat_id in habitat_ids:
+        previous_tick = sorted_ticks[0]
+        previous_occupancy = summary_by_tick[previous_tick]["occupancy_by_habitat"][habitat_id]
+        empty_since_tick = None
+        for tick in sorted_ticks[1:]:
+            occupancy = summary_by_tick[tick]["occupancy_by_habitat"][habitat_id]
+            if previous_occupancy > 0 and occupancy == 0:
+                event = OccupancyTransition(
+                    habitat_id=habitat_id,
+                    tick=tick,
+                    occupancy=occupancy,
+                    previous_occupancy=previous_occupancy,
+                )
+                collapse_events.append(event)
+                collapse_lookup[habitat_id].append(event)
+                empty_since_tick = tick
+            elif previous_occupancy == 0 and occupancy > 0:
+                if empty_since_tick is not None:
+                    event = OccupancyTransition(
+                        habitat_id=habitat_id,
+                        tick=tick,
+                        occupancy=occupancy,
+                        previous_occupancy=previous_occupancy,
+                        empty_duration_ticks=tick - empty_since_tick,
+                    )
+                    recolonization_events.append(event)
+                    recol_lookup[habitat_id].append(event)
+                empty_since_tick = None
+            previous_occupancy = occupancy
+
+    status_counts: Counter[str] = Counter()
+    disturbance_summaries: list[dict[str, object]] = []
+    final_tick = sorted_ticks[-1]
+
+    for disturbance in disturbances:
+        habitat_id = disturbance.habitat_id
+        assert habitat_id is not None
+        pre_tick = max((tick for tick in sorted_ticks if tick < disturbance.tick), default=sorted_ticks[0])
+        pre_occupancy = summary_by_tick[pre_tick]["occupancy_by_habitat"][habitat_id]
+        post_occupancy = summary_by_tick[disturbance.tick]["occupancy_by_habitat"][habitat_id]
+        collapse = next(
+            (
+                event
+                for event in collapse_lookup[habitat_id]
+                if disturbance.tick <= event.tick <= min(final_tick, disturbance.tick + recolonization_window)
+            ),
+            None,
+        )
+        delayed_recovery = None
+        recovery = None
+        if collapse is not None:
+            recovery = next(
+                (
+                    event
+                    for event in recol_lookup[habitat_id]
+                    if event.tick > collapse.tick and event.tick <= min(final_tick, disturbance.tick + recolonization_window)
+                ),
+                None,
+            )
+            delayed_recovery = next(
+                (
+                    event
+                    for event in recol_lookup[habitat_id]
+                    if event.tick > collapse.tick and event.tick > min(final_tick, disturbance.tick + recolonization_window)
+                ),
+                None,
+            )
+        if collapse is None and pre_occupancy == 0 and post_occupancy == 0:
+            status = "already_empty"
+        elif collapse is None:
+            status = "occupied_after_disturbance"
+        elif recovery is not None:
+            status = "collapsed_and_recovered"
+        elif delayed_recovery is not None:
+            status = "collapsed_delayed_recovery"
+        else:
+            status = "collapsed_unrecovered"
+        status_counts[status] += 1
+        disturbance_summaries.append(
+            {
+                "tick": disturbance.tick,
+                "habitat_id": habitat_id,
+                "resource_loss": disturbance.payload.get("resource_loss"),
+                "hazard_pulse": disturbance.payload.get("hazard_pulse"),
+                "pre_occupancy": pre_occupancy,
+                "post_occupancy": post_occupancy,
+                "status": status,
+                "collapse_tick": collapse.tick if collapse else None,
+                "recovery_tick": recovery.tick if recovery else None,
+                "delayed_recovery_tick": delayed_recovery.tick if delayed_recovery else None,
+            }
+        )
+
+    disturbance_by_habitat = Counter(event.habitat_id for event in disturbances if event.habitat_id is not None)
+    final_empty_habitats = [
+        habitat_id
+        for habitat_id, occupancy in summary_by_tick[final_tick]["occupancy_by_habitat"].items()
+        if occupancy == 0
+    ]
+    longest_empty_span_by_habitat: dict[str, int] = {}
+    for habitat_id in habitat_ids:
+        longest = 0
+        current = 0
+        for tick in sorted_ticks:
+            occupancy = summary_by_tick[tick]["occupancy_by_habitat"][habitat_id]
+            if occupancy == 0:
+                current += 1
+                longest = max(longest, current)
+            else:
+                current = 0
+        longest_empty_span_by_habitat[habitat_id] = longest
+
+    return {
+        "disturbance_count": len(disturbances),
+        "collapse_count": len(collapse_events),
+        "recolonization_count": len(recolonization_events),
+        "successful_recovery_count": status_counts["collapsed_and_recovered"],
+        "failed_recovery_count": status_counts["collapsed_unrecovered"],
+        "delayed_recovery_count": status_counts["collapsed_delayed_recovery"],
+        "disturbance_by_habitat": dict(disturbance_by_habitat),
+        "disturbance_status_counts": dict(status_counts),
+        "collapse_events": [event.to_dict() for event in collapse_events],
+        "recolonization_events": [event.to_dict() for event in recolonization_events],
+        "disturbance_summaries": disturbance_summaries,
+        "final_empty_habitats": final_empty_habitats,
+        "longest_empty_span_by_habitat": longest_empty_span_by_habitat,
+    }
