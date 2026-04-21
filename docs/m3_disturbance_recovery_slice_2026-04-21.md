@@ -20,12 +20,18 @@ Added in this pass:
 
 - `src/alife_biosphere/reporting.py`
 - disturbance / collapse / recolonization summary derivation
+- lineage-aware habitat occupancy in `tick_summary`
+- lineage-sensitive recolonization classification
 - disturbance status classification:
   - `collapsed_and_recovered`
   - `collapsed_delayed_recovery`
   - `collapsed_unrecovered`
   - `occupied_after_disturbance`
   - `already_empty`
+- lineage recovery mode classification:
+  - `same_lineage_return`
+  - `replacement_recovery`
+  - `mixed_recovery`
 - `outputs/ecology_probe/disturbance_recovery_summary.json`
 - reporting tests in `tests/test_reporting.py`
 
@@ -57,6 +63,12 @@ collapsed_delayed_recovery=1
 already_empty=2
 ```
 
+Current lineage recovery mode counts:
+
+```text
+replacement_recovery=3
+```
+
 ## What This Supports
 
 This slice supports the narrower claim that:
@@ -64,6 +76,8 @@ This slice supports the narrower claim that:
 - the event log is now rich enough to derive simple disturbance outcomes
 - local collapse and recolonization can be detected from current runs
 - some disturbances are followed by local recovery within a short window
+- recovery can now be classified by whether the returning occupants belong to
+  the same lineage or a replacement lineage
 
 ## What It Does Not Support
 
@@ -79,5 +93,5 @@ This slice does not yet support claims about:
 The next useful extension is:
 
 - habitat-specific recovery lag metrics
-- lineage-sensitive recolonization summaries
+- rescue-source and lineage-source summaries
 - better distinction between transient vacancy and true local crash

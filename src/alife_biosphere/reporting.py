@@ -95,6 +95,7 @@ def summarize_disturbance_recovery(
             previous_occupancy = occupancy
 
     status_counts: Counter[str] = Counter()
+    lineage_recovery_mode_counts: Counter[str] = Counter()
     disturbance_summaries: list[dict[str, object]] = []
     final_tick = sorted_ticks[-1]
 
@@ -104,6 +105,7 @@ def summarize_disturbance_recovery(
         pre_tick = max((tick for tick in sorted_ticks if tick < disturbance.tick), default=sorted_ticks[0])
         pre_occupancy = summary_by_tick[pre_tick]["occupancy_by_habitat"][habitat_id]
         post_occupancy = summary_by_tick[disturbance.tick]["occupancy_by_habitat"][habitat_id]
+        pre_lineages = set(summary_by_tick[pre_tick]["lineages_by_habitat"][habitat_id])
         collapse = next(
             (
                 event
@@ -142,6 +144,26 @@ def summarize_disturbance_recovery(
         else:
             status = "collapsed_unrecovered"
         status_counts[status] += 1
+        effective_recovery = recovery or delayed_recovery
+        recovery_lineages = (
+            set(summary_by_tick[effective_recovery.tick]["lineages_by_habitat"][habitat_id])
+            if effective_recovery is not None
+            else set()
+        )
+        shared_lineages = sorted(pre_lineages & recovery_lineages)
+        replacement_lineages = sorted(recovery_lineages - pre_lineages)
+        if effective_recovery is None:
+            lineage_recovery_mode = None
+        elif shared_lineages and replacement_lineages:
+            lineage_recovery_mode = "mixed_recovery"
+        elif shared_lineages:
+            lineage_recovery_mode = "same_lineage_return"
+        elif recovery_lineages:
+            lineage_recovery_mode = "replacement_recovery"
+        else:
+            lineage_recovery_mode = "empty_recovery"
+        if lineage_recovery_mode is not None:
+            lineage_recovery_mode_counts[lineage_recovery_mode] += 1
         disturbance_summaries.append(
             {
                 "tick": disturbance.tick,
@@ -150,10 +172,15 @@ def summarize_disturbance_recovery(
                 "hazard_pulse": disturbance.payload.get("hazard_pulse"),
                 "pre_occupancy": pre_occupancy,
                 "post_occupancy": post_occupancy,
+                "pre_lineages": sorted(pre_lineages),
                 "status": status,
                 "collapse_tick": collapse.tick if collapse else None,
                 "recovery_tick": recovery.tick if recovery else None,
                 "delayed_recovery_tick": delayed_recovery.tick if delayed_recovery else None,
+                "lineage_recovery_mode": lineage_recovery_mode,
+                "recovery_lineages": sorted(recovery_lineages),
+                "shared_lineages": shared_lineages,
+                "replacement_lineages": replacement_lineages,
             }
         )
 
@@ -185,6 +212,7 @@ def summarize_disturbance_recovery(
         "delayed_recovery_count": status_counts["collapsed_delayed_recovery"],
         "disturbance_by_habitat": dict(disturbance_by_habitat),
         "disturbance_status_counts": dict(status_counts),
+        "lineage_recovery_mode_counts": dict(lineage_recovery_mode_counts),
         "collapse_events": [event.to_dict() for event in collapse_events],
         "recolonization_events": [event.to_dict() for event in recolonization_events],
         "disturbance_summaries": disturbance_summaries,

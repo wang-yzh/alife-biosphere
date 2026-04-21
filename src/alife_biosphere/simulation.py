@@ -465,6 +465,7 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
                     if "refuge" in world.habitats
                     else 0,
                     "occupancy_by_habitat": world.occupancy_by_habitat(),
+                    "lineages_by_habitat": world.living_lineages_by_habitat(),
                     "occupancy_pressure_by_habitat": {
                         habitat_id: round(habitat.occupancy_pressure, 4)
                         for habitat_id, habitat in world.habitats.items()

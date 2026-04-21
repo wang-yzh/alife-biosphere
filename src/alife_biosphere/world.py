@@ -59,6 +59,18 @@ class World:
     def occupancy_by_habitat(self) -> dict[str, int]:
         return {habitat_id: len(habitat.occupants) for habitat_id, habitat in self.habitats.items()}
 
+    def living_lineages_by_habitat(self) -> dict[str, list[str]]:
+        payload: dict[str, list[str]] = {}
+        for habitat_id, habitat in self.habitats.items():
+            payload[habitat_id] = sorted(
+                {
+                    self.organisms[organism_id].lineage_id
+                    for organism_id in habitat.occupants
+                    if self.organisms[organism_id].alive
+                }
+            )
+        return payload
+
     def emit(self, event: Event) -> None:
         self.events.append(event)
 

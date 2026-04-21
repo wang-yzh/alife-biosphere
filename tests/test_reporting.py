@@ -23,8 +23,14 @@ def test_disturbance_recovery_summary_tracks_collapses_and_recovery() -> None:
     assert summary["recolonization_count"] > 0
     assert summary["disturbance_status_counts"]["collapsed_and_recovered"] >= 1
     assert sum(summary["disturbance_status_counts"].values()) == summary["disturbance_count"]
+    assert summary["lineage_recovery_mode_counts"]
     assert "frontier_a" in summary["disturbance_by_habitat"]
     assert summary["disturbance_summaries"]
+    assert any(
+        item["lineage_recovery_mode"] in {"same_lineage_return", "replacement_recovery", "mixed_recovery"}
+        for item in summary["disturbance_summaries"]
+        if item["lineage_recovery_mode"] is not None
+    )
 
 
 def test_disturbance_recovery_summary_handles_runs_without_disturbance() -> None:
