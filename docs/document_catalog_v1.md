@@ -85,6 +85,10 @@ They are no longer the shortest current control path.
   local movement, pickup, return, and unload
 - `ant_sandbox_m2_pheromone_slice_2026-04-21.md`: first trace-field and
   pheromone-effectiveness slice
+- `ant_sandbox_m3_persistence_slice_2026-04-21.md`: first bounded persistence
+  slice for births, deaths, and replenishment
+- `ant_sandbox_m4_role_slice_2026-04-21.md`: first behavior-summary and
+  clustering slice for role differentiation
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note

@@ -1,4 +1,5 @@
 from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig
+from alife_biosphere.ant_sandbox.reporting import summarize_behavior_roles
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 
 
@@ -50,3 +51,22 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
     alive_counts = [summary["alive"] for summary in summaries]
     assert min(alive_counts) > 0
     assert max(alive_counts) <= 44
+
+
+def test_ant_sandbox_role_summary_produces_multiple_clusters() -> None:
+    config = AntSandboxConfig(
+        ticks=420,
+        ants=AntAgentConfig(
+            max_age=200,
+            max_population=44,
+            spawn_food_cost=3,
+            spawn_interval=6,
+            pheromone_enabled=True,
+        ),
+    )
+    result = run_simulation(config)
+    summary = summarize_behavior_roles(config, result, cluster_count=3)
+    assert summary["cluster_summaries"]
+    assert len(summary["cluster_summaries"]) == 3
+    assert sum(cluster["member_count"] for cluster in summary["cluster_summaries"]) == len(summary["per_ant"])
+    assert len(summary["role_distribution"]) >= 2

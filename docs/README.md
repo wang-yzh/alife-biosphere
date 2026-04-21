@@ -74,6 +74,7 @@ These are still useful, but they are not the shortest entry path:
 - `ant_sandbox_m1_foraging_slice_2026-04-21.md`
 - `ant_sandbox_m2_pheromone_slice_2026-04-21.md`
 - `ant_sandbox_m3_persistence_slice_2026-04-21.md`
+- `ant_sandbox_m4_role_slice_2026-04-21.md`
 - `inheritance_architecture_v0.md`
 - `adaptive_cycle_and_trust_mechanisms_v1.md`
 - `connectedness_and_trust_channel_design_v1.md`
