@@ -384,100 +384,106 @@ def _resolve_death(world: World, organism_id: str, config: WorldConfig, tick: in
         )
 
 
+def step_world(world: World, config: WorldConfig, tick: int) -> dict[str, object]:
+    world.tick = tick
+    _update_habitats(world, config, tick)
+    _apply_disturbance_hook(world, config, tick)
+    _recompute_habitat_pressure(world, config)
+    moves_this_tick = 0
+    births_this_tick: list[Organism] = []
+    for organism_id in sorted(world.organisms):
+        organism = world.organisms[organism_id]
+        if not organism.alive:
+            continue
+        organism.begin_tick(
+            metabolism_cost=config.organism.metabolism_cost,
+            maturity_age=config.maturity_age,
+            senescence_age=config.senescence_age,
+        )
+        if organism.age >= config.max_age:
+            organism.die("old_age")
+        if not organism.alive:
+            _resolve_death(world, organism_id, config, tick)
+            continue
+        moved = _attempt_movement(world, organism_id, config, tick)
+        moves_this_tick += int(moved)
+        habitat = world.habitats[organism.habitat_id]
+        if habitat.resource_level > 0:
+            harvest = min(config.organism.harvest_gain, habitat.resource_level)
+            habitat.resource_level -= harvest
+            habitat.depletion_trace = 0.7 * habitat.depletion_trace + 0.3 * (
+                habitat.max_resource_level - habitat.resource_level
+            )
+            repair = organism.harvest(harvest, config.organism.repair_gain_scale)
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="harvest",
+                    organism_id=organism.organism_id,
+                    habitat_id=organism.habitat_id,
+                    payload={"amount": round(harvest, 4)},
+                )
+            )
+            if repair > 0.0:
+                _emit_repair_event(
+                    world,
+                    tick,
+                    organism.organism_id,
+                    organism.habitat_id,
+                    repair,
+                )
+        _apply_ecological_damage(world, organism_id, config, tick)
+        _update_reproduction_readiness(world, organism_id, config, tick)
+        child = _attempt_reproduction(world, organism_id, config, tick)
+        if child is not None:
+            births_this_tick.append(child)
+        _resolve_death(world, organism_id, config, tick)
+    for child in births_this_tick:
+        world.add_organism(child)
+    _recompute_habitat_pressure(world, config)
+    summary_payload = {
+        "alive": world.alive_count(),
+        "movement_count": moves_this_tick,
+        "birth_count": len(births_this_tick),
+        "reproduction_ready_count": world.reproduction_ready_count(),
+        "refuge_occupancy": len(
+            [
+                organism_id
+                for organism_id in world.habitats["refuge"].occupants
+                if world.organisms[organism_id].alive
+            ]
+        )
+        if "refuge" in world.habitats
+        else 0,
+        "occupancy_by_habitat": world.occupancy_by_habitat(),
+        "lineages_by_habitat": world.living_lineages_by_habitat(),
+        "occupancy_pressure_by_habitat": {
+            habitat_id: round(habitat.occupancy_pressure, 4)
+            for habitat_id, habitat in world.habitats.items()
+        },
+        "lineage_count": len(
+            {
+                organism.lineage_id
+                for organism in world.organisms.values()
+                if organism.alive
+            }
+        ),
+    }
+    world.emit(
+        Event(
+            tick=tick,
+            event_type="tick_summary",
+            organism_id=None,
+            habitat_id=None,
+            payload=summary_payload,
+        )
+    )
+    return summary_payload
+
+
 def run_simulation(config: SimulationConfig) -> SimulationResult:
     world = World.from_config(config.world)
     _recompute_habitat_pressure(world, config.world)
     for tick in range(1, config.world.ticks + 1):
-        world.tick = tick
-        _update_habitats(world, config.world, tick)
-        _apply_disturbance_hook(world, config.world, tick)
-        _recompute_habitat_pressure(world, config.world)
-        moves_this_tick = 0
-        births_this_tick: list[Organism] = []
-        for organism_id in sorted(world.organisms):
-            organism = world.organisms[organism_id]
-            if not organism.alive:
-                continue
-            organism.begin_tick(
-                metabolism_cost=config.world.organism.metabolism_cost,
-                maturity_age=config.world.maturity_age,
-                senescence_age=config.world.senescence_age,
-            )
-            if organism.age >= config.world.max_age:
-                organism.die("old_age")
-            if not organism.alive:
-                _resolve_death(world, organism_id, config.world, tick)
-                continue
-            moved = _attempt_movement(world, organism_id, config.world, tick)
-            moves_this_tick += int(moved)
-            habitat = world.habitats[organism.habitat_id]
-            if habitat.resource_level > 0:
-                harvest = min(config.world.organism.harvest_gain, habitat.resource_level)
-                habitat.resource_level -= harvest
-                habitat.depletion_trace = 0.7 * habitat.depletion_trace + 0.3 * (
-                    habitat.max_resource_level - habitat.resource_level
-                )
-                repair = organism.harvest(harvest, config.world.organism.repair_gain_scale)
-                world.emit(
-                    Event(
-                        tick=tick,
-                        event_type="harvest",
-                        organism_id=organism.organism_id,
-                        habitat_id=organism.habitat_id,
-                        payload={"amount": round(harvest, 4)},
-                    )
-                )
-                if repair > 0.0:
-                    _emit_repair_event(
-                        world,
-                        tick,
-                        organism.organism_id,
-                        organism.habitat_id,
-                        repair,
-                    )
-            _apply_ecological_damage(world, organism_id, config.world, tick)
-            _update_reproduction_readiness(world, organism_id, config.world, tick)
-            child = _attempt_reproduction(world, organism_id, config.world, tick)
-            if child is not None:
-                births_this_tick.append(child)
-            _resolve_death(world, organism_id, config.world, tick)
-        for child in births_this_tick:
-            world.add_organism(child)
-        _recompute_habitat_pressure(world, config.world)
-        world.emit(
-            Event(
-                tick=tick,
-                event_type="tick_summary",
-                organism_id=None,
-                habitat_id=None,
-                payload={
-                    "alive": world.alive_count(),
-                    "movement_count": moves_this_tick,
-                    "birth_count": len(births_this_tick),
-                    "reproduction_ready_count": world.reproduction_ready_count(),
-                    "refuge_occupancy": len(
-                        [
-                            organism_id
-                            for organism_id in world.habitats["refuge"].occupants
-                            if world.organisms[organism_id].alive
-                        ]
-                    )
-                    if "refuge" in world.habitats
-                    else 0,
-                    "occupancy_by_habitat": world.occupancy_by_habitat(),
-                    "lineages_by_habitat": world.living_lineages_by_habitat(),
-                    "occupancy_pressure_by_habitat": {
-                        habitat_id: round(habitat.occupancy_pressure, 4)
-                        for habitat_id, habitat in world.habitats.items()
-                    },
-                    "lineage_count": len(
-                        {
-                            organism.lineage_id
-                            for organism in world.organisms.values()
-                            if organism.alive
-                        }
-                    ),
-                },
-            )
-        )
+        step_world(world, config.world, tick)
     return SimulationResult(world=world)

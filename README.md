@@ -138,6 +138,7 @@ python -m pip install -e ".[dev]"
 python -m pytest
 python scripts/run_smoke.py
 python scripts/run_ecology_probe.py
+python scripts/run_live_observer.py
 ```
 
 Repository workflow:
