@@ -21,23 +21,35 @@ class FoodPatchConfig:
     y: int
     radius: int
     amount: int
+    max_amount: int | None = None
+    regrowth_rate: int = 0
 
     def __post_init__(self) -> None:
         if self.radius <= 0:
             raise ValueError("radius must be positive")
         if self.amount <= 0:
             raise ValueError("amount must be positive")
+        if self.max_amount is not None and self.max_amount <= 0:
+            raise ValueError("max_amount must be positive when provided")
+        if self.max_amount is not None and self.max_amount < self.amount:
+            raise ValueError("max_amount must not be less than amount")
+        if self.regrowth_rate < 0:
+            raise ValueError("regrowth_rate must be non-negative")
 
 
 @dataclass(frozen=True)
 class AntAgentConfig:
     ant_count: int = 32
+    max_population: int = 32
     step_size: int = 1
     wander_turn_jitter: float = 0.55
     food_sense_radius: int = 16
     nest_sense_radius: int = 8
     food_pickup_radius: int = 1
     nest_drop_radius: int = 3
+    max_age: int = 1000
+    spawn_food_cost: int = 8
+    spawn_interval: int = 10
     pheromone_enabled: bool = True
     pheromone_sense_radius: int = 6
     pheromone_weight: float = 4.5
@@ -48,6 +60,8 @@ class AntAgentConfig:
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
             raise ValueError("ant_count must be positive")
+        if self.max_population < self.ant_count:
+            raise ValueError("max_population must not be smaller than ant_count")
         if self.step_size <= 0:
             raise ValueError("step_size must be positive")
         if self.wander_turn_jitter < 0:
@@ -60,6 +74,12 @@ class AntAgentConfig:
             raise ValueError("food_pickup_radius must be non-negative")
         if self.nest_drop_radius < 0:
             raise ValueError("nest_drop_radius must be non-negative")
+        if self.max_age <= 0:
+            raise ValueError("max_age must be positive")
+        if self.spawn_food_cost < 0:
+            raise ValueError("spawn_food_cost must be non-negative")
+        if self.spawn_interval <= 0:
+            raise ValueError("spawn_interval must be positive")
         if self.pheromone_sense_radius < 0:
             raise ValueError("pheromone_sense_radius must be non-negative")
         if self.pheromone_weight < 0:
@@ -81,8 +101,8 @@ class AntSandboxConfig:
     nest: NestConfig = field(default_factory=NestConfig)
     food_patches: tuple[FoodPatchConfig, ...] = field(
         default_factory=lambda: (
-            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=120),
-            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=180),
+            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=120, max_amount=120, regrowth_rate=1),
+            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=180, max_amount=180, regrowth_rate=1),
         )
     )
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)

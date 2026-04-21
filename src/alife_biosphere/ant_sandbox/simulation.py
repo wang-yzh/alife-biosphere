@@ -40,6 +40,15 @@ def _food_within_range(ant: SandboxAnt, patches: list[FoodPatch], radius: int) -
     return min(visible, key=lambda patch: (_distance(ant.x, ant.y, patch.x, patch.y), patch.patch_id))
 
 
+def _regrow_food(world: AntSandboxWorld) -> None:
+    for patch in world.food_patches:
+        if patch.regrowth_rate <= 0:
+            continue
+        if patch.amount >= patch.max_amount:
+            continue
+        patch.amount = min(patch.max_amount, patch.amount + patch.regrowth_rate)
+
+
 def _target_heading(from_x: int, from_y: int, to_x: int, to_y: int) -> float:
     return atan2(to_y - from_y, to_x - from_x)
 
@@ -239,15 +248,74 @@ def _deposit_trail(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxCo
         )
 
 
+def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> bool:
+    if world.nest.stored_food < config.ants.spawn_food_cost:
+        return False
+    if world.alive_count() >= config.ants.max_population:
+        return False
+    if tick % config.ants.spawn_interval != 0:
+        return False
+    spawn_cells = [
+        (world.nest.x, world.nest.y),
+        (world.nest.x + 1, world.nest.y),
+        (world.nest.x - 1, world.nest.y),
+        (world.nest.x, world.nest.y + 1),
+        (world.nest.x, world.nest.y - 1),
+    ]
+    for x, y in spawn_cells:
+        if (x, y) in world.occupied_cells:
+            continue
+        ant_id = world.allocate_ant_id()
+        ant = SandboxAnt(
+            ant_id=ant_id,
+            x=max(0, min(world.width - 1, x)),
+            y=max(0, min(world.height - 1, y)),
+            heading=0.0,
+            lineage_id=ant_id,
+        )
+        world.ants.append(ant)
+        world.nest.stored_food -= config.ants.spawn_food_cost
+        world.occupied_cells.add((ant.x, ant.y))
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="ant_birth",
+                organism_id=ant.ant_id,
+                habitat_id="nest",
+                payload={"x": ant.x, "y": ant.y, "nest_food": world.nest.stored_food},
+            )
+        )
+        return True
+    return False
+
+
 def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> dict[str, int]:
     world.tick = tick
     moves = 0
     pickups = 0
     unloads = 0
+    deaths = 0
+    births = 0
     _decay_trails(world, config)
+    _regrow_food(world)
     world.occupied_cells = {(ant.x, ant.y) for ant in world.ants if ant.alive}
     for ant in world.ants:
         if not ant.alive:
+            continue
+        ant.age += 1
+        if ant.age > config.ants.max_age:
+            ant.alive = False
+            world.occupied_cells.discard((ant.x, ant.y))
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="ant_death",
+                    organism_id=ant.ant_id,
+                    habitat_id="world",
+                    payload={"x": ant.x, "y": ant.y, "age": ant.age},
+                )
+            )
+            deaths += 1
             continue
         world.occupied_cells.discard((ant.x, ant.y))
         next_x, next_y, next_heading = _choose_step(world, ant, config, tick)
@@ -271,13 +339,14 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
             ant.y = next_y
             moves += 1
         ant.heading = next_heading
-        ant.age += 1
         if _pickup_food(world, ant, config, tick):
             pickups += 1
         if _unload_food(world, ant, config, tick):
             unloads += 1
         _deposit_trail(world, ant, config, tick)
         world.occupied_cells.add((ant.x, ant.y))
+    if _spawn_ant(world, config, tick):
+        births += 1
     summary = {
         "ticks": world.tick,
         "alive": world.alive_count(),
@@ -288,6 +357,8 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "moves": moves,
         "pickups": pickups,
         "unloads": unloads,
+        "births": births,
+        "deaths": deaths,
         "food_trail_cells": len(world.food_trail),
         "home_trail_cells": len(world.home_trail),
     }

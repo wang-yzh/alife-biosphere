@@ -22,6 +22,8 @@ class FoodPatch:
     y: int
     radius: int
     amount: int
+    max_amount: int
+    regrowth_rate: int = 0
 
 
 @dataclass
@@ -46,6 +48,7 @@ class AntSandboxWorld:
     food_patches: list[FoodPatch]
     ants: list[SandboxAnt]
     tick: int = 0
+    next_ant_index: int = 0
     occupied_cells: set[tuple[int, int]] = field(default_factory=set)
     events: list[Event] = field(default_factory=list)
     food_trail: dict[tuple[int, int], float] = field(default_factory=dict)
@@ -65,6 +68,11 @@ class AntSandboxWorld:
 
     def delivered_food_total(self) -> int:
         return self.nest.stored_food
+
+    def allocate_ant_id(self) -> str:
+        ant_id = f"ant_{self.next_ant_index:03d}"
+        self.next_ant_index += 1
+        return ant_id
 
     def summary(self) -> dict[str, int]:
         return {
@@ -110,6 +118,8 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
             y=_clamp_cell(patch.y, 0, config.height - 1),
             radius=patch.radius,
             amount=patch.amount,
+            max_amount=patch.amount if patch.max_amount is None else patch.max_amount,
+            regrowth_rate=patch.regrowth_rate,
         )
         for patch in config.food_patches
     ]
@@ -155,5 +165,6 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
         nest=nest,
         food_patches=food_patches,
         ants=ants,
+        next_ant_index=config.ants.ant_count,
         occupied_cells=occupied_cells,
     )
