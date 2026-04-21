@@ -66,6 +66,11 @@ def _candidate_cells(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandbox
     return cells
 
 
+def _wall_margin(world: AntSandboxWorld, cell: tuple[int, int]) -> int:
+    x, y = cell
+    return min(x, y, world.width - 1 - x, world.height - 1 - y)
+
+
 def _best_pheromone_cell(
     ant: SandboxAnt,
     world: AntSandboxWorld,
@@ -144,11 +149,14 @@ def _choose_step(
     ]
     if not free_candidates:
         return ant.x, ant.y, target_heading
+    near_wall = _wall_margin(world, (ant.x, ant.y)) <= 2
     if target_x is None or target_y is None:
         return min(
             free_candidates,
             key=lambda cell: (
+                -_wall_margin(world, cell) if near_wall else 0,
                 abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
+                _distance(cell[0], cell[1], world.nest.x, world.nest.y) if near_wall else 0,
                 cell[1],
                 cell[0],
             ),
@@ -158,6 +166,7 @@ def _choose_step(
         key=lambda cell: (
             _distance(cell[0], cell[1], target_x, target_y),
             abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
+            -_wall_margin(world, cell) if near_wall else 0,
             cell[1],
             cell[0],
         ),

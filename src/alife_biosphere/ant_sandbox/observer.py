@@ -311,6 +311,16 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       line-height: 1.35;
     }}
 
+    .selected-ant {{
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(250, 245, 238, 0.9);
+      border: 1px solid rgba(48, 36, 25, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }}
+
     .tiny {{
       font-size: 11px;
       color: var(--muted);
@@ -360,6 +370,13 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <h2>Moment</h2>
         <div id="moment-log" class="log"></div>
       </section>
+      <section class="section">
+        <h2>Selected Ant</h2>
+        <div id="selected-ant" class="selected-ant">
+          <strong>No selection</strong>
+          <div class="tiny">Hover or click an ant to inspect its position.</div>
+        </div>
+      </section>
     </aside>
   </div>
   <script id="observer-data" type="application/json">{data_json}</script>
@@ -377,6 +394,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     const carryingEl = document.getElementById('carrying');
     const foodLeftEl = document.getElementById('food-left');
     const momentLog = document.getElementById('moment-log');
+    const selectedAntEl = document.getElementById('selected-ant');
 
     const widthScale = canvas.width / data.width;
     const heightScale = canvas.height / data.height;
@@ -385,6 +403,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     let playing = false;
     let timer = null;
     const frames = data.frames;
+    let hoverAntId = null;
+    let pinnedAntId = null;
 
     function toCanvasX(x) {{
       return (x + 0.5) * widthScale;
@@ -490,6 +510,21 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           ctx.lineWidth = 1.4;
           ctx.stroke();
         }}
+        const highlighted = ant.ant_id === (pinnedAntId || hoverAntId);
+        if (highlighted) {{
+          ctx.strokeStyle = 'rgba(38, 73, 59, 0.95)';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(x, y, 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(255, 252, 247, 0.92)';
+          ctx.fillRect(x + 10, y - 20, 104, 24);
+          ctx.strokeStyle = 'rgba(38, 73, 59, 0.22)';
+          ctx.strokeRect(x + 10, y - 20, 104, 24);
+          ctx.fillStyle = '#26493b';
+          ctx.font = '11px Menlo, monospace';
+          ctx.fillText(`${{ant.ant_id}} @ (${{ant.x}},${{ant.y}})`, x + 14, y - 5);
+        }}
       }}
       for (const death of frame.death_events) {{
         const x = toCanvasX(death.payload.x);
@@ -537,6 +572,23 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         row.innerHTML = `<strong>${{item}}</strong>`;
         momentLog.appendChild(row);
       }});
+
+      const selectedId = pinnedAntId || hoverAntId;
+      const selected = selectedId ? frame.ants.find(ant => ant.ant_id === selectedId) : null;
+      if (selected) {{
+        selectedAntEl.innerHTML = `
+          <strong>${{selected.ant_id}}</strong>
+          <div class="tiny">pos = (${{selected.x}}, ${{selected.y}})</div>
+          <div class="tiny">carrying = ${{selected.carrying_food ? 'yes' : 'no'}}</div>
+          <div class="tiny">delivered = ${{selected.delivered_food}}</div>
+          <div class="tiny">age = ${{selected.age}}</div>
+        `;
+      }} else {{
+        selectedAntEl.innerHTML = `
+          <strong>No selection</strong>
+          <div class="tiny">Hover or click an ant to inspect its position.</div>
+        `;
+      }}
     }}
 
     function setPlaying(next) {{
@@ -574,6 +626,49 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         render((index + 1) % frames.length);
       }});
     }}
+
+    function antAtPointer(event) {{
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const px = (event.clientX - rect.left) * scaleX;
+      const py = (event.clientY - rect.top) * scaleY;
+      let best = null;
+      let bestDistance = 14;
+      for (const ant of frames[index].ants) {{
+        const dx = toCanvasX(ant.x) - px;
+        const dy = toCanvasY(ant.y) - py;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < bestDistance) {{
+          bestDistance = distance;
+          best = ant.ant_id;
+        }}
+      }}
+      return best;
+    }}
+
+    canvas.addEventListener('mousemove', event => {{
+      if (pinnedAntId) return;
+      hoverAntId = antAtPointer(event);
+      render(index);
+    }});
+
+    canvas.addEventListener('mouseleave', () => {{
+      if (pinnedAntId) return;
+      hoverAntId = null;
+      render(index);
+    }});
+
+    canvas.addEventListener('click', event => {{
+      const selected = antAtPointer(event);
+      if (pinnedAntId && pinnedAntId === selected) {{
+        pinnedAntId = null;
+        hoverAntId = null;
+      }} else {{
+        pinnedAntId = selected;
+      }}
+      render(index);
+    }});
     render(0);
     {live_reload_script}
   </script>
