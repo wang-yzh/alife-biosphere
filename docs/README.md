@@ -67,6 +67,10 @@ These are still useful, but they are not the shortest entry path:
 - `m4_habitat_memory_slice_2026-04-21.md`
 - `ant_sandbox_hard_metrics_v1.md`
 - `ant_sandbox_gap_audit_v1.md`
+- `ant_sandbox_north_star_v1.md`
+- `ant_sandbox_world_design_v1.md`
+- `ant_sandbox_build_plan_v1.md`
+- `ant_sandbox_m0_substrate_spec_v1.md`
 - `inheritance_architecture_v0.md`
 - `adaptive_cycle_and_trust_mechanisms_v1.md`
 - `connectedness_and_trust_channel_design_v1.md`

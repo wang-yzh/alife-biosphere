@@ -75,6 +75,12 @@ They are no longer the shortest current control path.
   is actually becoming an ant sandbox
 - `ant_sandbox_gap_audit_v1.md`: current code audit against those ant-sandbox
   gates
+- `ant_sandbox_north_star_v1.md`: north star for the new ant-sandbox branch
+- `ant_sandbox_world_design_v1.md`: current design contract for the sandbox
+  world type
+- `ant_sandbox_build_plan_v1.md`: milestone order for the new sandbox branch
+- `ant_sandbox_m0_substrate_spec_v1.md`: first substrate spec for local-space
+  world initialization
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note
