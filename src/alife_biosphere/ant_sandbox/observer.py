@@ -41,6 +41,8 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "heading": ant.heading,
             "terrain_kind": terrain_kind(world, ant.x, ant.y),
             "carrying_food": ant.carrying_food,
+            "target_patch_id": ant.target_patch_id,
+            "outbound_commit_ticks": ant.outbound_commit_ticks,
             "delivered_food": ant.delivered_food,
             "age": ant.age,
             "range_bias": ant.range_bias,
@@ -684,6 +686,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <div class="tiny">pos = (${{selected.x}}, ${{selected.y}})</div>
           <div class="tiny">carrying = ${{selected.carrying_food ? 'yes' : 'no'}}</div>
           <div class="tiny">terrain = ${{selected.terrain_kind}}</div>
+          <div class="tiny">target = ${{selected.target_patch_id || 'none'}}</div>
+          <div class="tiny">outbound = ${{selected.outbound_commit_ticks}}</div>
           <div class="tiny">delivered = ${{selected.delivered_food}}</div>
           <div class="tiny">age = ${{selected.age}}</div>
           <div class="tiny">range = ${{selected.range_bias.toFixed(2)}}</div>

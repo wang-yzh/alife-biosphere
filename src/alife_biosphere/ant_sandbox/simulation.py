@@ -60,6 +60,15 @@ def _nearest_open_cell(world: AntSandboxWorld, x: int, y: int) -> tuple[int, int
     return x, y
 
 
+def _patch_by_id(world: AntSandboxWorld, patch_id: str | None) -> FoodPatch | None:
+    if patch_id is None:
+        return None
+    for patch in world.food_patches:
+        if patch.patch_id == patch_id:
+            return patch
+    return None
+
+
 def _food_within_range(
     world: AntSandboxWorld,
     ant: SandboxAnt,
@@ -78,6 +87,16 @@ def _food_within_range(
     if not visible:
         return None
     return min(visible, key=lambda patch: (_distance(ant.x, ant.y, patch.x, patch.y), patch.patch_id))
+
+
+def _local_density(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int], radius: int = 2) -> int:
+    density = 0
+    for other in world.ants:
+        if not other.alive or other.ant_id == ant.ant_id:
+            continue
+        if max(abs(other.x - cell[0]), abs(other.y - cell[1])) <= radius:
+            density += 1
+    return density
 
 
 def _patch_respawn_cell(
@@ -234,14 +253,18 @@ def _choose_step(
     target_x: int | None = None
     target_y: int | None = None
     hungry = ant.energy <= config.ants.hunger_return_threshold
+    committed_patch = _patch_by_id(world, ant.target_patch_id)
     if ant.carrying_food or (hungry and world.nest.stored_food > 0):
         target_x = world.nest.x
         target_y = world.nest.y
     else:
-        patch = _food_within_range(world, ant, world.food_patches, config.ants.food_sense_radius)
+        patch = committed_patch if ant.outbound_commit_ticks > 0 and committed_patch is not None and committed_patch.amount > 0 else None
+        if patch is None:
+            patch = _food_within_range(world, ant, world.food_patches, config.ants.food_sense_radius)
         if patch is not None:
             target_x = patch.x
             target_y = patch.y
+            ant.target_patch_id = patch.patch_id
         else:
             pheromone_target = _best_pheromone_cell(
                 ant,
@@ -289,10 +312,12 @@ def _choose_step(
         return ant.x, ant.y, target_heading
     near_wall = _wall_margin(world, (ant.x, ant.y)) <= 2
     current_stale = world.stale_field.get((ant.x, ant.y), 0.0)
+    near_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y) <= world.nest.radius + 8
     if target_x is None or target_y is None:
         return min(
             free_candidates,
             key=lambda cell: (
+                _local_density(world, ant, cell, radius=1) if near_nest else 0,
                 _terrain_move_cost(world, cell[0], cell[1]),
                 -_wall_margin(world, cell) if near_wall else 0,
                 world.stale_field.get(cell, 0.0),
@@ -305,6 +330,7 @@ def _choose_step(
     return min(
         free_candidates,
         key=lambda cell: (
+            _local_density(world, ant, cell, radius=1) if near_nest else 0,
             _distance(cell[0], cell[1], target_x, target_y),
             _terrain_move_cost(world, cell[0], cell[1]),
             abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
@@ -325,6 +351,8 @@ def _pickup_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
         if _distance(ant.x, ant.y, patch.x, patch.y) <= max(patch.radius, config.ants.food_pickup_radius):
             patch.amount -= 1
             ant.carrying_food = True
+            ant.target_patch_id = patch.patch_id
+            ant.outbound_commit_ticks = 0
             patch.recent_pickups += 1
             world.emit(
                 Event(
@@ -357,6 +385,7 @@ def _unload_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
         return False
     ant.carrying_food = False
     ant.delivered_food += 1
+    ant.outbound_commit_ticks = 14
     world.nest.stored_food += 1
     world.emit(
         Event(
@@ -634,6 +663,8 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     for ant in world.ants:
         if not ant.alive:
             continue
+        if ant.outbound_commit_ticks > 0:
+            ant.outbound_commit_ticks -= 1
         ant.age += 1
         ant.energy = max(0.0, ant.energy - config.ants.metabolism_cost)
         if ant.age > config.ants.max_age:

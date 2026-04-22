@@ -57,6 +57,8 @@ class SandboxAnt:
     trail_affinity: float
     harvest_drive: float
     carrying_food: bool = False
+    target_patch_id: str | None = None
+    outbound_commit_ticks: int = 0
     age: int = 0
     alive: bool = True
     parent_id: str | None = None
