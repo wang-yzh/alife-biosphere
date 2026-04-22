@@ -61,7 +61,7 @@ class AntAgentConfig:
     trail_decay: float = 0.03
     initial_energy: float = 18.0
     max_energy: float = 20.0
-    metabolism_cost: float = 0.06
+    metabolism_cost: float = 0.03
     hunger_return_threshold: float = 6.0
     nest_feed_amount: float = 4.0
 

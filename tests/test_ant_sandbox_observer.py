@@ -26,3 +26,9 @@ def test_ant_sandbox_observer_html_writes_canvas_window(tmp_path: Path) -> None:
     assert "<canvas id=\"world\"" in html
     assert "observer-data" in html
     assert "Ant Observer" in html
+
+
+def test_ant_sandbox_showcase_world_keeps_all_ants_alive_to_tick_239() -> None:
+    payload = build_ant_observer_payload(AntSandboxConfig(ticks=240), title="Ant Observer")
+    frame_239 = payload["frames"][238]
+    assert frame_239["alive"] == 32
