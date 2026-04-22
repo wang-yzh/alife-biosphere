@@ -74,6 +74,7 @@ These are still useful, but they are not the shortest entry path:
 - `ant_sandbox_build_plan_v2.md`
 - `ant_sandbox_m0_substrate_spec_v1.md`
 - `ant_sandbox_m7_scale_up_spec_v1.md`
+- `ant_sandbox_long_horizon_construction_route_v1.md`
 - `ant_sandbox_m1_foraging_slice_2026-04-21.md`
 - `ant_sandbox_m2_pheromone_slice_2026-04-21.md`
 - `ant_sandbox_m3_persistence_slice_2026-04-21.md`

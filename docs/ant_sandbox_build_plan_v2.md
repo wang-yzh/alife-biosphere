@@ -87,6 +87,10 @@ Only after the above:
 - multiple nests or colonies
 - stronger adaptive variation
 
+For the longer route beyond this phase, see:
+
+- `ant_sandbox_long_horizon_construction_route_v1.md`
+
 ## Rule
 
 If bigger maps and terrain make the sandbox less readable or less alive,

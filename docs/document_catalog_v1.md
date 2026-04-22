@@ -87,6 +87,9 @@ They are no longer the shortest current control path.
   world initialization
 - `ant_sandbox_m7_scale_up_spec_v1.md`: next implementation freeze for larger
   maps, terrain, and richer world-first presentation
+- `ant_sandbox_long_horizon_construction_route_v1.md`: dependency-ordered
+  future route for competition, multi-colony conflict, stronger death ecology,
+  and inherited variation
 - `ant_sandbox_m1_foraging_slice_2026-04-21.md`: first behavior slice for
   local movement, pickup, return, and unload
 - `ant_sandbox_m2_pheromone_slice_2026-04-21.md`: first trace-field and
