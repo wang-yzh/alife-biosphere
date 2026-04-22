@@ -95,3 +95,19 @@ The most useful next observer upgrades are:
 - render role clusters directly on ants
 - show pheromone effectiveness visually over time
 - add disturbance overlays for the colony branch
+
+## Follow-Up Behavioral Fix
+
+After the first observer release, the sandbox logic was adjusted so that ants
+would not keep piling into unproductive corners.
+
+The current branch now includes:
+
+- stronger wall and corner avoidance
+- a lightweight stale-zone repulsion signal
+- hunger-triggered return-to-nest behavior
+- nest feeding before re-entry into exploration
+- hover / click ant inspection with direct position readout
+
+This means the observer now reflects a less pathological sandbox than the first
+release.

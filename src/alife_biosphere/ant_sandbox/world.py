@@ -54,6 +54,7 @@ class AntSandboxWorld:
     events: list[Event] = field(default_factory=list)
     food_trail: dict[tuple[int, int], float] = field(default_factory=dict)
     home_trail: dict[tuple[int, int], float] = field(default_factory=dict)
+    stale_field: dict[tuple[int, int], float] = field(default_factory=dict)
 
     def emit(self, event: Event) -> None:
         self.events.append(event)
@@ -95,6 +96,7 @@ class AntSandboxWorld:
             "ants": [asdict(ant) for ant in self.ants],
             "food_trail": {f"{x},{y}": value for (x, y), value in self.food_trail.items()},
             "home_trail": {f"{x},{y}": value for (x, y), value in self.home_trail.items()},
+            "stale_field": {f"{x},{y}": value for (x, y), value in self.stale_field.items()},
         }
 
 

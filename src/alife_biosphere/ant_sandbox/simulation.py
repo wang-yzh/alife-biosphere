@@ -94,6 +94,14 @@ def _best_pheromone_cell(
     return max(candidates, key=lambda item: (item[1], item[0][1], item[0][0]))[0]
 
 
+def _decay_stale_field(world: AntSandboxWorld) -> None:
+    world.stale_field = {
+        cell: value * 0.92
+        for cell, value in world.stale_field.items()
+        if value * 0.92 > 0.02
+    }
+
+
 def _choose_step(
     world: AntSandboxWorld,
     ant: SandboxAnt,
@@ -150,11 +158,13 @@ def _choose_step(
     if not free_candidates:
         return ant.x, ant.y, target_heading
     near_wall = _wall_margin(world, (ant.x, ant.y)) <= 2
+    current_stale = world.stale_field.get((ant.x, ant.y), 0.0)
     if target_x is None or target_y is None:
         return min(
             free_candidates,
             key=lambda cell: (
                 -_wall_margin(world, cell) if near_wall else 0,
+                world.stale_field.get(cell, 0.0),
                 abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
                 _distance(cell[0], cell[1], world.nest.x, world.nest.y) if near_wall else 0,
                 cell[1],
@@ -166,6 +176,7 @@ def _choose_step(
         key=lambda cell: (
             _distance(cell[0], cell[1], target_x, target_y),
             abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
+            world.stale_field.get(cell, 0.0) - current_stale * 0.4,
             -_wall_margin(world, cell) if near_wall else 0,
             cell[1],
             cell[0],
@@ -325,6 +336,16 @@ def _deposit_trail(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxCo
         )
 
 
+def _update_stale_signal(world: AntSandboxWorld, ant: SandboxAnt) -> None:
+    key = (ant.x, ant.y)
+    wall_penalty = 0.45 if _wall_margin(world, key) <= 1 else 0.0
+    carrying_relief = -0.35 if ant.carrying_food else 0.0
+    world.stale_field[key] = max(
+        0.0,
+        world.stale_field.get(key, 0.0) + 0.18 + wall_penalty + carrying_relief,
+    )
+
+
 def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> bool:
     if world.nest.stored_food < config.ants.spawn_food_cost:
         return False
@@ -377,6 +398,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     feeds = 0
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
+    _decay_stale_field(world)
     _regrow_food(world)
     world.occupied_cells = {(ant.x, ant.y) for ant in world.ants if ant.alive}
     for ant in world.ants:
@@ -427,6 +449,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         if _unload_food(world, ant, config, tick):
             unloads += 1
         _deposit_trail(world, ant, config, tick)
+        _update_stale_signal(world, ant)
         world.occupied_cells.add((ant.x, ant.y))
     if _spawn_ant(world, config, tick):
         births += 1

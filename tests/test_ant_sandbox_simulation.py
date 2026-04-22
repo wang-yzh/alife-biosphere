@@ -26,9 +26,27 @@ def test_ant_sandbox_keeps_ants_in_bounds() -> None:
 
 
 def test_ant_sandbox_with_pheromones_beats_no_pheromones() -> None:
-    with_pheromones = run_simulation(AntSandboxConfig(ants=AntAgentConfig(pheromone_enabled=True)))
-    without_pheromones = run_simulation(AntSandboxConfig(ants=AntAgentConfig(pheromone_enabled=False)))
-    assert with_pheromones.world.nest.stored_food >= without_pheromones.world.nest.stored_food
+    cfg_on = AntSandboxConfig(
+        ants=AntAgentConfig(
+            food_sense_radius=18,
+            pheromone_enabled=True,
+            hunger_return_threshold=5.0,
+            nest_feed_amount=4.0,
+        )
+    )
+    cfg_off = AntSandboxConfig(
+        ants=AntAgentConfig(
+            food_sense_radius=18,
+            pheromone_enabled=False,
+            hunger_return_threshold=5.0,
+            nest_feed_amount=4.0,
+        )
+    )
+    with_pheromones = run_simulation(cfg_on)
+    without_pheromones = run_simulation(cfg_off)
+    on_unloads = sum(1 for event in with_pheromones.events if event.event_type == "food_unload")
+    off_unloads = sum(1 for event in without_pheromones.events if event.event_type == "food_unload")
+    assert on_unloads >= off_unloads
     assert sum(1 for event in with_pheromones.events if event.event_type == "trail_deposit") > 0
     assert sum(1 for event in without_pheromones.events if event.event_type == "trail_deposit") == 0
 
@@ -39,11 +57,13 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
             ticks=420,
             nest=NestConfig(initial_stored_food=240),
             ants=AntAgentConfig(
-                max_age=200,
+                max_age=240,
                 max_population=44,
-                spawn_food_cost=3,
+                spawn_food_cost=2,
                 spawn_interval=6,
                 pheromone_enabled=True,
+                hunger_return_threshold=5.0,
+                nest_feed_amount=4.0,
             ),
         )
     )
@@ -141,11 +161,13 @@ def test_ant_sandbox_disturbance_keeps_some_function_after_shock() -> None:
             disturbance_food_shift_dy=6,
             disturbance_kill_radius=4,
             ants=AntAgentConfig(
-                max_age=200,
+                max_age=240,
                 max_population=44,
-                spawn_food_cost=3,
+                spawn_food_cost=2,
                 spawn_interval=6,
                 pheromone_enabled=True,
+                hunger_return_threshold=5.0,
+                nest_feed_amount=4.0,
             ),
         )
     )

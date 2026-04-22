@@ -18,11 +18,13 @@ def main() -> None:
         ticks=420,
         nest=NestConfig(initial_stored_food=240),
         ants=AntAgentConfig(
-            max_age=200,
+            max_age=240,
             max_population=44,
-            spawn_food_cost=3,
+            spawn_food_cost=2,
             spawn_interval=6,
             pheromone_enabled=True,
+            hunger_return_threshold=5.0,
+            nest_feed_amount=4.0,
         ),
     )
     result = run_simulation(config)
