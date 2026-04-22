@@ -1,4 +1,4 @@
-from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig
+from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, NestConfig
 from alife_biosphere.ant_sandbox.reporting import summarize_behavior_roles
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 from alife_biosphere.ant_sandbox.validation import summarize_validation_status, ValidationCase
@@ -16,7 +16,8 @@ def test_ant_sandbox_produces_foraging_loop_events() -> None:
     event_types = {event.event_type for event in result.events}
     assert "food_pickup" in event_types
     assert "food_unload" in event_types
-    assert result.world.nest.stored_food > 0
+    assert "nest_feed" in event_types
+    assert sum(1 for event in result.events if event.event_type == "food_unload") > 0
 
 
 def test_ant_sandbox_keeps_ants_in_bounds() -> None:
@@ -36,6 +37,7 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
     result = run_simulation(
         AntSandboxConfig(
             ticks=420,
+            nest=NestConfig(initial_stored_food=240),
             ants=AntAgentConfig(
                 max_age=200,
                 max_population=44,
@@ -71,6 +73,24 @@ def test_ant_sandbox_role_summary_produces_multiple_clusters() -> None:
     assert len(summary["cluster_summaries"]) == 3
     assert sum(cluster["member_count"] for cluster in summary["cluster_summaries"]) == len(summary["per_ant"])
     assert len(summary["role_distribution"]) >= 2
+
+
+def test_hungry_ants_can_refuel_at_nest() -> None:
+    config = AntSandboxConfig(
+        ticks=80,
+        nest=AntSandboxConfig().nest.__class__(initial_stored_food=20),
+        ants=AntAgentConfig(
+            initial_energy=5.0,
+            max_energy=20.0,
+            metabolism_cost=0.04,
+            hunger_return_threshold=8.0,
+            nest_feed_amount=5.0,
+        ),
+    )
+    result = run_simulation(config)
+    feed_events = [event for event in result.events if event.event_type == "nest_feed"]
+    assert feed_events
+    assert all(event.payload["energy"] > 5.0 for event in feed_events)
 
 
 def test_validation_status_evaluates_expected_metric_states() -> None:
@@ -114,6 +134,7 @@ def test_ant_sandbox_disturbance_keeps_some_function_after_shock() -> None:
     result = run_simulation(
         AntSandboxConfig(
             ticks=300,
+            nest=NestConfig(initial_stored_food=240),
             disturbance_tick=150,
             disturbance_food_shift=True,
             disturbance_food_shift_dx=-8,

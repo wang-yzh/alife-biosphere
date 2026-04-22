@@ -8,10 +8,13 @@ class NestConfig:
     x: int = 16
     y: int = 24
     radius: int = 3
+    initial_stored_food: int = 18
 
     def __post_init__(self) -> None:
         if self.radius <= 0:
             raise ValueError("radius must be positive")
+        if self.initial_stored_food < 0:
+            raise ValueError("initial_stored_food must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -56,6 +59,11 @@ class AntAgentConfig:
     trail_deposit: float = 1.4
     home_trail_deposit: float = 0.8
     trail_decay: float = 0.03
+    initial_energy: float = 18.0
+    max_energy: float = 20.0
+    metabolism_cost: float = 0.06
+    hunger_return_threshold: float = 6.0
+    nest_feed_amount: float = 4.0
 
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
@@ -90,6 +98,16 @@ class AntAgentConfig:
             raise ValueError("home_trail_deposit must be non-negative")
         if self.trail_decay < 0:
             raise ValueError("trail_decay must be non-negative")
+        if self.initial_energy <= 0:
+            raise ValueError("initial_energy must be positive")
+        if self.max_energy < self.initial_energy:
+            raise ValueError("max_energy must not be less than initial_energy")
+        if self.metabolism_cost <= 0:
+            raise ValueError("metabolism_cost must be positive")
+        if self.hunger_return_threshold < 0:
+            raise ValueError("hunger_return_threshold must be non-negative")
+        if self.nest_feed_amount <= 0:
+            raise ValueError("nest_feed_amount must be positive")
 
 
 @dataclass(frozen=True)

@@ -32,6 +32,7 @@ class SandboxAnt:
     x: int
     y: int
     heading: float
+    energy: float
     carrying_food: bool = False
     age: int = 0
     alive: bool = True
@@ -110,6 +111,7 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
         x=_clamp_cell(config.nest.x, 0, config.width - 1),
         y=_clamp_cell(config.nest.y, 0, config.height - 1),
         radius=config.nest.radius,
+        stored_food=config.nest.initial_stored_food,
     )
     food_patches = [
         FoodPatch(
@@ -155,6 +157,7 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
             x=spawn_x,
             y=spawn_y,
             heading=round(angle, 6),
+            energy=config.ants.initial_energy,
             lineage_id=f"ant_{index:03d}",
         )
         ants.append(ant)

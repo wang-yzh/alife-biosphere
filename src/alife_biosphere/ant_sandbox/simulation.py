@@ -103,7 +103,7 @@ def _choose_step(
     rng = make_rng(config.seed, f"ant-sandbox:{tick}:{ant.ant_id}:move")
     target_x: int | None = None
     target_y: int | None = None
-    if ant.carrying_food:
+    if ant.carrying_food or ant.energy <= config.ants.hunger_return_threshold:
         target_x = world.nest.x
         target_y = world.nest.y
     else:
@@ -125,7 +125,7 @@ def _choose_step(
     else:
         target_heading = None
         distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
-        if ant.carrying_food:
+        if ant.carrying_food or ant.energy <= config.ants.hunger_return_threshold:
             base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
         else:
             outward_heading = _target_heading(world.nest.x, world.nest.y, ant.x, ant.y)
@@ -210,6 +210,27 @@ def _unload_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
             organism_id=ant.ant_id,
             habitat_id="nest",
             payload={"x": ant.x, "y": ant.y, "nest_food": world.nest.stored_food},
+        )
+    )
+    return True
+
+
+def _feed_at_nest(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int) -> bool:
+    if _distance(ant.x, ant.y, world.nest.x, world.nest.y) > max(world.nest.radius, config.ants.nest_drop_radius):
+        return False
+    if ant.energy >= config.ants.max_energy:
+        return False
+    if world.nest.stored_food <= 0:
+        return False
+    world.nest.stored_food -= 1
+    ant.energy = min(config.ants.max_energy, ant.energy + config.ants.nest_feed_amount)
+    world.emit(
+        Event(
+            tick=tick,
+            event_type="nest_feed",
+            organism_id=ant.ant_id,
+            habitat_id="nest",
+            payload={"x": ant.x, "y": ant.y, "energy": round(ant.energy, 3), "nest_food": world.nest.stored_food},
         )
     )
     return True
@@ -327,6 +348,7 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> b
             x=max(0, min(world.width - 1, x)),
             y=max(0, min(world.height - 1, y)),
             heading=0.0,
+            energy=config.ants.initial_energy,
             lineage_id=ant_id,
         )
         world.ants.append(ant)
@@ -352,6 +374,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     unloads = 0
     deaths = 0
     births = 0
+    feeds = 0
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
     _regrow_food(world)
@@ -360,6 +383,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         if not ant.alive:
             continue
         ant.age += 1
+        ant.energy = max(0.0, ant.energy - config.ants.metabolism_cost)
         if ant.age > config.ants.max_age:
             ant.alive = False
             world.occupied_cells.discard((ant.x, ant.y))
@@ -374,6 +398,8 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
             )
             deaths += 1
             continue
+        if _feed_at_nest(world, ant, config, tick):
+            feeds += 1
         world.occupied_cells.discard((ant.x, ant.y))
         next_x, next_y, next_heading = _choose_step(world, ant, config, tick)
         if (next_x, next_y) != (ant.x, ant.y):
@@ -416,6 +442,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "unloads": unloads,
         "births": births,
         "deaths": deaths,
+        "feeds": feeds,
         "food_trail_cells": len(world.food_trail),
         "home_trail_cells": len(world.home_trail),
     }
