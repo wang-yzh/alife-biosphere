@@ -78,6 +78,7 @@ These are still useful, but they are not the shortest entry path:
 - `ant_sandbox_m5_disturbance_slice_2026-04-22.md`
 - `ant_sandbox_observer_slice_2026-04-22.md`
 - `ant_sandbox_instinct_pressure_slice_2026-04-22.md`
+- `ant_sandbox_instinct_roles_slice_2026-04-22.md`
 - `ant_sandbox_status_v1.md`
 - `inheritance_architecture_v0.md`
 - `adaptive_cycle_and_trust_mechanisms_v1.md`

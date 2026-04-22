@@ -5,6 +5,7 @@ from math import atan2, cos, dist, sin, tau
 
 from .config import AntSandboxConfig
 from ..events import Event
+from ..rng import make_rng
 
 
 @dataclass
@@ -38,6 +39,9 @@ class SandboxAnt:
     y: int
     heading: float
     energy: float
+    range_bias: float
+    trail_affinity: float
+    harvest_drive: float
     carrying_food: bool = False
     age: int = 0
     alive: bool = True
@@ -113,6 +117,10 @@ def _distance(a_x: int, a_y: int, b_x: int, b_y: int) -> float:
     return dist((a_x, a_y), (b_x, b_y))
 
 
+def _clamp_unit(value: float) -> float:
+    return min(1.0, max(0.0, value))
+
+
 def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
     nest = Nest(
         x=_clamp_cell(config.nest.x, 0, config.width - 1),
@@ -161,12 +169,22 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
     for index in range(config.ants.ant_count):
         angle = tau * (index / max(config.ants.ant_count, 1))
         spawn_x, spawn_y = unique_cells[index % len(unique_cells)]
+        trait_rng = make_rng(config.seed, f"ant-sandbox:traits:{index}")
+        count_scale = index / max(1, config.ants.ant_count - 1)
+        range_bias = _clamp_unit(0.12 + 0.76 * count_scale + trait_rng.uniform(-0.12, 0.12))
+        trail_phase = ((index * 7) % max(1, config.ants.ant_count)) / max(1, config.ants.ant_count - 1)
+        trail_affinity = _clamp_unit(0.15 + 0.7 * trail_phase + trait_rng.uniform(-0.15, 0.15))
+        harvest_phase = ((index * 13) % max(1, config.ants.ant_count)) / max(1, config.ants.ant_count - 1)
+        harvest_drive = _clamp_unit(0.18 + 0.66 * harvest_phase + trait_rng.uniform(-0.16, 0.16))
         ant = SandboxAnt(
             ant_id=f"ant_{index:03d}",
             x=spawn_x,
             y=spawn_y,
             heading=round(angle, 6),
             energy=config.ants.initial_energy,
+            range_bias=round(range_bias, 4),
+            trail_affinity=round(trail_affinity, 4),
+            harvest_drive=round(harvest_drive, 4),
             lineage_id=f"ant_{index:03d}",
         )
         ants.append(ant)

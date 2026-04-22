@@ -93,6 +93,8 @@ They are no longer the shortest current control path.
   and live window for the ant-sandbox branch
 - `ant_sandbox_instinct_pressure_slice_2026-04-22.md`: instinct-pressure pass
   that adds nest upkeep and dynamic food-site turnover to the sandbox branch
+- `ant_sandbox_instinct_roles_slice_2026-04-22.md`: instinct-bias pass that
+  strengthens scout / forager separation without adding culture or explicit caste scripting
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note

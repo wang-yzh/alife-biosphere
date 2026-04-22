@@ -30,10 +30,11 @@ def _distance(a_x: int, a_y: int, b_x: int, b_y: int) -> float:
 
 
 def _food_within_range(ant: SandboxAnt, patches: list[FoodPatch], radius: int) -> FoodPatch | None:
+    effective_radius = max(4, int(round(radius * (0.8 + ant.harvest_drive * 0.65))))
     visible = [
         patch
         for patch in patches
-        if patch.amount > 0 and _distance(ant.x, ant.y, patch.x, patch.y) <= radius
+        if patch.amount > 0 and _distance(ant.x, ant.y, patch.x, patch.y) <= effective_radius
     ]
     if not visible:
         return None
@@ -154,14 +155,15 @@ def _best_pheromone_cell(
         return None
     field = world.food_trail if target == "food" else world.home_trail
     candidates = []
-    radius = config.ants.pheromone_sense_radius
+    radius = max(2, int(round(config.ants.pheromone_sense_radius * (0.55 + ant.trail_affinity * 0.95))))
     for (x, y), strength in field.items():
         if strength <= 0:
             continue
         distance = _distance(ant.x, ant.y, x, y)
         if distance == 0 or distance > radius:
             continue
-        candidates.append(((x, y), strength / distance))
+        desirability = (strength / distance) * (0.55 + ant.trail_affinity * 1.2)
+        candidates.append(((x, y), desirability))
     if not candidates:
         return None
     return max(candidates, key=lambda item: (item[1], item[0][1], item[0][0]))[0]
@@ -207,21 +209,24 @@ def _choose_step(
     else:
         target_heading = None
         distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
+        desired_distance = world.nest.radius + 4 + int(round(ant.range_bias * 14))
         if ant.carrying_food or (hungry and world.nest.stored_food > 0):
             base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
         else:
             outward_heading = _target_heading(world.nest.x, world.nest.y, ant.x, ant.y)
             if hungry and world.nest.stored_food <= 0:
                 base_heading = ant.heading
-            elif distance_from_nest <= world.nest.radius + 5:
+            elif distance_from_nest < desired_distance - 2:
                 base_heading = outward_heading
+            elif distance_from_nest > desired_distance + 4:
+                base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
             else:
                 base_heading = ant.heading
         if ant.x <= 1 or ant.x >= world.width - 2 or ant.y <= 1 or ant.y >= world.height - 2:
             center_x = world.width // 2
             center_y = world.height // 2
             base_heading = _target_heading(ant.x, ant.y, center_x, center_y)
-        jitter_scale = config.ants.wander_turn_jitter * (0.65 if ant.carrying_food else 1.0)
+        jitter_scale = config.ants.wander_turn_jitter * (0.65 if ant.carrying_food else 0.75 + ant.range_bias * 0.45)
         if target_heading is not None:
             base_heading = (base_heading * 0.35 + target_heading * 0.65)
             jitter_scale *= 0.6
@@ -463,12 +468,17 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> b
         if (x, y) in world.occupied_cells:
             continue
         ant_id = world.allocate_ant_id()
+        trait_rng = make_rng(config.seed, f"ant-sandbox:birth-traits:{tick}:{ant_id}")
+        parentless_center = (len(world.ants) % 9) / 8 if world.ants else 0.5
         ant = SandboxAnt(
             ant_id=ant_id,
             x=max(0, min(world.width - 1, x)),
             y=max(0, min(world.height - 1, y)),
             heading=0.0,
             energy=config.ants.initial_energy,
+            range_bias=max(0.0, min(1.0, 0.2 + 0.6 * parentless_center + trait_rng.uniform(-0.18, 0.18))),
+            trail_affinity=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 3) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
+            harvest_drive=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 5) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
             lineage_id=ant_id,
         )
         world.ants.append(ant)

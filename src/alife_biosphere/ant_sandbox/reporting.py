@@ -118,6 +118,14 @@ def summarize_behavior_roles(
 ) -> dict[str, object]:
     snapshots = _replay_ant_states(config, result)
     events = result.events
+    trait_map = {
+        ant.ant_id: {
+            "range_bias": ant.range_bias,
+            "trail_affinity": ant.trail_affinity,
+            "harvest_drive": ant.harvest_drive,
+        }
+        for ant in result.world.ants
+    }
     moves_by_ant: dict[str, int] = {}
     pickups_by_ant: dict[str, int] = {}
     unloads_by_ant: dict[str, int] = {}
@@ -160,6 +168,9 @@ def summarize_behavior_roles(
             "alive": final_state.alive,
             "final_x": final_state.x,
             "final_y": final_state.y,
+            "range_bias": round(trait_map.get(ant_id, {}).get("range_bias", 0.0), 4),
+            "trail_affinity": round(trait_map.get(ant_id, {}).get("trail_affinity", 0.0), 4),
+            "harvest_drive": round(trait_map.get(ant_id, {}).get("harvest_drive", 0.0), 4),
             "moves": moves_by_ant.get(ant_id, 0),
             "pickups": pickups_by_ant.get(ant_id, 0),
             "unloads": unloads_by_ant.get(ant_id, 0),
@@ -189,12 +200,16 @@ def summarize_behavior_roles(
     role_labels: dict[int, str] = {}
     for idx, centroid in enumerate(centroids):
         move_rate, pickups, unloads, far_ratio, near_ratio = centroid
-        if unloads >= max(1.0, pickups * 0.5):
+        if far_ratio >= 0.36 and near_ratio <= 0.18 and unloads <= max(1.8, pickups * 0.9):
+            label = "scout_like"
+        elif near_ratio >= 0.42 and far_ratio <= 0.24 and pickups <= 2.0 and unloads <= 1.5:
+            label = "nest_like"
+        elif unloads >= max(2.0, pickups * 0.65):
             label = "forager_like"
-        elif far_ratio > near_ratio and move_rate > 0.5:
+        elif far_ratio > near_ratio and move_rate > 0.54:
             label = "scout_like"
         else:
-            label = "nest_like"
+            label = "forager_like"
         role_labels[idx] = label
 
     cluster_summaries = []

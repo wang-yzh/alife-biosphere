@@ -79,9 +79,9 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
                 ),
             ),
             ants=AntAgentConfig(
-                max_age=240,
+                max_age=260,
                 max_population=44,
-                spawn_food_cost=2,
+                spawn_food_cost=1,
                 spawn_interval=6,
                 pheromone_enabled=True,
                 hunger_return_threshold=5.0,

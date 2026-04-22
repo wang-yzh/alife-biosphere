@@ -108,6 +108,10 @@ The current branch now includes:
 - hunger-triggered return-to-nest behavior
 - nest feeding before re-entry into exploration
 - hover / click ant inspection with direct position readout
+- instinct profile readout for selected ants:
+  - `range_bias`
+  - `trail_affinity`
+  - `harvest_drive`
 
 This means the observer now reflects a less pathological sandbox than the first
 release.

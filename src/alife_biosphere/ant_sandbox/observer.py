@@ -34,6 +34,9 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "carrying_food": ant.carrying_food,
             "delivered_food": ant.delivered_food,
             "age": ant.age,
+            "range_bias": ant.range_bias,
+            "trail_affinity": ant.trail_affinity,
+            "harvest_drive": ant.harvest_drive,
         }
         for ant in world.ants
         if ant.alive
@@ -599,6 +602,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <div class="tiny">carrying = ${{selected.carrying_food ? 'yes' : 'no'}}</div>
           <div class="tiny">delivered = ${{selected.delivered_food}}</div>
           <div class="tiny">age = ${{selected.age}}</div>
+          <div class="tiny">range = ${{selected.range_bias.toFixed(2)}}</div>
+          <div class="tiny">trail = ${{selected.trail_affinity.toFixed(2)}}</div>
+          <div class="tiny">harvest = ${{selected.harvest_drive.toFixed(2)}}</div>
         `;
       }} else {{
         selectedAntEl.innerHTML = `
