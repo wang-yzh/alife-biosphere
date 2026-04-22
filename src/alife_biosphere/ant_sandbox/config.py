@@ -9,12 +9,15 @@ class NestConfig:
     y: int = 24
     radius: int = 3
     initial_stored_food: int = 18
+    colony_upkeep_per_ant_tick: float = 0.002
 
     def __post_init__(self) -> None:
         if self.radius <= 0:
             raise ValueError("radius must be positive")
         if self.initial_stored_food < 0:
             raise ValueError("initial_stored_food must be non-negative")
+        if self.colony_upkeep_per_ant_tick < 0:
+            raise ValueError("colony_upkeep_per_ant_tick must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,8 @@ class FoodPatchConfig:
     amount: int
     max_amount: int | None = None
     regrowth_rate: int = 0
+    relocate_on_depletion: bool = True
+    respawn_delay_ticks: int = 28
 
     def __post_init__(self) -> None:
         if self.radius <= 0:
@@ -38,6 +43,8 @@ class FoodPatchConfig:
             raise ValueError("max_amount must not be less than amount")
         if self.regrowth_rate < 0:
             raise ValueError("regrowth_rate must be non-negative")
+        if self.respawn_delay_ticks <= 0:
+            raise ValueError("respawn_delay_ticks must be positive")
 
 
 @dataclass(frozen=True)
@@ -119,8 +126,8 @@ class AntSandboxConfig:
     nest: NestConfig = field(default_factory=NestConfig)
     food_patches: tuple[FoodPatchConfig, ...] = field(
         default_factory=lambda: (
-            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=120, max_amount=120, regrowth_rate=1),
-            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=180, max_amount=180, regrowth_rate=1),
+            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=48, max_amount=48, regrowth_rate=0, respawn_delay_ticks=16),
+            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
         )
     )
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)

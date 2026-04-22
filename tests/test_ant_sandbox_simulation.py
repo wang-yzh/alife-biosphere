@@ -1,4 +1,4 @@
-from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, NestConfig
+from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig
 from alife_biosphere.ant_sandbox.reporting import summarize_behavior_roles
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 from alife_biosphere.ant_sandbox.validation import summarize_validation_status, ValidationCase
@@ -55,7 +55,29 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
     result = run_simulation(
         AntSandboxConfig(
             ticks=420,
-            nest=NestConfig(initial_stored_food=240),
+            nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
+            food_patches=(
+                FoodPatchConfig(
+                    "food_a",
+                    x=38,
+                    y=14,
+                    radius=3,
+                    amount=120,
+                    max_amount=120,
+                    regrowth_rate=1,
+                    relocate_on_depletion=False,
+                ),
+                FoodPatchConfig(
+                    "food_b",
+                    x=48,
+                    y=35,
+                    radius=4,
+                    amount=180,
+                    max_amount=180,
+                    regrowth_rate=1,
+                    relocate_on_depletion=False,
+                ),
+            ),
             ants=AntAgentConfig(
                 max_age=240,
                 max_population=44,
@@ -79,6 +101,29 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
 def test_ant_sandbox_role_summary_produces_multiple_clusters() -> None:
     config = AntSandboxConfig(
         ticks=420,
+        nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig(
+                "food_a",
+                x=38,
+                y=14,
+                radius=3,
+                amount=120,
+                max_amount=120,
+                regrowth_rate=1,
+                relocate_on_depletion=False,
+            ),
+            FoodPatchConfig(
+                "food_b",
+                x=48,
+                y=35,
+                radius=4,
+                amount=180,
+                max_amount=180,
+                regrowth_rate=1,
+                relocate_on_depletion=False,
+            ),
+        ),
         ants=AntAgentConfig(
             max_age=200,
             max_population=44,
@@ -113,14 +158,67 @@ def test_hungry_ants_can_refuel_at_nest() -> None:
     assert all(event.payload["energy"] > 5.0 for event in feed_events)
 
 
+def test_colony_upkeep_consumes_nest_food() -> None:
+    config = AntSandboxConfig(
+        ticks=6,
+        nest=NestConfig(initial_stored_food=12, colony_upkeep_per_ant_tick=0.6),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=1,
+            initial_energy=20.0,
+            max_energy=20.0,
+            metabolism_cost=0.01,
+            hunger_return_threshold=0.0,
+            pheromone_enabled=False,
+        ),
+    )
+    result = run_simulation(config)
+    upkeep_events = [event for event in result.events if event.event_type == "nest_upkeep"]
+    assert upkeep_events
+    assert result.world.nest.stored_food < 12
+
+
+def test_depleted_food_patch_reseeds_to_new_site() -> None:
+    config = AntSandboxConfig(
+        ticks=24,
+        nest=NestConfig(initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig(
+                "food_a",
+                x=20,
+                y=24,
+                radius=1,
+                amount=1,
+                max_amount=5,
+                regrowth_rate=0,
+                respawn_delay_ticks=4,
+            ),
+        ),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=1,
+            initial_energy=20.0,
+            max_energy=20.0,
+            metabolism_cost=0.01,
+            hunger_return_threshold=0.0,
+            pheromone_enabled=False,
+            food_sense_radius=18,
+        ),
+    )
+    result = run_simulation(config)
+    reseed_events = [event for event in result.events if event.event_type == "food_patch_reseed"]
+    assert reseed_events
+    event = reseed_events[0]
+    assert (event.payload["from_x"], event.payload["from_y"]) != (event.payload["to_x"], event.payload["to_y"])
+
+
 def test_validation_status_evaluates_expected_metric_states() -> None:
     cases = [
         ValidationCase(
             seed=7,
-            base_nest_food=10,
             base_unloads=10,
-            pheromone_on_nest_food=10,
-            pheromone_off_nest_food=7,
+            pheromone_on_unloads=10,
+            pheromone_off_unloads=7,
             persistence_births=5,
             persistence_deaths=36,
             persistence_alive_min=1,
@@ -130,10 +228,9 @@ def test_validation_status_evaluates_expected_metric_states() -> None:
         ),
         ValidationCase(
             seed=11,
-            base_nest_food=11,
             base_unloads=11,
-            pheromone_on_nest_food=12,
-            pheromone_off_nest_food=8,
+            pheromone_on_unloads=12,
+            pheromone_off_unloads=8,
             persistence_births=4,
             persistence_deaths=30,
             persistence_alive_min=2,
@@ -154,7 +251,29 @@ def test_ant_sandbox_disturbance_keeps_some_function_after_shock() -> None:
     result = run_simulation(
         AntSandboxConfig(
             ticks=300,
-            nest=NestConfig(initial_stored_food=240),
+            nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
+            food_patches=(
+                FoodPatchConfig(
+                    "food_a",
+                    x=38,
+                    y=14,
+                    radius=3,
+                    amount=120,
+                    max_amount=120,
+                    regrowth_rate=1,
+                    relocate_on_depletion=False,
+                ),
+                FoodPatchConfig(
+                    "food_b",
+                    x=48,
+                    y=35,
+                    radius=4,
+                    amount=180,
+                    max_amount=180,
+                    regrowth_rate=1,
+                    relocate_on_depletion=False,
+                ),
+            ),
             disturbance_tick=150,
             disturbance_food_shift=True,
             disturbance_food_shift_dx=-8,

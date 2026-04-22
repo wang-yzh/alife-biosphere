@@ -31,6 +31,9 @@ def main() -> None:
     derived = {
         "pickups": sum(1 for event in result.events if event.event_type == "food_pickup"),
         "unloads": sum(1 for event in result.events if event.event_type == "food_unload"),
+        "feeds": sum(1 for event in result.events if event.event_type == "nest_feed"),
+        "upkeep_consumed": sum(event.payload["consumed"] for event in result.events if event.event_type == "nest_upkeep"),
+        "food_reseeds": sum(1 for event in result.events if event.event_type == "food_patch_reseed"),
         "nest_food": world.nest.stored_food,
         "food_remaining": world.food_remaining(),
         "final_summary": tick_summaries[-1] if tick_summaries else {},

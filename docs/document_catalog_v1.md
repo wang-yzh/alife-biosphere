@@ -91,6 +91,8 @@ They are no longer the shortest current control path.
   clustering slice for role differentiation
 - `ant_sandbox_observer_slice_2026-04-22.md`: dedicated world-first observer
   and live window for the ant-sandbox branch
+- `ant_sandbox_instinct_pressure_slice_2026-04-22.md`: instinct-pressure pass
+  that adds nest upkeep and dynamic food-site turnover to the sandbox branch
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note

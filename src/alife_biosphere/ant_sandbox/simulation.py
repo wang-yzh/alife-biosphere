@@ -40,13 +40,86 @@ def _food_within_range(ant: SandboxAnt, patches: list[FoodPatch], radius: int) -
     return min(visible, key=lambda patch: (_distance(ant.x, ant.y, patch.x, patch.y), patch.patch_id))
 
 
-def _regrow_food(world: AntSandboxWorld) -> None:
+def _patch_respawn_cell(
+    world: AntSandboxWorld,
+    patch: FoodPatch,
+    config: AntSandboxConfig,
+    tick: int,
+) -> tuple[int, int]:
+    rng = make_rng(config.seed, f"ant-sandbox:{tick}:{patch.patch_id}:respawn:{patch.respawn_count}")
+    wall_margin = max(5, patch.radius + 2)
+    min_nest_distance = world.nest.radius + patch.radius + 10
+    spacing = patch.radius + 10
+    candidates: list[tuple[int, int]] = []
+    for y in range(wall_margin, world.height - wall_margin):
+        for x in range(wall_margin, world.width - wall_margin):
+            if _distance(x, y, world.nest.x, world.nest.y) < min_nest_distance:
+                continue
+            if any(
+                other.patch_id != patch.patch_id and _distance(x, y, other.x, other.y) < other.radius + spacing
+                for other in world.food_patches
+            ):
+                continue
+            candidates.append((x, y))
+    if not candidates:
+        return patch.x, patch.y
+    return candidates[rng.randrange(len(candidates))]
+
+
+def _dampen_food_trails(world: AntSandboxWorld, center_x: int, center_y: int, radius: int) -> None:
+    cutoff = radius + 8
+    world.food_trail = {
+        cell: value * (0.15 if _distance(cell[0], cell[1], center_x, center_y) <= cutoff else 1.0)
+        for cell, value in world.food_trail.items()
+        if value > 0.02
+    }
+    world.home_trail = {
+        cell: value * (0.35 if _distance(cell[0], cell[1], center_x, center_y) <= cutoff else 1.0)
+        for cell, value in world.home_trail.items()
+        if value > 0.02
+    }
+
+
+def _regrow_food(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> int:
+    reseeds = 0
     for patch in world.food_patches:
+        if patch.amount <= 0:
+            patch.empty_ticks += 1
+            if patch.relocate_on_depletion and patch.empty_ticks >= patch.respawn_delay_ticks:
+                old_x = patch.x
+                old_y = patch.y
+                patch.x, patch.y = _patch_respawn_cell(world, patch, config, tick)
+                patch.amount = patch.max_amount
+                patch.empty_ticks = 0
+                patch.respawn_count += 1
+                _dampen_food_trails(world, old_x, old_y, patch.radius)
+                world.emit(
+                    Event(
+                        tick=tick,
+                        event_type="food_patch_reseed",
+                        organism_id=None,
+                        habitat_id=patch.patch_id,
+                        payload={
+                            "from_x": old_x,
+                            "from_y": old_y,
+                            "to_x": patch.x,
+                            "to_y": patch.y,
+                            "amount": patch.amount,
+                            "respawn_count": patch.respawn_count,
+                        },
+                    )
+                )
+                reseeds += 1
+            elif not patch.relocate_on_depletion and patch.regrowth_rate > 0:
+                patch.amount = min(patch.max_amount, patch.amount + patch.regrowth_rate)
+            continue
+        patch.empty_ticks = 0
         if patch.regrowth_rate <= 0:
             continue
         if patch.amount >= patch.max_amount:
             continue
         patch.amount = min(patch.max_amount, patch.amount + patch.regrowth_rate)
+    return reseeds
 
 
 def _target_heading(from_x: int, from_y: int, to_x: int, to_y: int) -> float:
@@ -111,7 +184,8 @@ def _choose_step(
     rng = make_rng(config.seed, f"ant-sandbox:{tick}:{ant.ant_id}:move")
     target_x: int | None = None
     target_y: int | None = None
-    if ant.carrying_food or ant.energy <= config.ants.hunger_return_threshold:
+    hungry = ant.energy <= config.ants.hunger_return_threshold
+    if ant.carrying_food or (hungry and world.nest.stored_food > 0):
         target_x = world.nest.x
         target_y = world.nest.y
     else:
@@ -133,11 +207,13 @@ def _choose_step(
     else:
         target_heading = None
         distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
-        if ant.carrying_food or ant.energy <= config.ants.hunger_return_threshold:
+        if ant.carrying_food or (hungry and world.nest.stored_food > 0):
             base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
         else:
             outward_heading = _target_heading(world.nest.x, world.nest.y, ant.x, ant.y)
-            if distance_from_nest <= world.nest.radius + 5:
+            if hungry and world.nest.stored_food <= 0:
+                base_heading = ant.heading
+            elif distance_from_nest <= world.nest.radius + 5:
                 base_heading = outward_heading
             else:
                 base_heading = ant.heading
@@ -245,6 +321,29 @@ def _feed_at_nest(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxCon
         )
     )
     return True
+
+
+def _apply_colony_upkeep(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> int:
+    if config.nest.colony_upkeep_per_ant_tick <= 0:
+        return 0
+    world.nest.upkeep_reserve += world.alive_count() * config.nest.colony_upkeep_per_ant_tick
+    consumed = min(int(world.nest.upkeep_reserve), world.nest.stored_food)
+    if consumed <= 0:
+        world.nest.upkeep_reserve = min(world.nest.upkeep_reserve, 0.999)
+        return 0
+    world.nest.stored_food -= consumed
+    world.nest.upkeep_reserve -= consumed
+    world.nest.upkeep_reserve = min(world.nest.upkeep_reserve, 0.999)
+    world.emit(
+        Event(
+            tick=tick,
+            event_type="nest_upkeep",
+            organism_id=None,
+            habitat_id="nest",
+            payload={"consumed": consumed, "nest_food": world.nest.stored_food},
+        )
+    )
+    return consumed
 
 
 def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> None:
@@ -396,10 +495,13 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     deaths = 0
     births = 0
     feeds = 0
+    upkeep = 0
+    reseeds = 0
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
     _decay_stale_field(world)
-    _regrow_food(world)
+    upkeep += _apply_colony_upkeep(world, config, tick)
+    reseeds += _regrow_food(world, config, tick)
     world.occupied_cells = {(ant.x, ant.y) for ant in world.ants if ant.alive}
     for ant in world.ants:
         if not ant.alive:
@@ -466,6 +568,8 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "births": births,
         "deaths": deaths,
         "feeds": feeds,
+        "upkeep": upkeep,
+        "food_reseeds": reseeds,
         "food_trail_cells": len(world.food_trail),
         "home_trail_cells": len(world.home_trail),
     }

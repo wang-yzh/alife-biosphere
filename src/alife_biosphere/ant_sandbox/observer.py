@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from .config import AntSandboxConfig
@@ -67,6 +68,8 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "death_events": _event_dicts(world, tick, "ant_death"),
         "pickup_events": _event_dicts(world, tick, "food_pickup"),
         "unload_events": _event_dicts(world, tick, "food_unload"),
+        "reseed_events": _event_dicts(world, tick, "food_patch_reseed"),
+        "upkeep_events": _event_dicts(world, tick, "nest_upkeep"),
     }
 
 
@@ -81,6 +84,7 @@ def build_ant_observer_payload(
         frames.append(_frame_payload(world, summary, tick))
     return {
         "title": title,
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "width": config.width,
         "height": config.height,
         "total_ticks": config.ticks,
@@ -179,6 +183,13 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       margin: 0 0 14px;
       font-size: 14px;
       color: var(--muted);
+    }}
+
+    .meta {{
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
     }}
 
     .controls {{
@@ -342,6 +353,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     <section class="world">
       <h1>{title}</h1>
       <p class="sub">A colony window that prioritizes nest, food, ants, and trace flow over dashboard metrics.</p>
+      <p class="meta" id="generated-at"></p>
       <div class="controls">
         <button id="play">Play</button>
         <button id="back" class="secondary">Back</button>
@@ -393,6 +405,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     const nestFoodEl = document.getElementById('nest-food');
     const carryingEl = document.getElementById('carrying');
     const foodLeftEl = document.getElementById('food-left');
+    const generatedAtEl = document.getElementById('generated-at');
     const momentLog = document.getElementById('moment-log');
     const selectedAntEl = document.getElementById('selected-ant');
 
@@ -405,6 +418,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     const frames = data.frames;
     let hoverAntId = null;
     let pinnedAntId = null;
+
+    generatedAtEl.textContent = `Generated ${{data.generated_at}}${{data.live ? ' · live export' : ''}}`;
 
     function toCanvasX(x) {{
       return (x + 0.5) * widthScale;
@@ -562,9 +577,11 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       const logItems = [];
       if (frame.pickups) logItems.push(`food pickups +${{frame.pickups}}`);
       if (frame.unloads) logItems.push(`nest unloads +${{frame.unloads}}`);
-      if (frame.births.length) logItems.push(`ant births +${{frame.births.length}}`);
+      if (frame.upkeep_events.length) logItems.push(`nest upkeep -${{frame.upkeep_events.reduce((sum, event) => sum + event.payload.consumed, 0)}}`);
+      if (frame.reseed_events.length) logItems.push(`food reseeds +${{frame.reseed_events.length}}`);
+      if (frame.births) logItems.push(`ant births +${{frame.births}}`);
       if (frame.death_events.length) logItems.push(`ant deaths +${{frame.death_events.length}}`);
-      if (frame.moves.length) logItems.push(`moves +${{frame.moves.length}}`);
+      if (frame.moves) logItems.push(`moves +${{frame.moves}}`);
       if (!logItems.length) logItems.push('quiet tick');
       logItems.forEach(item => {{
         const row = document.createElement('div');

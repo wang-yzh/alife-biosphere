@@ -9,14 +9,36 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, NestConfig
+from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 
 
 def main() -> None:
     config = AntSandboxConfig(
         ticks=300,
-        nest=NestConfig(initial_stored_food=240),
+        nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig(
+                "food_a",
+                x=38,
+                y=14,
+                radius=3,
+                amount=120,
+                max_amount=120,
+                regrowth_rate=1,
+                relocate_on_depletion=False,
+            ),
+            FoodPatchConfig(
+                "food_b",
+                x=48,
+                y=35,
+                radius=4,
+                amount=180,
+                max_amount=180,
+                regrowth_rate=1,
+                relocate_on_depletion=False,
+            ),
+        ),
         disturbance_tick=150,
         disturbance_food_shift=True,
         disturbance_food_shift_dx=-8,

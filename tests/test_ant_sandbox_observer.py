@@ -10,6 +10,7 @@ def test_ant_sandbox_observer_payload_contains_world_frames() -> None:
     assert payload["width"] == 64
     assert payload["height"] == 48
     assert payload["total_ticks"] == 40
+    assert payload["generated_at"]
     assert payload["frames"]
     first = payload["frames"][0]
     assert "ants" in first

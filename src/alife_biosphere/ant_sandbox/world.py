@@ -13,6 +13,7 @@ class Nest:
     y: int
     radius: int
     stored_food: int = 0
+    upkeep_reserve: float = 0.0
 
 
 @dataclass
@@ -24,6 +25,10 @@ class FoodPatch:
     amount: int
     max_amount: int
     regrowth_rate: int = 0
+    relocate_on_depletion: bool = True
+    respawn_delay_ticks: int = 28
+    empty_ticks: int = 0
+    respawn_count: int = 0
 
 
 @dataclass
@@ -124,6 +129,8 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
             amount=patch.amount,
             max_amount=patch.amount if patch.max_amount is None else patch.max_amount,
             regrowth_rate=patch.regrowth_rate,
+            relocate_on_depletion=patch.relocate_on_depletion,
+            respawn_delay_ticks=patch.respawn_delay_ticks,
         )
         for patch in config.food_patches
     ]
