@@ -58,6 +58,11 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "radius": patch.radius,
             "amount": patch.amount,
             "max_amount": patch.max_amount,
+            "nearby_ants": patch.nearby_ants,
+            "carrying_nearby": patch.carrying_nearby,
+            "competition_pressure": patch.competition_pressure,
+            "contested_ticks": patch.contested_ticks,
+            "depletion_count": patch.depletion_count,
         }
         for patch in world.food_patches
     ]
@@ -82,6 +87,8 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "unload_events": _event_dicts(world, tick, "food_unload"),
         "reseed_events": _event_dicts(world, tick, "food_patch_reseed"),
         "upkeep_events": _event_dicts(world, tick, "nest_upkeep"),
+        "contested_source_events": _event_dicts(world, tick, "food_source_contested"),
+        "depleted_source_events": _event_dicts(world, tick, "food_source_depleted"),
     }
 
 
@@ -535,17 +542,30 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     function drawFood(frame) {{
       for (const patch of frame.food_patches) {{
         if (patch.amount <= 0) continue;
+        const pressureAlpha = Math.min(0.36, patch.competition_pressure / 18);
+        if (pressureAlpha > 0.02) {{
+          ctx.fillStyle = `rgba(214, 116, 59, ${{pressureAlpha}})`;
+          ctx.beginPath();
+          ctx.arc(
+            toCanvasX(patch.x),
+            toCanvasY(patch.y),
+            (patch.radius + 2.6 + patch.nearby_ants * 0.18) * widthScale,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+        }}
         const alpha = patch.max_amount === 0 ? 0 : Math.max(0.08, patch.amount / patch.max_amount);
         ctx.fillStyle = `rgba(152, 184, 95, ${{alpha}})`;
-        ctx.strokeStyle = 'rgba(93, 120, 44, 0.28)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = patch.competition_pressure >= 3.2 ? 'rgba(168, 84, 34, 0.72)' : 'rgba(93, 120, 44, 0.28)';
+        ctx.lineWidth = patch.competition_pressure >= 3.2 ? 3.2 : 2;
         ctx.beginPath();
         ctx.arc(toCanvasX(patch.x), toCanvasY(patch.y), (patch.radius + 1.3) * widthScale, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = 'rgba(58, 82, 28, 0.58)';
         ctx.font = '11px Menlo, monospace';
-        ctx.fillText(String(patch.amount), toCanvasX(patch.x) - 8, toCanvasY(patch.y) + 4);
+        ctx.fillText(`${{patch.amount}} · ${{patch.nearby_ants}}`, toCanvasX(patch.x) - 18, toCanvasY(patch.y) + 4);
       }}
     }}
 
@@ -643,6 +663,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       if (frame.unloads) logItems.push(`nest unloads +${{frame.unloads}}`);
       if (frame.upkeep_events.length) logItems.push(`nest upkeep -${{frame.upkeep_events.reduce((sum, event) => sum + event.payload.consumed, 0)}}`);
       if (frame.reseed_events.length) logItems.push(`food reseeds +${{frame.reseed_events.length}}`);
+      if (frame.contested_source_events.length) logItems.push(`source contests +${{frame.contested_source_events.length}}`);
+      if (frame.depleted_source_events.length) logItems.push(`sources depleted +${{frame.depleted_source_events.length}}`);
       if (frame.births) logItems.push(`ant births +${{frame.births}}`);
       if (frame.death_events.length) logItems.push(`ant deaths +${{frame.death_events.length}}`);
       if (frame.moves) logItems.push(`moves +${{frame.moves}}`);

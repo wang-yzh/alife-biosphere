@@ -38,6 +38,12 @@ class FoodPatch:
     respawn_delay_ticks: int = 28
     empty_ticks: int = 0
     respawn_count: int = 0
+    nearby_ants: int = 0
+    carrying_nearby: int = 0
+    recent_pickups: int = 0
+    competition_pressure: float = 0.0
+    contested_ticks: int = 0
+    depletion_count: int = 0
 
 
 @dataclass

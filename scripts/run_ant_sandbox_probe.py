@@ -11,6 +11,7 @@ if str(SRC) not in sys.path:
 
 from alife_biosphere.ant_sandbox import AntSandboxConfig
 from alife_biosphere.ant_sandbox import initialize_world
+from alife_biosphere.ant_sandbox import summarize_food_source_competition
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 
 
@@ -34,11 +35,16 @@ def main() -> None:
         "feeds": sum(1 for event in result.events if event.event_type == "nest_feed"),
         "upkeep_consumed": sum(event.payload["consumed"] for event in result.events if event.event_type == "nest_upkeep"),
         "food_reseeds": sum(1 for event in result.events if event.event_type == "food_patch_reseed"),
+        "contested_sources": sum(1 for event in result.events if event.event_type == "food_source_contested"),
         "nest_food": world.nest.stored_food,
         "food_remaining": world.food_remaining(),
         "final_summary": tick_summaries[-1] if tick_summaries else {},
     }
     (output_dir / "derived_summary.json").write_text(json.dumps(derived, indent=2), encoding="utf-8")
+    (output_dir / "food_source_competition_summary.json").write_text(
+        json.dumps(summarize_food_source_competition(result), indent=2),
+        encoding="utf-8",
+    )
     print(result.summary())
     print(derived)
 

@@ -19,6 +19,8 @@ def test_ant_sandbox_observer_payload_contains_world_frames() -> None:
     assert "food_trail" in first
     assert "home_trail" in first
     assert "terrain_kind" in first["ants"][0]
+    assert "competition_pressure" in first["food_patches"][0]
+    assert "nearby_ants" in first["food_patches"][0]
 
 
 def test_ant_sandbox_observer_html_writes_canvas_window(tmp_path: Path) -> None:

@@ -134,6 +134,10 @@ def _regrow_food(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) ->
                 patch.amount = patch.max_amount
                 patch.empty_ticks = 0
                 patch.respawn_count += 1
+                patch.nearby_ants = 0
+                patch.carrying_nearby = 0
+                patch.recent_pickups = 0
+                patch.competition_pressure = 0.0
                 _dampen_food_trails(world, old_x, old_y, patch.radius)
                 world.emit(
                     Event(
@@ -312,15 +316,16 @@ def _choose_step(
     ) + (target_heading,)
 
 
-def _pickup_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int) -> bool:
+def _pickup_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int) -> str | None:
     if ant.carrying_food:
-        return False
+        return None
     for patch in world.food_patches:
         if patch.amount <= 0:
             continue
         if _distance(ant.x, ant.y, patch.x, patch.y) <= max(patch.radius, config.ants.food_pickup_radius):
             patch.amount -= 1
             ant.carrying_food = True
+            patch.recent_pickups += 1
             world.emit(
                 Event(
                     tick=tick,
@@ -330,8 +335,19 @@ def _pickup_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
                     payload={"x": ant.x, "y": ant.y, "remaining_amount": patch.amount},
                 )
             )
-            return True
-    return False
+            if patch.amount == 0:
+                patch.depletion_count += 1
+                world.emit(
+                    Event(
+                        tick=tick,
+                        event_type="food_source_depleted",
+                        organism_id=ant.ant_id,
+                        habitat_id=patch.patch_id,
+                        payload={"x": patch.x, "y": patch.y, "depletion_count": patch.depletion_count},
+                    )
+                )
+            return patch.patch_id
+    return None
 
 
 def _unload_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int) -> bool:
@@ -498,6 +514,59 @@ def _update_stale_signal(world: AntSandboxWorld, ant: SandboxAnt) -> None:
     )
 
 
+def _update_food_source_competition(world: AntSandboxWorld, tick: int) -> int:
+    contested_sources = 0
+    for patch in world.food_patches:
+        nearby_ants = sum(
+            1
+            for ant in world.ants
+            if ant.alive and _distance(ant.x, ant.y, patch.x, patch.y) <= patch.radius + 4
+        )
+        carrying_nearby = sum(
+            1
+            for ant in world.ants
+            if ant.alive and ant.carrying_food and _distance(ant.x, ant.y, patch.x, patch.y) <= patch.radius + 6
+        )
+        patch.nearby_ants = nearby_ants
+        patch.carrying_nearby = carrying_nearby
+        depletion_ratio = 0.0 if patch.max_amount <= 0 else 1.0 - (patch.amount / patch.max_amount)
+        patch.competition_pressure = round(
+            patch.competition_pressure * 0.78
+            + nearby_ants * 0.65
+            + carrying_nearby * 0.45
+            + patch.recent_pickups * 1.6
+            + depletion_ratio * 1.2,
+            4,
+        )
+        is_contested = (
+            nearby_ants >= 4
+            or patch.recent_pickups >= 2
+            or (depletion_ratio >= 0.4 and nearby_ants >= 2)
+        )
+        if is_contested:
+            patch.contested_ticks += 1
+            contested_sources += 1
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="food_source_contested",
+                    organism_id=None,
+                    habitat_id=patch.patch_id,
+                    payload={
+                        "x": patch.x,
+                        "y": patch.y,
+                        "nearby_ants": nearby_ants,
+                        "carrying_nearby": carrying_nearby,
+                        "recent_pickups": patch.recent_pickups,
+                        "remaining_amount": patch.amount,
+                        "competition_pressure": patch.competition_pressure,
+                    },
+                )
+            )
+        patch.recent_pickups = 0
+    return contested_sources
+
+
 def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> bool:
     if world.nest.stored_food < config.ants.spawn_food_cost:
         return False
@@ -555,6 +624,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     feeds = 0
     upkeep = 0
     reseeds = 0
+    contested_sources = 0
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
     _decay_stale_field(world)
@@ -613,6 +683,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         world.occupied_cells.add((ant.x, ant.y))
     if _spawn_ant(world, config, tick):
         births += 1
+    contested_sources += _update_food_source_competition(world, tick)
     summary = {
         "ticks": world.tick,
         "alive": world.alive_count(),
@@ -628,6 +699,8 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "feeds": feeds,
         "upkeep": upkeep,
         "food_reseeds": reseeds,
+        "contested_sources": contested_sources,
+        "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
         "food_trail_cells": len(world.food_trail),
         "home_trail_cells": len(world.home_trail),
     }

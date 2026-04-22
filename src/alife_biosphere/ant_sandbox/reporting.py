@@ -241,3 +241,45 @@ def summarize_behavior_roles(
             for label in sorted(set(role_labels.values()))
         },
     }
+
+
+def summarize_food_source_competition(result: AntSandboxResult) -> dict[str, object]:
+    pickups_by_source: dict[str, int] = {}
+    contested_by_source: dict[str, int] = {}
+    for event in result.events:
+        if event.habitat_id is None:
+            continue
+        if event.event_type == "food_pickup":
+            pickups_by_source[event.habitat_id] = pickups_by_source.get(event.habitat_id, 0) + 1
+        elif event.event_type == "food_source_contested":
+            contested_by_source[event.habitat_id] = contested_by_source.get(event.habitat_id, 0) + 1
+
+    per_source = []
+    for patch in result.world.food_patches:
+        per_source.append(
+            {
+                "patch_id": patch.patch_id,
+                "amount": patch.amount,
+                "max_amount": patch.max_amount,
+                "nearby_ants": patch.nearby_ants,
+                "carrying_nearby": patch.carrying_nearby,
+                "competition_pressure": round(patch.competition_pressure, 4),
+                "contested_ticks": patch.contested_ticks,
+                "depletion_count": patch.depletion_count,
+                "pickup_count": pickups_by_source.get(patch.patch_id, 0),
+                "contested_event_count": contested_by_source.get(patch.patch_id, 0),
+            }
+        )
+    top_sources = sorted(
+        per_source,
+        key=lambda item: (
+            item["competition_pressure"],
+            item["contested_ticks"],
+            item["pickup_count"],
+        ),
+        reverse=True,
+    )
+    return {
+        "per_source": per_source,
+        "top_competition_sources": top_sources[:3],
+    }

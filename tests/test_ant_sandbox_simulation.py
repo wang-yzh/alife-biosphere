@@ -200,6 +200,35 @@ def test_colony_upkeep_consumes_nest_food() -> None:
     assert result.world.nest.stored_food < 12
 
 
+def test_food_source_contention_events_can_emerge() -> None:
+    config = AntSandboxConfig(
+        ticks=120,
+        width=64,
+        height=48,
+        nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=12, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("food_a", x=32, y=24, radius=4, amount=28, max_amount=28, regrowth_rate=0, respawn_delay_ticks=18),
+            FoodPatchConfig("food_b", x=47, y=16, radius=3, amount=20, max_amount=20, regrowth_rate=0, respawn_delay_ticks=18),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=24,
+            max_population=24,
+            food_sense_radius=18,
+            pheromone_enabled=True,
+            pheromone_sense_radius=12,
+            trail_deposit=1.8,
+            trail_decay=0.02,
+            hunger_return_threshold=5.0,
+            nest_feed_amount=4.0,
+        ),
+    )
+    result = run_simulation(config)
+    contested_events = [event for event in result.events if event.event_type == "food_source_contested"]
+    assert contested_events
+    assert any(patch.competition_pressure > 0 for patch in result.world.food_patches)
+
+
 def test_depleted_food_patch_reseeds_to_new_site() -> None:
     config = AntSandboxConfig(
         ticks=24,

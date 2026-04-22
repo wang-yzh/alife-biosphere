@@ -106,6 +106,8 @@ They are no longer the shortest current control path.
   strengthens scout / forager separation without adding culture or explicit caste scripting
 - `ant_sandbox_m7_m8_scale_up_slice_2026-04-22.md`: first larger-map and
   terrain-aware implementation slice for the ant-sandbox scale-up phase
+- `ant_sandbox_r1_food_source_competition_slice_2026-04-22.md`: first
+  resource-competition slice, making food sources contested ecological objects
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note
