@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
-from .config import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig
+from .config import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig, TerrainConfig
 from .reporting import summarize_behavior_roles
 from .simulation import run_simulation
 
@@ -39,7 +39,25 @@ class ValidationCase:
 
 
 def _base_config(seed: int) -> AntSandboxConfig:
-    return AntSandboxConfig(seed=seed)
+    return AntSandboxConfig(
+        seed=seed,
+        width=64,
+        height=48,
+        nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=18, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=48, max_amount=48, regrowth_rate=0, respawn_delay_ticks=16),
+            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            food_sense_radius=14,
+            pheromone_sense_radius=12,
+            trail_deposit=1.8,
+            trail_decay=0.02,
+            hunger_return_threshold=5.0,
+            nest_feed_amount=4.0,
+        ),
+    )
 
 
 def _persistence_config(seed: int) -> AntSandboxConfig:
@@ -129,8 +147,9 @@ def run_validation_cases(seeds: tuple[int, ...] = DEFAULT_VALIDATION_SEEDS) -> l
     cases: list[ValidationCase] = []
     for seed in seeds:
         base_result = run_simulation(_base_config(seed))
-        pheromone_on = run_simulation(AntSandboxConfig(seed=seed, ants=AntAgentConfig(pheromone_enabled=True)))
-        pheromone_off = run_simulation(AntSandboxConfig(seed=seed, ants=AntAgentConfig(pheromone_enabled=False)))
+        base_cfg = _base_config(seed)
+        pheromone_on = run_simulation(replace(base_cfg, ants=replace(base_cfg.ants, pheromone_enabled=True)))
+        pheromone_off = run_simulation(replace(base_cfg, ants=replace(base_cfg.ants, pheromone_enabled=False)))
         persistence_result = run_simulation(_persistence_config(seed))
         role_summary = summarize_behavior_roles(_persistence_config(seed), persistence_result, cluster_count=3)
         disturbance_result = run_simulation(_disturbance_config(seed))

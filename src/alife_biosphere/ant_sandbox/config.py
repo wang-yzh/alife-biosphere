@@ -4,11 +4,21 @@ from dataclasses import asdict, dataclass, field
 
 
 @dataclass(frozen=True)
+class TerrainConfig:
+    enabled: bool = True
+    layout: str = "surface_v1"
+
+    def __post_init__(self) -> None:
+        if not self.layout:
+            raise ValueError("layout must be non-empty")
+
+
+@dataclass(frozen=True)
 class NestConfig:
-    x: int = 16
-    y: int = 24
-    radius: int = 3
-    initial_stored_food: int = 18
+    x: int = 28
+    y: int = 48
+    radius: int = 4
+    initial_stored_food: int = 24
     colony_upkeep_per_ant_tick: float = 0.002
 
     def __post_init__(self) -> None:
@@ -53,15 +63,15 @@ class AntAgentConfig:
     max_population: int = 32
     step_size: int = 1
     wander_turn_jitter: float = 0.55
-    food_sense_radius: int = 16
-    nest_sense_radius: int = 8
+    food_sense_radius: int = 24
+    nest_sense_radius: int = 10
     food_pickup_radius: int = 1
     nest_drop_radius: int = 3
     max_age: int = 1000
     spawn_food_cost: int = 8
     spawn_interval: int = 10
     pheromone_enabled: bool = True
-    pheromone_sense_radius: int = 6
+    pheromone_sense_radius: int = 10
     pheromone_weight: float = 4.5
     trail_deposit: float = 1.4
     home_trail_deposit: float = 0.8
@@ -121,16 +131,17 @@ class AntAgentConfig:
 class AntSandboxConfig:
     seed: int = 7
     ticks: int = 180
-    width: int = 64
-    height: int = 48
+    width: int = 128
+    height: int = 96
     nest: NestConfig = field(default_factory=NestConfig)
     food_patches: tuple[FoodPatchConfig, ...] = field(
         default_factory=lambda: (
-            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=48, max_amount=48, regrowth_rate=0, respawn_delay_ticks=16),
-            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
+            FoodPatchConfig("food_a", x=54, y=24, radius=5, amount=96, max_amount=96, regrowth_rate=0, respawn_delay_ticks=20),
+            FoodPatchConfig("food_b", x=70, y=72, radius=6, amount=144, max_amount=144, regrowth_rate=0, respawn_delay_ticks=24),
         )
     )
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)
+    terrain: TerrainConfig = field(default_factory=TerrainConfig)
     disturbance_tick: int = 0
     disturbance_food_shift: bool = False
     disturbance_food_shift_dx: int = 0

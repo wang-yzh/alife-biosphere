@@ -1,4 +1,4 @@
-from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig
+from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig, TerrainConfig
 from alife_biosphere.ant_sandbox.reporting import summarize_behavior_roles
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 from alife_biosphere.ant_sandbox.validation import summarize_validation_status, ValidationCase
@@ -27,17 +27,39 @@ def test_ant_sandbox_keeps_ants_in_bounds() -> None:
 
 def test_ant_sandbox_with_pheromones_beats_no_pheromones() -> None:
     cfg_on = AntSandboxConfig(
+        width=64,
+        height=48,
+        nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=18, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=48, max_amount=48, regrowth_rate=0, respawn_delay_ticks=16),
+            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
+        ),
+        terrain=TerrainConfig(enabled=False),
         ants=AntAgentConfig(
-            food_sense_radius=18,
+            food_sense_radius=14,
             pheromone_enabled=True,
+            pheromone_sense_radius=12,
+            trail_deposit=1.8,
+            trail_decay=0.02,
             hunger_return_threshold=5.0,
             nest_feed_amount=4.0,
         )
     )
     cfg_off = AntSandboxConfig(
+        width=64,
+        height=48,
+        nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=18, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=48, max_amount=48, regrowth_rate=0, respawn_delay_ticks=16),
+            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
+        ),
+        terrain=TerrainConfig(enabled=False),
         ants=AntAgentConfig(
-            food_sense_radius=18,
+            food_sense_radius=14,
             pheromone_enabled=False,
+            pheromone_sense_radius=12,
+            trail_deposit=1.8,
+            trail_decay=0.02,
             hunger_return_threshold=5.0,
             nest_feed_amount=4.0,
         )
@@ -181,11 +203,13 @@ def test_colony_upkeep_consumes_nest_food() -> None:
 def test_depleted_food_patch_reseeds_to_new_site() -> None:
     config = AntSandboxConfig(
         ticks=24,
-        nest=NestConfig(initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+        width=64,
+        height=48,
+        nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
             FoodPatchConfig(
                 "food_a",
-                x=20,
+                x=18,
                 y=24,
                 radius=1,
                 amount=1,
@@ -194,6 +218,7 @@ def test_depleted_food_patch_reseeds_to_new_site() -> None:
                 respawn_delay_ticks=4,
             ),
         ),
+        terrain=TerrainConfig(enabled=False),
         ants=AntAgentConfig(
             ant_count=1,
             max_population=1,

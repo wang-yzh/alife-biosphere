@@ -6,7 +6,7 @@ from math import atan2, cos, dist, sin, tau
 from ..events import Event
 from ..rng import make_rng
 from .config import AntSandboxConfig
-from .world import AntSandboxWorld, FoodPatch, SandboxAnt, initialize_world
+from .world import AntSandboxWorld, FoodPatch, SandboxAnt, initialize_world, terrain_effect, terrain_kind
 
 
 @dataclass(frozen=True)
@@ -29,8 +29,47 @@ def _distance(a_x: int, a_y: int, b_x: int, b_y: int) -> float:
     return dist((a_x, a_y), (b_x, b_y))
 
 
-def _food_within_range(ant: SandboxAnt, patches: list[FoodPatch], radius: int) -> FoodPatch | None:
-    effective_radius = max(4, int(round(radius * (0.8 + ant.harvest_drive * 0.65))))
+def _terrain_move_cost(world: AntSandboxWorld, x: int, y: int) -> float:
+    return float(terrain_effect(world, x, y)["move_cost"])
+
+
+def _terrain_trail_factor(world: AntSandboxWorld, x: int, y: int) -> float:
+    return float(terrain_effect(world, x, y)["trail_factor"])
+
+
+def _terrain_sense_factor(world: AntSandboxWorld, x: int, y: int) -> float:
+    return float(terrain_effect(world, x, y)["sense_factor"])
+
+
+def _terrain_blocked(world: AntSandboxWorld, x: int, y: int) -> bool:
+    return bool(terrain_effect(world, x, y)["blocked"])
+
+
+def _nearest_open_cell(world: AntSandboxWorld, x: int, y: int) -> tuple[int, int]:
+    if not _terrain_blocked(world, x, y):
+        return x, y
+    for radius in range(1, max(world.width, world.height)):
+        for dy in range(-radius, radius + 1):
+            for dx in range(-radius, radius + 1):
+                if abs(dx) != radius and abs(dy) != radius:
+                    continue
+                nx = _clamp(x + dx, 0, world.width - 1)
+                ny = _clamp(y + dy, 0, world.height - 1)
+                if not _terrain_blocked(world, nx, ny):
+                    return nx, ny
+    return x, y
+
+
+def _food_within_range(
+    world: AntSandboxWorld,
+    ant: SandboxAnt,
+    patches: list[FoodPatch],
+    radius: int,
+) -> FoodPatch | None:
+    effective_radius = max(
+        4,
+        int(round(radius * (0.8 + ant.harvest_drive * 0.65) * _terrain_sense_factor(world, ant.x, ant.y))),
+    )
     visible = [
         patch
         for patch in patches
@@ -55,6 +94,8 @@ def _patch_respawn_cell(
     for y in range(wall_margin, world.height - wall_margin):
         for x in range(wall_margin, world.width - wall_margin):
             if _distance(x, y, world.nest.x, world.nest.y) < min_nest_distance:
+                continue
+            if _terrain_blocked(world, x, y):
                 continue
             if any(
                 other.patch_id != patch.patch_id and _distance(x, y, other.x, other.y) < other.radius + spacing
@@ -136,6 +177,8 @@ def _candidate_cells(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandbox
                 continue
             nx = _clamp(ant.x + dx, 0, world.width - 1)
             ny = _clamp(ant.y + dy, 0, world.height - 1)
+            if _terrain_blocked(world, nx, ny):
+                continue
             cells.append((nx, ny))
     return cells
 
@@ -162,7 +205,7 @@ def _best_pheromone_cell(
         distance = _distance(ant.x, ant.y, x, y)
         if distance == 0 or distance > radius:
             continue
-        desirability = (strength / distance) * (0.55 + ant.trail_affinity * 1.2)
+        desirability = (strength / distance) * (0.55 + ant.trail_affinity * 1.2) * _terrain_sense_factor(world, x, y)
         candidates.append(((x, y), desirability))
     if not candidates:
         return None
@@ -191,7 +234,7 @@ def _choose_step(
         target_x = world.nest.x
         target_y = world.nest.y
     else:
-        patch = _food_within_range(ant, world.food_patches, config.ants.food_sense_radius)
+        patch = _food_within_range(world, ant, world.food_patches, config.ants.food_sense_radius)
         if patch is not None:
             target_x = patch.x
             target_y = patch.y
@@ -209,7 +252,9 @@ def _choose_step(
     else:
         target_heading = None
         distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
-        desired_distance = world.nest.radius + 4 + int(round(ant.range_bias * 14))
+        desired_distance = world.nest.radius + 6 + int(
+            round(ant.range_bias * max(18, min(world.width, world.height) * 0.45))
+        )
         if ant.carrying_food or (hungry and world.nest.stored_food > 0):
             base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
         else:
@@ -244,6 +289,7 @@ def _choose_step(
         return min(
             free_candidates,
             key=lambda cell: (
+                _terrain_move_cost(world, cell[0], cell[1]),
                 -_wall_margin(world, cell) if near_wall else 0,
                 world.stale_field.get(cell, 0.0),
                 abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
@@ -256,6 +302,7 @@ def _choose_step(
         free_candidates,
         key=lambda cell: (
             _distance(cell[0], cell[1], target_x, target_y),
+            _terrain_move_cost(world, cell[0], cell[1]),
             abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
             world.stale_field.get(cell, 0.0) - current_stale * 0.4,
             -_wall_margin(world, cell) if near_wall else 0,
@@ -356,8 +403,9 @@ def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: i
         return
     if config.disturbance_food_shift:
         for patch in world.food_patches:
-            patch.x = _clamp(patch.x + config.disturbance_food_shift_dx, 0, world.width - 1)
-            patch.y = _clamp(patch.y + config.disturbance_food_shift_dy, 0, world.height - 1)
+            shifted_x = _clamp(patch.x + config.disturbance_food_shift_dx, 0, world.width - 1)
+            shifted_y = _clamp(patch.y + config.disturbance_food_shift_dy, 0, world.height - 1)
+            patch.x, patch.y = _nearest_open_cell(world, shifted_x, shifted_y)
         world.emit(
             Event(
                 tick=tick,
@@ -417,24 +465,24 @@ def _deposit_trail(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxCo
         return
     key = (ant.x, ant.y)
     if ant.carrying_food:
-        world.food_trail[key] = world.food_trail.get(key, 0.0) + config.ants.trail_deposit
+        world.food_trail[key] = world.food_trail.get(key, 0.0) + config.ants.trail_deposit * _terrain_trail_factor(world, ant.x, ant.y)
         world.emit(
             Event(
                 tick=tick,
                 event_type="trail_deposit",
                 organism_id=ant.ant_id,
-                habitat_id=None,
+                habitat_id=terrain_kind(world, ant.x, ant.y),
                 payload={"trail_kind": "food", "x": ant.x, "y": ant.y, "strength": round(world.food_trail[key], 4)},
             )
         )
     else:
-        world.home_trail[key] = world.home_trail.get(key, 0.0) + config.ants.home_trail_deposit
+        world.home_trail[key] = world.home_trail.get(key, 0.0) + config.ants.home_trail_deposit * _terrain_trail_factor(world, ant.x, ant.y)
         world.emit(
             Event(
                 tick=tick,
                 event_type="trail_deposit",
                 organism_id=ant.ant_id,
-                habitat_id=None,
+                habitat_id=terrain_kind(world, ant.x, ant.y),
                 payload={"trail_kind": "home", "x": ant.x, "y": ant.y, "strength": round(world.home_trail[key], 4)},
             )
         )

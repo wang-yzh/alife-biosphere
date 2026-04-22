@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .config import AntSandboxConfig
 from .simulation import step_world
-from .world import AntSandboxWorld, initialize_world
+from .world import AntSandboxWorld, initialize_world, terrain_kind
 
 
 def _trail_points(field: dict[tuple[int, int], float], minimum: float = 0.04) -> list[dict[str, float]]:
@@ -14,6 +14,13 @@ def _trail_points(field: dict[tuple[int, int], float], minimum: float = 0.04) ->
         {"x": float(x), "y": float(y), "value": round(value, 4)}
         for (x, y), value in sorted(field.items())
         if value >= minimum
+    ]
+
+
+def _terrain_points(world: AntSandboxWorld) -> list[dict[str, object]]:
+    return [
+        {"x": x, "y": y, "kind": kind}
+        for (x, y), kind in sorted(world.terrain.items(), key=lambda item: (item[0][1], item[0][0]))
     ]
 
 
@@ -31,6 +38,8 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "ant_id": ant.ant_id,
             "x": ant.x,
             "y": ant.y,
+            "heading": ant.heading,
+            "terrain_kind": terrain_kind(world, ant.x, ant.y),
             "carrying_food": ant.carrying_food,
             "delivered_food": ant.delivered_food,
             "age": ant.age,
@@ -91,6 +100,7 @@ def build_ant_observer_payload(
         "width": config.width,
         "height": config.height,
         "total_ticks": config.ticks,
+        "terrain": _terrain_points(world),
         "nest": {
             "x": world.nest.x,
             "y": world.nest.y,
@@ -126,6 +136,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       --home-trail: rgba(217, 153, 72, 0.22);
       --ant: #2c241d;
       --ant-carry: #d8893c;
+      --dense-grass: rgba(106, 141, 84, 0.42);
+      --sand: rgba(214, 184, 129, 0.44);
+      --rock: rgba(92, 86, 81, 0.78);
       --birth: rgba(51, 165, 116, 0.9);
       --death: rgba(156, 52, 43, 0.86);
       --shadow: 0 18px 48px rgba(35, 26, 17, 0.12);
@@ -365,6 +378,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <span class="tick" id="tick-label"></span>
       </div>
       <div class="legend">
+        <span><i class="dot" style="background: var(--dense-grass)"></i>dense grass</span>
+        <span><i class="dot" style="background: var(--sand)"></i>sand</span>
+        <span><i class="dot" style="background: var(--rock)"></i>rock</span>
         <span><i class="dot" style="background: var(--nest)"></i>nest</span>
         <span><i class="dot" style="background: var(--food)"></i>food</span>
         <span><i class="dot" style="background: var(--ant)"></i>ant</span>
@@ -414,6 +430,11 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
 
     const widthScale = canvas.width / data.width;
     const heightScale = canvas.height / data.height;
+    const terrainPalette = {{
+      dense_grass: 'rgba(106, 141, 84, 0.42)',
+      sand: 'rgba(214, 184, 129, 0.44)',
+      rock: 'rgba(92, 86, 81, 0.78)',
+    }};
 
     let index = 0;
     let playing = false;
@@ -455,6 +476,20 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       }}
     }}
 
+    function drawTerrain() {{
+      for (const cell of data.terrain) {{
+        const fill = terrainPalette[cell.kind];
+        if (!fill) continue;
+        ctx.fillStyle = fill;
+        ctx.fillRect(
+          cell.x * widthScale,
+          cell.y * heightScale,
+          Math.max(1.2, widthScale),
+          Math.max(1.2, heightScale),
+        );
+      }}
+    }}
+
     function drawTrails(frame) {{
       for (const point of frame.home_trail) {{
         ctx.fillStyle = `rgba(217, 153, 72, ${{Math.min(0.30, point.value / 8)}})`;
@@ -471,22 +506,35 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     }}
 
     function drawNest() {{
+      const x = toCanvasX(data.nest.x);
+      const y = toCanvasY(data.nest.y);
+      ctx.fillStyle = 'rgba(126, 94, 66, 0.14)';
+      ctx.beginPath();
+      ctx.arc(x, y, (data.nest.radius + 4.5) * widthScale, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = 'rgba(126, 94, 66, 0.96)';
       ctx.beginPath();
-      ctx.arc(toCanvasX(data.nest.x), toCanvasY(data.nest.y), (data.nest.radius + 1.8) * widthScale, 0, Math.PI * 2);
+      ctx.arc(x, y, (data.nest.radius + 1.8) * widthScale, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = 'rgba(255, 246, 235, 0.92)';
       ctx.beginPath();
-      ctx.arc(toCanvasX(data.nest.x), toCanvasY(data.nest.y), (data.nest.radius + 0.7) * widthScale, 0, Math.PI * 2);
+      ctx.arc(x, y, (data.nest.radius + 0.7) * widthScale, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#4d3726';
       ctx.beginPath();
-      ctx.arc(toCanvasX(data.nest.x), toCanvasY(data.nest.y), data.nest.radius * widthScale, 0, Math.PI * 2);
+      ctx.arc(x, y, data.nest.radius * widthScale, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 248, 239, 0.84)';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(x + (data.nest.radius + 0.8) * widthScale, y);
+      ctx.lineTo(x + (data.nest.radius + 3.1) * widthScale, y);
+      ctx.stroke();
     }}
 
     function drawFood(frame) {{
       for (const patch of frame.food_patches) {{
+        if (patch.amount <= 0) continue;
         const alpha = patch.max_amount === 0 ? 0 : Math.max(0.08, patch.amount / patch.max_amount);
         ctx.fillStyle = `rgba(152, 184, 95, ${{alpha}})`;
         ctx.strokeStyle = 'rgba(93, 120, 44, 0.28)';
@@ -495,14 +543,17 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         ctx.arc(toCanvasX(patch.x), toCanvasY(patch.y), (patch.radius + 1.3) * widthScale, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
+        ctx.fillStyle = 'rgba(58, 82, 28, 0.58)';
+        ctx.font = '11px Menlo, monospace';
+        ctx.fillText(String(patch.amount), toCanvasX(patch.x) - 8, toCanvasY(patch.y) + 4);
       }}
     }}
 
     function antColor(ant) {{
       if (ant.carrying_food) return '#d8893c';
       let hash = 0;
-      for (let i = 0; i < ant.lineage_id.length; i += 1) {{
-        hash = ((hash << 5) - hash + ant.lineage_id.charCodeAt(i)) | 0;
+      for (let i = 0; i < ant.ant_id.length; i += 1) {{
+        hash = ((hash << 5) - hash + ant.ant_id.charCodeAt(i)) | 0;
       }}
       const hue = Math.abs(hash) % 360;
       return `hsl(${{hue}} 30% 22%)`;
@@ -512,21 +563,30 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       for (const ant of frame.ants) {{
         const x = toCanvasX(ant.x);
         const y = toCanvasY(ant.y);
-        if (ant.just_born) {{
-          ctx.strokeStyle = 'rgba(51, 165, 116, 0.92)';
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.arc(x, y, 9, 0, Math.PI * 2);
-          ctx.stroke();
-        }}
         ctx.fillStyle = antColor(ant);
+        const heading = ant.heading || 0;
+        const dx = Math.cos(heading);
+        const dy = Math.sin(heading);
+        const abdomenX = x - dx * 5;
+        const abdomenY = y - dy * 5;
+        const headX = x + dx * 4;
+        const headY = y + dy * 4;
         ctx.beginPath();
-        ctx.ellipse(x, y, ant.carrying_food ? 6 : 5, ant.carrying_food ? 4.8 : 4, 0, 0, Math.PI * 2);
+        ctx.arc(abdomenX, abdomenY, 3.6, 0, Math.PI * 2);
+        ctx.arc(x, y, 2.9, 0, Math.PI * 2);
+        ctx.arc(headX, headY, 2.4, 0, Math.PI * 2);
         ctx.fill();
-        if (ant.just_moved) {{
-          ctx.strokeStyle = 'rgba(255,255,255,0.82)';
-          ctx.lineWidth = 1.4;
-          ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.26)';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(abdomenX, abdomenY);
+        ctx.lineTo(headX, headY);
+        ctx.stroke();
+        if (ant.carrying_food) {{
+          ctx.fillStyle = 'rgba(216, 137, 60, 0.96)';
+          ctx.beginPath();
+          ctx.arc(headX + dx * 3, headY + dy * 3, 2.3, 0, Math.PI * 2);
+          ctx.fill();
         }}
         const highlighted = ant.ant_id === (pinnedAntId || hoverAntId);
         if (highlighted) {{
@@ -560,6 +620,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
 
     function drawFrame(frame) {{
       drawBackground();
+      drawTerrain();
       drawTrails(frame);
       drawFood(frame);
       drawNest();
@@ -600,6 +661,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <strong>${{selected.ant_id}}</strong>
           <div class="tiny">pos = (${{selected.x}}, ${{selected.y}})</div>
           <div class="tiny">carrying = ${{selected.carrying_food ? 'yes' : 'no'}}</div>
+          <div class="tiny">terrain = ${{selected.terrain_kind}}</div>
           <div class="tiny">delivered = ${{selected.delivered_food}}</div>
           <div class="tiny">age = ${{selected.age}}</div>
           <div class="tiny">range = ${{selected.range_bias.toFixed(2)}}</div>

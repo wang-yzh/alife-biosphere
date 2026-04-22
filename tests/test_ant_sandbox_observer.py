@@ -7,16 +7,18 @@ from alife_biosphere.ant_sandbox.observer import build_ant_observer_payload, wri
 
 def test_ant_sandbox_observer_payload_contains_world_frames() -> None:
     payload = build_ant_observer_payload(AntSandboxConfig(ticks=40), title="Ant Observer")
-    assert payload["width"] == 64
-    assert payload["height"] == 48
+    assert payload["width"] == 128
+    assert payload["height"] == 96
     assert payload["total_ticks"] == 40
     assert payload["generated_at"]
+    assert payload["terrain"]
     assert payload["frames"]
     first = payload["frames"][0]
     assert "ants" in first
     assert "food_patches" in first
     assert "food_trail" in first
     assert "home_trail" in first
+    assert "terrain_kind" in first["ants"][0]
 
 
 def test_ant_sandbox_observer_html_writes_canvas_window(tmp_path: Path) -> None:

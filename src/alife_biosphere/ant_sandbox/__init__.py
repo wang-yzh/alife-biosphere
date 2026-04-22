@@ -1,6 +1,6 @@
 """Ant sandbox substrate branch."""
 
-from .config import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig
+from .config import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig, TerrainConfig
 from .observer import build_ant_observer_payload, write_ant_live_observer_html, write_ant_observer_html
 from .reporting import summarize_behavior_roles
 from .simulation import AntSandboxResult, run_simulation, step_world
@@ -15,6 +15,7 @@ __all__ = [
     "FoodPatchConfig",
     "Nest",
     "NestConfig",
+    "TerrainConfig",
     "SandboxAnt",
     "AntSandboxWorld",
     "DEFAULT_VALIDATION_SEEDS",
