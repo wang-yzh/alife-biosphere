@@ -78,9 +78,15 @@ They are no longer the shortest current control path.
 - `ant_sandbox_north_star_v1.md`: north star for the new ant-sandbox branch
 - `ant_sandbox_world_design_v1.md`: current design contract for the sandbox
   world type
+- `ant_sandbox_world_design_v2.md`: scale-up design contract for larger maps,
+  terrain, richer observer presentation, and persistent food-source identity
 - `ant_sandbox_build_plan_v1.md`: milestone order for the new sandbox branch
+- `ant_sandbox_build_plan_v2.md`: scale-up milestone order after the first
+  sandbox core has passed its hard gates
 - `ant_sandbox_m0_substrate_spec_v1.md`: first substrate spec for local-space
   world initialization
+- `ant_sandbox_m7_scale_up_spec_v1.md`: next implementation freeze for larger
+  maps, terrain, and richer world-first presentation
 - `ant_sandbox_m1_foraging_slice_2026-04-21.md`: first behavior slice for
   local movement, pickup, return, and unload
 - `ant_sandbox_m2_pheromone_slice_2026-04-21.md`: first trace-field and

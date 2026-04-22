@@ -61,6 +61,23 @@ Still provisional:
 - disturbance recovery under harder settings
 - observer integration of role and disturbance overlays
 
+## Next Phase
+
+The next active phase is no longer “prove the small sandbox works”.
+
+It is:
+
+- larger showcase map
+- terrain-aware surface world
+- persistent food-source identity
+- richer observer presentation
+
+The next current planning set is:
+
+- `ant_sandbox_world_design_v2.md`
+- `ant_sandbox_build_plan_v2.md`
+- `ant_sandbox_m7_scale_up_spec_v1.md`
+
 ## Current Working Interpretation
 
 The branch is no longer just a substrate experiment.
