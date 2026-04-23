@@ -61,6 +61,7 @@ class FoodPatchConfig:
     regrowth_rate: int = 0
     relocate_on_depletion: bool = True
     respawn_delay_ticks: int = 28
+    regrow_only_when_empty: bool = False
 
     def __post_init__(self) -> None:
         if self.radius <= 0:
@@ -90,6 +91,7 @@ class AntAgentConfig:
     food_pickup_radius: int = 1
     nest_drop_radius: int = 3
     max_age: int = 1000
+    allow_spawning: bool = True
     spawn_food_cost: int = 8
     spawn_interval: int = 10
     pheromone_enabled: bool = True
@@ -103,6 +105,9 @@ class AntAgentConfig:
     metabolism_cost: float = 0.04
     hunger_return_threshold: float = 6.0
     nest_feed_amount: float = 4.0
+    hostility_radius: int = 3
+    hostility_weight: float = 1.0
+    foreign_trail_weight: float = 0.25
 
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
@@ -123,6 +128,12 @@ class AntAgentConfig:
             raise ValueError("nest_drop_radius must be non-negative")
         if self.max_age <= 0:
             raise ValueError("max_age must be positive")
+        if self.hostility_radius < 0:
+            raise ValueError("hostility_radius must be non-negative")
+        if self.hostility_weight < 0:
+            raise ValueError("hostility_weight must be non-negative")
+        if self.foreign_trail_weight < 0:
+            raise ValueError("foreign_trail_weight must be non-negative")
         if self.spawn_food_cost < 0:
             raise ValueError("spawn_food_cost must be non-negative")
         if self.spawn_interval <= 0:

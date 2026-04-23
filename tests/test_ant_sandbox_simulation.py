@@ -1,4 +1,11 @@
-from alife_biosphere.ant_sandbox import AntAgentConfig, AntSandboxConfig, FoodPatchConfig, NestConfig, TerrainConfig
+from alife_biosphere.ant_sandbox import (
+    AntAgentConfig,
+    AntSandboxConfig,
+    FoodPatchConfig,
+    NestConfig,
+    TerrainConfig,
+    build_showcase_config,
+)
 from alife_biosphere.ant_sandbox.reporting import summarize_behavior_roles
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 from alife_biosphere.ant_sandbox.validation import summarize_validation_status, ValidationCase
@@ -279,6 +286,52 @@ def test_depleted_food_patch_reseeds_to_new_site() -> None:
     assert reseed_events
     event = reseed_events[0]
     assert (event.payload["from_x"], event.payload["from_y"]) != (event.payload["to_x"], event.payload["to_y"])
+
+
+def test_depleted_food_patch_can_regrow_in_place_after_delay() -> None:
+    config = AntSandboxConfig(
+        ticks=20,
+        width=64,
+        height=48,
+        colonies=(),
+        nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig(
+                "food_a",
+                x=18,
+                y=24,
+                radius=1,
+                amount=1,
+                max_amount=5,
+                regrowth_rate=2,
+                relocate_on_depletion=False,
+                respawn_delay_ticks=4,
+                regrow_only_when_empty=True,
+            ),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=1,
+            initial_energy=20.0,
+            max_energy=20.0,
+            metabolism_cost=0.01,
+            hunger_return_threshold=0.0,
+            pheromone_enabled=False,
+            food_sense_radius=18,
+        ),
+    )
+    result = run_simulation(config)
+    regrow_events = [event for event in result.events if event.event_type == "food_patch_regrow"]
+    assert regrow_events
+    event = regrow_events[0]
+    assert (event.payload["x"], event.payload["y"]) == (18, 24)
+
+
+def test_showcase_config_disables_births_and_extends_lifespan() -> None:
+    config = build_showcase_config(ticks=240)
+    assert config.ants.allow_spawning is False
+    assert config.ants.max_age > config.ticks
 
 
 def test_validation_status_evaluates_expected_metric_states() -> None:

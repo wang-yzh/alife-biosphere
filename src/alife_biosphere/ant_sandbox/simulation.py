@@ -96,41 +96,6 @@ def _distance_field(world: AntSandboxWorld, key: str, goal: tuple[int, int]) -> 
     return distances
 
 
-def _neighbor_cells(world: AntSandboxWorld, cell: tuple[int, int]) -> list[tuple[int, int]]:
-    x, y = cell
-    neighbors: list[tuple[int, int]] = []
-    for dy in (-1, 0, 1):
-        for dx in (-1, 0, 1):
-            if dx == 0 and dy == 0:
-                continue
-            nx = _clamp(x + dx, 0, world.width - 1)
-            ny = _clamp(y + dy, 0, world.height - 1)
-            if _terrain_blocked(world, nx, ny):
-                continue
-            neighbors.append((nx, ny))
-    return neighbors
-
-
-def _distance_field(world: AntSandboxWorld, key: str, goal: tuple[int, int]) -> dict[tuple[int, int], float]:
-    cached = world.navigation_cache.get(key)
-    if cached is not None:
-        return cached
-    distances: dict[tuple[int, int], float] = {goal: 0.0}
-    heap: list[tuple[float, tuple[int, int]]] = [(0.0, goal)]
-    while heap:
-        current_cost, cell = heapq.heappop(heap)
-        if current_cost > distances.get(cell, float("inf")):
-            continue
-        for neighbor in _neighbor_cells(world, cell):
-            step_cost = _terrain_move_cost(world, neighbor[0], neighbor[1])
-            next_cost = current_cost + step_cost
-            if next_cost < distances.get(neighbor, float("inf")):
-                distances[neighbor] = next_cost
-                heapq.heappush(heap, (next_cost, neighbor))
-    world.navigation_cache[key] = distances
-    return distances
-
-
 def _home_colony(world: AntSandboxWorld, ant: SandboxAnt) -> Colony:
     return world.colonies[ant.colony_id]
 
@@ -211,6 +176,29 @@ def _local_density(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int
         if max(abs(other.x - cell[0]), abs(other.y - cell[1])) <= radius:
             density += 1
     return density
+
+
+def _enemy_density(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int], radius: int) -> int:
+    density = 0
+    for other in world.ants:
+        if not other.alive or other.ant_id == ant.ant_id or other.colony_id == ant.colony_id:
+            continue
+        if max(abs(other.x - cell[0]), abs(other.y - cell[1])) <= radius:
+            density += 1
+    return density
+
+
+def _foreign_trail_pressure(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int]) -> float:
+    pressure = 0.0
+    for colony_id, field in world.food_trail.items():
+        if colony_id == ant.colony_id:
+            continue
+        pressure += field.get(cell, 0.0)
+    for colony_id, field in world.home_trail.items():
+        if colony_id == ant.colony_id:
+            continue
+        pressure += field.get(cell, 0.0) * 0.7
+    return pressure
 
 
 def _blocked_neighbor_count(world: AntSandboxWorld, cell: tuple[int, int]) -> int:
@@ -356,11 +344,24 @@ def _regrow_food(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) ->
                     )
                 )
                 reseeds += 1
-            elif not patch.relocate_on_depletion and patch.regrowth_rate > 0:
+            elif not patch.relocate_on_depletion and patch.regrowth_rate > 0 and patch.empty_ticks >= patch.respawn_delay_ticks:
+                before = patch.amount
                 patch.amount = min(patch.max_amount, patch.amount + patch.regrowth_rate)
+                if before == 0 and patch.amount > 0:
+                    world.emit(
+                        Event(
+                            tick=tick,
+                            event_type="food_patch_regrow",
+                            organism_id=None,
+                            habitat_id=patch.patch_id,
+                            payload={"x": patch.x, "y": patch.y, "amount": patch.amount},
+                        )
+                    )
             continue
         patch.empty_ticks = 0
         if patch.regrowth_rate <= 0:
+            continue
+        if patch.regrow_only_when_empty:
             continue
         if patch.amount >= patch.max_amount:
             continue
@@ -425,6 +426,24 @@ def _task_trail_bonus(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, 
     if target_x is not None and target_y is not None:
         return food_field.get(cell, 0.0) * 0.6
     return food_field.get(cell, 0.0) * 0.28 - home_field.get(cell, 0.0) * 0.16
+
+
+def _hostility_penalty(
+    world: AntSandboxWorld,
+    ant: SandboxAnt,
+    config: AntSandboxConfig,
+    cell: tuple[int, int],
+    exploration_phase: bool,
+) -> float:
+    if config.ants.hostility_radius <= 0:
+        return 0.0
+    enemy_density = _enemy_density(world, ant, cell, config.ants.hostility_radius)
+    foreign_trail = _foreign_trail_pressure(world, ant, cell)
+    phase_weight = 1.0 if exploration_phase else 0.45
+    return (
+        enemy_density * config.ants.hostility_weight * phase_weight
+        + foreign_trail * config.ants.foreign_trail_weight * phase_weight
+    )
 
 
 def _decay_stale_field(world: AntSandboxWorld) -> None:
@@ -528,6 +547,7 @@ def _choose_step(
             free_candidates,
             key=lambda cell: (
                 (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell) + home_field.get(cell, 0.0) * 0.18) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
+                _hostility_penalty(world, ant, config, cell, exploration_phase),
                 -_wall_margin(world, cell) * 4 if edge_stuck else 0,
                 _blocked_neighbor_count(world, cell) * 3 if obstacle_stuck else 0,
                 -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
@@ -545,6 +565,7 @@ def _choose_step(
         free_candidates,
         key=lambda cell: (
             (_local_density(world, ant, cell, radius=2) * 0.8 + _revisit_penalty(ant, cell) * 0.2) if launch_exploration else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
+            _hostility_penalty(world, ant, config, cell, exploration_phase),
             -_wall_margin(world, cell) * 4 if edge_stuck else 0,
             _blocked_neighbor_count(world, cell) * 3 if obstacle_stuck else 0,
             -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
@@ -778,6 +799,11 @@ def _update_stale_signal(world: AntSandboxWorld, ant: SandboxAnt) -> None:
 def _update_food_source_competition(world: AntSandboxWorld, tick: int) -> int:
     contested_sources = 0
     for patch in world.food_patches:
+        nearby_colonies = {
+            ant.colony_id
+            for ant in world.ants
+            if ant.alive and _distance(ant.x, ant.y, patch.x, patch.y) <= patch.radius + 6
+        }
         nearby_ants = sum(
             1
             for ant in world.ants
@@ -800,7 +826,8 @@ def _update_food_source_competition(world: AntSandboxWorld, tick: int) -> int:
             4,
         )
         is_contested = (
-            nearby_ants >= 4
+            len(nearby_colonies) >= 2
+            or nearby_ants >= 4
             or patch.recent_pickups >= 2
             or (depletion_ratio >= 0.4 and nearby_ants >= 2)
         )
@@ -817,6 +844,7 @@ def _update_food_source_competition(world: AntSandboxWorld, tick: int) -> int:
                         "x": patch.x,
                         "y": patch.y,
                         "nearby_ants": nearby_ants,
+                        "nearby_colonies": len(nearby_colonies),
                         "carrying_nearby": carrying_nearby,
                         "recent_pickups": patch.recent_pickups,
                         "remaining_amount": patch.amount,
@@ -828,7 +856,21 @@ def _update_food_source_competition(world: AntSandboxWorld, tick: int) -> int:
     return contested_sources
 
 
+def _count_hostility_contacts(world: AntSandboxWorld, config: AntSandboxConfig) -> int:
+    if config.ants.hostility_radius <= 0:
+        return 0
+    contacts = 0
+    for ant in world.ants:
+        if not ant.alive:
+            continue
+        if _enemy_density(world, ant, (ant.x, ant.y), config.ants.hostility_radius) > 0:
+            contacts += 1
+    return contacts
+
+
 def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> bool:
+    if not config.ants.allow_spawning:
+        return False
     if tick % config.ants.spawn_interval != 0:
         return False
     if world.alive_count() >= config.ants.max_population * max(1, len(world.colonies)):
@@ -888,6 +930,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     upkeep = 0
     reseeds = 0
     contested_sources = 0
+    hostility_contacts = 0
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
     _decay_stale_field(world)
@@ -950,6 +993,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     if _spawn_ant(world, config, tick):
         births += 1
     contested_sources += _update_food_source_competition(world, tick)
+    hostility_contacts += _count_hostility_contacts(world, config)
     summary = {
         "ticks": world.tick,
         "alive": world.alive_count(),
@@ -966,6 +1010,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "upkeep": upkeep,
         "food_reseeds": reseeds,
         "contested_sources": contested_sources,
+        "hostility_contacts": hostility_contacts,
         "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
         "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
         "home_trail_cells": sum(len(field) for field in world.home_trail.values()),

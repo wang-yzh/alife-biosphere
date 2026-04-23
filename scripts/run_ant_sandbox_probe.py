@@ -30,12 +30,15 @@ def main() -> None:
     (output_dir / "world.json").write_text(json.dumps(world.to_dict(), indent=2), encoding="utf-8")
     tick_summaries = [event.payload for event in result.events if event.event_type == "tick_summary"]
     derived = {
+        "births": sum(1 for event in result.events if event.event_type == "ant_birth"),
         "pickups": sum(1 for event in result.events if event.event_type == "food_pickup"),
         "unloads": sum(1 for event in result.events if event.event_type == "food_unload"),
         "feeds": sum(1 for event in result.events if event.event_type == "nest_feed"),
         "upkeep_consumed": sum(event.payload["consumed"] for event in result.events if event.event_type == "nest_upkeep"),
         "food_reseeds": sum(1 for event in result.events if event.event_type == "food_patch_reseed"),
+        "food_regrows": sum(1 for event in result.events if event.event_type == "food_patch_regrow"),
         "contested_sources": sum(1 for event in result.events if event.event_type == "food_source_contested"),
+        "hostility_contacts": sum(summary["hostility_contacts"] for summary in tick_summaries),
         "nest_food": world.delivered_food_total(),
         "colony_food": {colony_id: colony.nest.stored_food for colony_id, colony in world.colonies.items()},
         "food_remaining": world.food_remaining(),

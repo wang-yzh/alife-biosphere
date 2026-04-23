@@ -45,6 +45,7 @@ class FoodPatch:
     regrowth_rate: int = 0
     relocate_on_depletion: bool = True
     respawn_delay_ticks: int = 28
+    regrow_only_when_empty: bool = False
     empty_ticks: int = 0
     respawn_count: int = 0
     nearby_ants: int = 0
@@ -311,6 +312,7 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
             regrowth_rate=patch.regrowth_rate,
             relocate_on_depletion=patch.relocate_on_depletion,
             respawn_delay_ticks=patch.respawn_delay_ticks,
+            regrow_only_when_empty=patch.regrow_only_when_empty,
         )
         for patch in config.food_patches
     ]
