@@ -10,15 +10,15 @@ from .config import AntAgentConfig, AntSandboxConfig, ColonyConfig, FoodPatchCon
 def _randomized_food_patches(seed: int, colonies: tuple[ColonyConfig, ...]) -> tuple[FoodPatchConfig, ...]:
     rng = make_rng(seed, "ant-sandbox:showcase:food")
     specs = [
-        ("food_northwest", 0.28, 0.24, 4, 34, 0.92, 42, 2),
-        ("food_mid_north", 0.54, 0.22, 5, 58, 1.08, 48, 2),
-        ("food_mid_core", 0.56, 0.48, 6, 88, 1.28, 56, 3),
-        ("food_southeast", 0.78, 0.72, 7, 120, 1.48, 66, 4),
-        ("food_south_pass", 0.56, 0.82, 6, 84, 1.18, 54, 3),
-        ("food_far_east", 0.86, 0.42, 6, 92, 1.36, 60, 3),
+        ("food_northwest", 0.28, 0.24, 4, 34, 0.9, 16),
+        ("food_north", 0.55, 0.18, 5, 56, 1.0, 18),
+        ("food_mid", 0.52, 0.50, 5, 68, 1.1, 20),
+        ("food_southeast", 0.78, 0.72, 7, 120, 1.45, 24),
+        ("food_south", 0.60, 0.82, 6, 84, 1.2, 22),
+        ("food_far_east", 0.86, 0.42, 6, 92, 1.35, 24),
     ]
     patches: list[FoodPatchConfig] = []
-    for patch_id, px, py, radius, amount, value_score, respawn_delay, regrowth_rate in specs:
+    for patch_id, px, py, radius, amount, value_score, respawn_delay in specs:
         jitter_x = rng.randint(-6, 6)
         jitter_y = rng.randint(-5, 5)
         amount_jitter = rng.randint(-10, 14)
@@ -47,10 +47,8 @@ def _randomized_food_patches(seed: int, colonies: tuple[ColonyConfig, ...]) -> t
                 amount=final_amount,
                 max_amount=final_amount,
                 value_score=max(0.65, round(value_score + value_jitter, 2)),
-                regrowth_rate=regrowth_rate,
-                relocate_on_depletion=False,
+                regrowth_rate=0,
                 respawn_delay_ticks=respawn_delay,
-                regrow_only_when_empty=True,
             )
         )
     return tuple(patches)
