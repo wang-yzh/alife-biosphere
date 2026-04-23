@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import heapq
 from math import atan2, cos, dist, sin, tau
 
 from ..events import Event
@@ -58,6 +59,76 @@ def _nearest_open_cell(world: AntSandboxWorld, x: int, y: int) -> tuple[int, int
                 if not _terrain_blocked(world, nx, ny):
                     return nx, ny
     return x, y
+
+
+def _neighbor_cells(world: AntSandboxWorld, cell: tuple[int, int]) -> list[tuple[int, int]]:
+    x, y = cell
+    neighbors: list[tuple[int, int]] = []
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dx == 0 and dy == 0:
+                continue
+            nx = _clamp(x + dx, 0, world.width - 1)
+            ny = _clamp(y + dy, 0, world.height - 1)
+            if _terrain_blocked(world, nx, ny):
+                continue
+            neighbors.append((nx, ny))
+    return neighbors
+
+
+def _distance_field(world: AntSandboxWorld, key: str, goal: tuple[int, int]) -> dict[tuple[int, int], float]:
+    cached = world.navigation_cache.get(key)
+    if cached is not None:
+        return cached
+    distances: dict[tuple[int, int], float] = {goal: 0.0}
+    heap: list[tuple[float, tuple[int, int]]] = [(0.0, goal)]
+    while heap:
+        current_cost, cell = heapq.heappop(heap)
+        if current_cost > distances.get(cell, float("inf")):
+            continue
+        for neighbor in _neighbor_cells(world, cell):
+            step_cost = _terrain_move_cost(world, neighbor[0], neighbor[1])
+            next_cost = current_cost + step_cost
+            if next_cost < distances.get(neighbor, float("inf")):
+                distances[neighbor] = next_cost
+                heapq.heappush(heap, (next_cost, neighbor))
+    world.navigation_cache[key] = distances
+    return distances
+
+
+def _neighbor_cells(world: AntSandboxWorld, cell: tuple[int, int]) -> list[tuple[int, int]]:
+    x, y = cell
+    neighbors: list[tuple[int, int]] = []
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dx == 0 and dy == 0:
+                continue
+            nx = _clamp(x + dx, 0, world.width - 1)
+            ny = _clamp(y + dy, 0, world.height - 1)
+            if _terrain_blocked(world, nx, ny):
+                continue
+            neighbors.append((nx, ny))
+    return neighbors
+
+
+def _distance_field(world: AntSandboxWorld, key: str, goal: tuple[int, int]) -> dict[tuple[int, int], float]:
+    cached = world.navigation_cache.get(key)
+    if cached is not None:
+        return cached
+    distances: dict[tuple[int, int], float] = {goal: 0.0}
+    heap: list[tuple[float, tuple[int, int]]] = [(0.0, goal)]
+    while heap:
+        current_cost, cell = heapq.heappop(heap)
+        if current_cost > distances.get(cell, float("inf")):
+            continue
+        for neighbor in _neighbor_cells(world, cell):
+            step_cost = _terrain_move_cost(world, neighbor[0], neighbor[1])
+            next_cost = current_cost + step_cost
+            if next_cost < distances.get(neighbor, float("inf")):
+                distances[neighbor] = next_cost
+                heapq.heappush(heap, (next_cost, neighbor))
+    world.navigation_cache[key] = distances
+    return distances
 
 
 def _home_colony(world: AntSandboxWorld, ant: SandboxAnt) -> Colony:
@@ -142,6 +213,20 @@ def _local_density(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int
     return density
 
 
+def _blocked_neighbor_count(world: AntSandboxWorld, cell: tuple[int, int]) -> int:
+    x, y = cell
+    blocked = 0
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dx == 0 and dy == 0:
+                continue
+            nx = _clamp(x + dx, 0, world.width - 1)
+            ny = _clamp(y + dy, 0, world.height - 1)
+            if _terrain_blocked(world, nx, ny):
+                blocked += 1
+    return blocked
+
+
 def _remember_position(ant: SandboxAnt) -> None:
     ant.recent_positions.append((ant.x, ant.y))
     if len(ant.recent_positions) > 12:
@@ -165,6 +250,15 @@ def _edge_stuck(world: AntSandboxWorld, ant: SandboxAnt) -> bool:
     if len(recent) < 6:
         return False
     return len(set(recent)) <= 4
+
+
+def _obstacle_stuck(world: AntSandboxWorld, ant: SandboxAnt) -> bool:
+    recent = ant.recent_positions[-8:]
+    if len(recent) < 6:
+        return False
+    if len(set(recent)) > 5:
+        return False
+    return any(_blocked_neighbor_count(world, cell) >= 2 for cell in recent)
 
 
 def _egress_spread_heading(ant: SandboxAnt, base_heading: float) -> float:
@@ -351,6 +445,7 @@ def _choose_step(
     home_nest = _home_nest(world, ant)
     target_x: int | None = None
     target_y: int | None = None
+    target_key: str | None = None
     hungry = ant.energy <= config.ants.hunger_return_threshold
     distance_from_nest = _distance(ant.x, ant.y, home_nest.x, home_nest.y)
     launch_exploration = ant.outbound_commit_ticks > 6 and distance_from_nest <= home_nest.radius + 7
@@ -359,6 +454,7 @@ def _choose_step(
     if ant.carrying_food or (hungry and home_nest.stored_food > 0):
         target_x = home_nest.x
         target_y = home_nest.y
+        target_key = f"nest:{ant.colony_id}:{home_nest.x}:{home_nest.y}"
     else:
         patch = None if launch_exploration else task_patch
         if patch is None:
@@ -366,6 +462,7 @@ def _choose_step(
         if patch is not None:
             target_x = patch.x
             target_y = patch.y
+            target_key = f"patch:{patch.patch_id}:{patch.x}:{patch.y}"
             ant.target_patch_id = patch.patch_id
         elif ant.outbound_commit_ticks <= 6 or distance_from_nest > home_nest.radius + 5:
             pheromone_target = _best_pheromone_cell(
@@ -379,6 +476,7 @@ def _choose_step(
                 nearest_patch = _nearest_food_patch(world, target_x, target_y)
                 if nearest_patch is not None:
                     ant.target_patch_id = nearest_patch.patch_id
+                    target_key = f"patch:{nearest_patch.patch_id}:{nearest_patch.x}:{nearest_patch.y}"
     if target_x is not None and target_y is not None:
         target_heading = _target_heading(ant.x, ant.y, target_x, target_y)
     else:
@@ -418,17 +516,20 @@ def _choose_step(
         return ant.x, ant.y, target_heading
     near_wall = _wall_margin(world, (ant.x, ant.y)) <= 2
     edge_stuck = _edge_stuck(world, ant)
+    obstacle_stuck = _obstacle_stuck(world, ant)
     current_stale = world.stale_field.get((ant.x, ant.y), 0.0)
     near_nest = _distance(ant.x, ant.y, home_nest.x, home_nest.y) <= home_nest.radius + 8
     exploration_phase = (not ant.carrying_food) and (not hungry) and (target_x is None or launch_exploration)
     force_egress = launch_exploration and not ant.carrying_food and not hungry
     home_field = _home_trail_field(world, ant.colony_id)
+    path_field = _distance_field(world, target_key, (target_x, target_y)) if target_key is not None and target_x is not None and target_y is not None else None
     if target_x is None or target_y is None:
         return min(
             free_candidates,
             key=lambda cell: (
                 (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell) + home_field.get(cell, 0.0) * 0.18) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
                 -_wall_margin(world, cell) * 4 if edge_stuck else 0,
+                _blocked_neighbor_count(world, cell) * 3 if obstacle_stuck else 0,
                 -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
                 -_task_trail_bonus(world, ant, cell, target_x, target_y),
                 _terrain_move_cost(world, cell[0], cell[1]),
@@ -445,7 +546,9 @@ def _choose_step(
         key=lambda cell: (
             (_local_density(world, ant, cell, radius=2) * 0.8 + _revisit_penalty(ant, cell) * 0.2) if launch_exploration else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
             -_wall_margin(world, cell) * 4 if edge_stuck else 0,
+            _blocked_neighbor_count(world, cell) * 3 if obstacle_stuck else 0,
             -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
+            path_field.get(cell, float("inf")) if path_field is not None else float("inf"),
             _distance(cell[0], cell[1], target_x, target_y),
             -_task_trail_bonus(world, ant, cell, target_x, target_y),
             _terrain_move_cost(world, cell[0], cell[1]),

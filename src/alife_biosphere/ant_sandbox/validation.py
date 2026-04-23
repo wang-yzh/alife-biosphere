@@ -50,8 +50,8 @@ def _base_config(seed: int) -> AntSandboxConfig:
         ),
         terrain=TerrainConfig(enabled=True),
         ants=AntAgentConfig(
-            food_sense_radius=10,
-            pheromone_sense_radius=12,
+            food_sense_radius=6,
+            pheromone_sense_radius=10,
             trail_deposit=2.0,
             trail_decay=0.02,
             hunger_return_threshold=5.0,

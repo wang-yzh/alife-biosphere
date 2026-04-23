@@ -46,9 +46,9 @@ def test_ant_sandbox_with_pheromones_beats_no_pheromones() -> None:
         ),
         terrain=TerrainConfig(enabled=True),
         ants=AntAgentConfig(
-            food_sense_radius=10,
+            food_sense_radius=6,
             pheromone_enabled=True,
-            pheromone_sense_radius=12,
+            pheromone_sense_radius=10,
             trail_deposit=2.0,
             trail_decay=0.02,
             hunger_return_threshold=5.0,
@@ -64,9 +64,9 @@ def test_ant_sandbox_with_pheromones_beats_no_pheromones() -> None:
         ),
         terrain=TerrainConfig(enabled=True),
         ants=AntAgentConfig(
-            food_sense_radius=10,
+            food_sense_radius=6,
             pheromone_enabled=False,
-            pheromone_sense_radius=12,
+            pheromone_sense_radius=10,
             trail_deposit=2.0,
             trail_decay=0.02,
             hunger_return_threshold=5.0,

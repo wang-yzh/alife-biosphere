@@ -93,6 +93,7 @@ class AntSandboxWorld:
     home_trail: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
     stale_field: dict[tuple[int, int], float] = field(default_factory=dict)
     terrain: dict[tuple[int, int], str] = field(default_factory=dict)
+    navigation_cache: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
 
     def emit(self, event: Event) -> None:
         self.events.append(event)
