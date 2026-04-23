@@ -17,6 +17,24 @@ def _trail_points(field: dict[tuple[int, int], float], minimum: float = 0.04) ->
     ]
 
 
+def _trail_layers(
+    fields: dict[str, dict[tuple[int, int], float]],
+    colonies: dict[str, object],
+    minimum: float = 0.04,
+) -> list[dict[str, object]]:
+    layers: list[dict[str, object]] = []
+    for colony_id, field in fields.items():
+        colony = colonies[colony_id]
+        layers.append(
+            {
+                "colony_id": colony_id,
+                "color": colony.color,
+                "points": _trail_points(field, minimum=minimum),
+            }
+        )
+    return layers
+
+
 def _terrain_points(world: AntSandboxWorld) -> list[dict[str, object]]:
     return [
         {"x": x, "y": y, "kind": kind}
@@ -36,6 +54,7 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
     ants = [
         {
             "ant_id": ant.ant_id,
+            "colony_id": ant.colony_id,
             "x": ant.x,
             "y": ant.y,
             "heading": ant.heading,
@@ -82,8 +101,8 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "deaths": summary["deaths"],
         "ants": ants,
         "food_patches": food_patches,
-        "food_trail": _trail_points(world.food_trail),
-        "home_trail": _trail_points(world.home_trail),
+        "food_trail_layers": _trail_layers(world.food_trail, world.colonies),
+        "home_trail_layers": _trail_layers(world.home_trail, world.colonies),
         "birth_events": _event_dicts(world, tick, "ant_birth"),
         "death_events": _event_dicts(world, tick, "ant_death"),
         "pickup_events": _event_dicts(world, tick, "food_pickup"),
@@ -116,6 +135,20 @@ def build_ant_observer_payload(
             "y": world.nest.y,
             "radius": world.nest.radius,
         },
+        "colonies": [
+            {
+                "colony_id": colony.colony_id,
+                "display_name": colony.display_name,
+                "color": colony.color,
+                "nest": {
+                    "x": colony.nest.x,
+                    "y": colony.nest.y,
+                    "radius": colony.nest.radius,
+                    "stored_food": colony.nest.stored_food,
+                },
+            }
+            for colony in world.colonies.values()
+        ],
         "frames": frames,
     }
 
@@ -440,6 +473,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
 
     const widthScale = canvas.width / data.width;
     const heightScale = canvas.height / data.height;
+    const colonyMeta = Object.fromEntries(data.colonies.map(colony => [colony.colony_id, colony]));
     const terrainPalette = {{
       dense_grass: 'rgba(106, 141, 84, 0.42)',
       sand: 'rgba(214, 184, 129, 0.44)',
@@ -501,45 +535,54 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     }}
 
     function drawTrails(frame) {{
-      for (const point of frame.home_trail) {{
-        ctx.fillStyle = `rgba(217, 153, 72, ${{Math.min(0.30, point.value / 8)}})`;
-        ctx.beginPath();
-        ctx.arc(toCanvasX(point.x), toCanvasY(point.y), 4 + point.value * 1.2, 0, Math.PI * 2);
-        ctx.fill();
+      for (const layer of frame.home_trail_layers) {{
+        for (const point of layer.points) {{
+          ctx.fillStyle = `${{layer.color}}33`;
+          ctx.beginPath();
+          ctx.arc(toCanvasX(point.x), toCanvasY(point.y), 3.5 + point.value * 1.1, 0, Math.PI * 2);
+          ctx.fill();
+        }}
       }}
-      for (const point of frame.food_trail) {{
-        ctx.fillStyle = `rgba(64, 163, 120, ${{Math.min(0.34, point.value / 8)}})`;
-        ctx.beginPath();
-        ctx.arc(toCanvasX(point.x), toCanvasY(point.y), 4 + point.value * 1.2, 0, Math.PI * 2);
-        ctx.fill();
+      for (const layer of frame.food_trail_layers) {{
+        for (const point of layer.points) {{
+          ctx.fillStyle = `${{layer.color}}55`;
+          ctx.beginPath();
+          ctx.arc(toCanvasX(point.x), toCanvasY(point.y), 4 + point.value * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }}
       }}
     }}
 
-    function drawNest() {{
-      const x = toCanvasX(data.nest.x);
-      const y = toCanvasY(data.nest.y);
-      ctx.fillStyle = 'rgba(126, 94, 66, 0.14)';
-      ctx.beginPath();
-      ctx.arc(x, y, (data.nest.radius + 4.5) * widthScale, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(126, 94, 66, 0.96)';
-      ctx.beginPath();
-      ctx.arc(x, y, (data.nest.radius + 1.8) * widthScale, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255, 246, 235, 0.92)';
-      ctx.beginPath();
-      ctx.arc(x, y, (data.nest.radius + 0.7) * widthScale, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#4d3726';
-      ctx.beginPath();
-      ctx.arc(x, y, data.nest.radius * widthScale, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 248, 239, 0.84)';
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.moveTo(x + (data.nest.radius + 0.8) * widthScale, y);
-      ctx.lineTo(x + (data.nest.radius + 3.1) * widthScale, y);
-      ctx.stroke();
+    function drawNests() {{
+      for (const colony of data.colonies) {{
+        const x = toCanvasX(colony.nest.x);
+        const y = toCanvasY(colony.nest.y);
+        ctx.fillStyle = `${{colony.color}}22`;
+        ctx.beginPath();
+        ctx.arc(x, y, (colony.nest.radius + 4.5) * widthScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = colony.color;
+        ctx.beginPath();
+        ctx.arc(x, y, (colony.nest.radius + 1.8) * widthScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 246, 235, 0.92)';
+        ctx.beginPath();
+        ctx.arc(x, y, (colony.nest.radius + 0.7) * widthScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4d3726';
+        ctx.beginPath();
+        ctx.arc(x, y, colony.nest.radius * widthScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 248, 239, 0.84)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(x + (colony.nest.radius + 0.8) * widthScale, y);
+        ctx.lineTo(x + (colony.nest.radius + 3.1) * widthScale, y);
+        ctx.stroke();
+        ctx.fillStyle = colony.color;
+        ctx.font = '12px Menlo, monospace';
+        ctx.fillText(colony.display_name, x - 18, y - 14);
+      }}
     }}
 
     function drawFood(frame) {{
@@ -573,13 +616,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     }}
 
     function antColor(ant) {{
-      if (ant.carrying_food) return '#d8893c';
-      let hash = 0;
-      for (let i = 0; i < ant.ant_id.length; i += 1) {{
-        hash = ((hash << 5) - hash + ant.ant_id.charCodeAt(i)) | 0;
-      }}
-      const hue = Math.abs(hash) % 360;
-      return `hsl(${{hue}} 30% 22%)`;
+      const colony = colonyMeta[ant.colony_id];
+      if (!colony) return ant.carrying_food ? '#d8893c' : '#2c241d';
+      return ant.carrying_food ? '#d8893c' : colony.color;
     }}
 
     function drawAnts(frame) {{
@@ -646,7 +685,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       drawTerrain();
       drawTrails(frame);
       drawFood(frame);
-      drawNest();
+      drawNests();
       drawAnts(frame);
     }}
 
@@ -684,6 +723,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       if (selected) {{
         selectedAntEl.innerHTML = `
           <strong>${{selected.ant_id}}</strong>
+          <div class="tiny">colony = ${{selected.colony_id}}</div>
           <div class="tiny">pos = (${{selected.x}}, ${{selected.y}})</div>
           <div class="tiny">carrying = ${{selected.carrying_food ? 'yes' : 'no'}}</div>
           <div class="tiny">terrain = ${{selected.terrain_kind}}</div>

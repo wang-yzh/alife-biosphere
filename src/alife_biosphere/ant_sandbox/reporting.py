@@ -12,6 +12,7 @@ from .world import SandboxAnt, initialize_world
 @dataclass
 class _AntState:
     ant_id: str
+    colony_id: str
     x: int
     y: int
     carrying_food: bool
@@ -28,6 +29,7 @@ def _replay_ant_states(config: AntSandboxConfig, result: AntSandboxResult) -> di
     states: dict[str, _AntState] = {
         ant.ant_id: _AntState(
             ant_id=ant.ant_id,
+            colony_id=ant.colony_id,
             x=ant.x,
             y=ant.y,
             carrying_food=ant.carrying_food,
@@ -56,6 +58,7 @@ def _replay_ant_states(config: AntSandboxConfig, result: AntSandboxResult) -> di
             elif event.event_type == "ant_birth" and event.organism_id is not None:
                 states[event.organism_id] = _AntState(
                     ant_id=event.organism_id,
+                    colony_id=str(event.payload.get("colony_id", "solo")),
                     x=int(event.payload["x"]),
                     y=int(event.payload["y"]),
                     carrying_food=False,
@@ -69,6 +72,7 @@ def _replay_ant_states(config: AntSandboxConfig, result: AntSandboxResult) -> di
         snapshots[tick] = {
             ant_id: _AntState(
                 ant_id=state.ant_id,
+                colony_id=state.colony_id,
                 x=state.x,
                 y=state.y,
                 carrying_food=state.carrying_food,
@@ -156,8 +160,12 @@ def summarize_behavior_roles(
                 alive_ticks += 1
             if state.carrying_food:
                 carrying_ticks += 1
-            distance_from_nest = dist((state.x, state.y), (result.world.nest.x, result.world.nest.y))
-            if distance_from_nest <= result.world.nest.radius + 3:
+            colony = result.world.colonies.get(state.colony_id)
+            nest_x = result.world.nest.x if colony is None else colony.nest.x
+            nest_y = result.world.nest.y if colony is None else colony.nest.y
+            nest_radius = result.world.nest.radius if colony is None else colony.nest.radius
+            distance_from_nest = dist((state.x, state.y), (nest_x, nest_y))
+            if distance_from_nest <= nest_radius + 3:
                 near_nest_ticks += 1
             if distance_from_nest >= 12:
                 far_field_ticks += 1
@@ -166,6 +174,7 @@ def summarize_behavior_roles(
             prev = state
         per_ant[ant_id] = {
             "alive": final_state.alive,
+            "colony_id": final_state.colony_id,
             "final_x": final_state.x,
             "final_y": final_state.y,
             "range_bias": round(trait_map.get(ant_id, {}).get("range_bias", 0.0), 4),

@@ -108,6 +108,8 @@ They are no longer the shortest current control path.
   terrain-aware implementation slice for the ant-sandbox scale-up phase
 - `ant_sandbox_r1_food_source_competition_slice_2026-04-22.md`: first
   resource-competition slice, making food sources contested ecological objects
+- `ant_sandbox_r2_three_tribe_shared_world_slice_2026-04-23.md`: first
+  three-tribe shared-world slice with separate nests, ledgers, and trail layers
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note

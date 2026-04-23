@@ -85,6 +85,7 @@ These are still useful, but they are not the shortest entry path:
 - `ant_sandbox_instinct_roles_slice_2026-04-22.md`
 - `ant_sandbox_m7_m8_scale_up_slice_2026-04-22.md`
 - `ant_sandbox_r1_food_source_competition_slice_2026-04-22.md`
+- `ant_sandbox_r2_three_tribe_shared_world_slice_2026-04-23.md`
 - `ant_sandbox_status_v1.md`
 - `inheritance_architecture_v0.md`
 - `adaptive_cycle_and_trust_mechanisms_v1.md`

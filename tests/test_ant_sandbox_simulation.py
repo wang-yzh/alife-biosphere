@@ -86,6 +86,7 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
     result = run_simulation(
         AntSandboxConfig(
             ticks=420,
+            colonies=(),
             nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
             food_patches=(
                 FoodPatchConfig(
@@ -132,6 +133,7 @@ def test_ant_sandbox_can_show_births_and_deaths_in_longer_run() -> None:
 def test_ant_sandbox_role_summary_produces_multiple_clusters() -> None:
     config = AntSandboxConfig(
         ticks=420,
+        colonies=(),
         nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
             FoodPatchConfig(
@@ -174,6 +176,7 @@ def test_ant_sandbox_role_summary_produces_multiple_clusters() -> None:
 def test_hungry_ants_can_refuel_at_nest() -> None:
     config = AntSandboxConfig(
         ticks=80,
+        colonies=(),
         nest=AntSandboxConfig().nest.__class__(initial_stored_food=20),
         ants=AntAgentConfig(
             initial_energy=5.0,
@@ -192,6 +195,7 @@ def test_hungry_ants_can_refuel_at_nest() -> None:
 def test_colony_upkeep_consumes_nest_food() -> None:
     config = AntSandboxConfig(
         ticks=6,
+        colonies=(),
         nest=NestConfig(initial_stored_food=12, colony_upkeep_per_ant_tick=0.6),
         ants=AntAgentConfig(
             ant_count=1,
@@ -214,6 +218,7 @@ def test_food_source_contention_events_can_emerge() -> None:
         ticks=120,
         width=64,
         height=48,
+        colonies=(),
         nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=12, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
             FoodPatchConfig("food_a", x=32, y=24, radius=4, amount=28, max_amount=28, regrowth_rate=0, respawn_delay_ticks=18),
@@ -243,6 +248,7 @@ def test_depleted_food_patch_reseeds_to_new_site() -> None:
         ticks=24,
         width=64,
         height=48,
+        colonies=(),
         nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
             FoodPatchConfig(
@@ -314,6 +320,7 @@ def test_ant_sandbox_disturbance_keeps_some_function_after_shock() -> None:
     result = run_simulation(
         AntSandboxConfig(
             ticks=300,
+            colonies=(),
             nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
             food_patches=(
                 FoodPatchConfig(

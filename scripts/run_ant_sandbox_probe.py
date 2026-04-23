@@ -36,7 +36,8 @@ def main() -> None:
         "upkeep_consumed": sum(event.payload["consumed"] for event in result.events if event.event_type == "nest_upkeep"),
         "food_reseeds": sum(1 for event in result.events if event.event_type == "food_patch_reseed"),
         "contested_sources": sum(1 for event in result.events if event.event_type == "food_source_contested"),
-        "nest_food": world.nest.stored_food,
+        "nest_food": world.delivered_food_total(),
+        "colony_food": {colony_id: colony.nest.stored_food for colony_id, colony in world.colonies.items()},
         "food_remaining": world.food_remaining(),
         "final_summary": tick_summaries[-1] if tick_summaries else {},
     }

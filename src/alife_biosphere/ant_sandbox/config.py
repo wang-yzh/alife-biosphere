@@ -31,6 +31,25 @@ class NestConfig:
 
 
 @dataclass(frozen=True)
+class ColonyConfig:
+    colony_id: str
+    display_name: str
+    color: str
+    ant_count: int
+    nest: NestConfig
+
+    def __post_init__(self) -> None:
+        if not self.colony_id:
+            raise ValueError("colony_id must be non-empty")
+        if not self.display_name:
+            raise ValueError("display_name must be non-empty")
+        if not self.color:
+            raise ValueError("color must be non-empty")
+        if self.ant_count <= 0:
+            raise ValueError("ant_count must be positive")
+
+
+@dataclass(frozen=True)
 class FoodPatchConfig:
     patch_id: str
     x: int
@@ -137,6 +156,31 @@ class AntSandboxConfig:
     width: int = 128
     height: int = 96
     nest: NestConfig = field(default_factory=NestConfig)
+    colonies: tuple[ColonyConfig, ...] = field(
+        default_factory=lambda: (
+            ColonyConfig(
+                colony_id="wei",
+                display_name="Wei",
+                color="#375a7f",
+                ant_count=11,
+                nest=NestConfig(x=22, y=48, radius=4, initial_stored_food=16, colony_upkeep_per_ant_tick=0.002),
+            ),
+            ColonyConfig(
+                colony_id="shu",
+                display_name="Shu",
+                color="#b24a3a",
+                ant_count=11,
+                nest=NestConfig(x=20, y=28, radius=4, initial_stored_food=16, colony_upkeep_per_ant_tick=0.002),
+            ),
+            ColonyConfig(
+                colony_id="wu",
+                display_name="Wu",
+                color="#2f8f5b",
+                ant_count=10,
+                nest=NestConfig(x=20, y=70, radius=4, initial_stored_food=16, colony_upkeep_per_ant_tick=0.002),
+            ),
+        )
+    )
     food_patches: tuple[FoodPatchConfig, ...] = field(
         default_factory=lambda: (
             FoodPatchConfig("food_near", x=46, y=34, radius=4, amount=40, max_amount=40, value_score=0.8, regrowth_rate=0, respawn_delay_ticks=18),
@@ -159,10 +203,25 @@ class AntSandboxConfig:
             raise ValueError("width and height must be positive")
         if not self.food_patches:
             raise ValueError("at least one food patch is required")
+        if len({colony.colony_id for colony in self.colonies}) != len(self.colonies):
+            raise ValueError("colony_id values must be unique")
         if self.disturbance_tick < 0:
             raise ValueError("disturbance_tick must be non-negative")
         if self.disturbance_kill_radius < 0:
             raise ValueError("disturbance_kill_radius must be non-negative")
+
+    def resolved_colonies(self) -> tuple[ColonyConfig, ...]:
+        if self.colonies:
+            return self.colonies
+        return (
+            ColonyConfig(
+                colony_id="solo",
+                display_name="Solo",
+                color="#7e5e42",
+                ant_count=self.ants.ant_count,
+                nest=self.nest,
+            ),
+        )
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

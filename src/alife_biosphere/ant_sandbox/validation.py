@@ -43,6 +43,7 @@ def _base_config(seed: int) -> AntSandboxConfig:
         seed=seed,
         width=64,
         height=48,
+        colonies=(),
         nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=18, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
             FoodPatchConfig("food_a", x=46, y=14, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
@@ -63,6 +64,7 @@ def _persistence_config(seed: int) -> AntSandboxConfig:
     return AntSandboxConfig(
         seed=seed,
         ticks=420,
+        colonies=(),
         nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
             FoodPatchConfig(
@@ -102,6 +104,7 @@ def _disturbance_config(seed: int) -> AntSandboxConfig:
     return AntSandboxConfig(
         seed=seed,
         ticks=300,
+        colonies=(),
         nest=NestConfig(initial_stored_food=240, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
             FoodPatchConfig(

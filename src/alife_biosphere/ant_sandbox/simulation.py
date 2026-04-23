@@ -6,7 +6,7 @@ from math import atan2, cos, dist, sin, tau
 from ..events import Event
 from ..rng import make_rng
 from .config import AntSandboxConfig
-from .world import AntSandboxWorld, FoodPatch, SandboxAnt, initialize_world, terrain_effect, terrain_kind
+from .world import AntSandboxWorld, Colony, FoodPatch, Nest, SandboxAnt, initialize_world, terrain_effect, terrain_kind
 
 
 @dataclass(frozen=True)
@@ -58,6 +58,22 @@ def _nearest_open_cell(world: AntSandboxWorld, x: int, y: int) -> tuple[int, int
                 if not _terrain_blocked(world, nx, ny):
                     return nx, ny
     return x, y
+
+
+def _home_colony(world: AntSandboxWorld, ant: SandboxAnt) -> Colony:
+    return world.colonies[ant.colony_id]
+
+
+def _home_nest(world: AntSandboxWorld, ant: SandboxAnt) -> Nest:
+    return _home_colony(world, ant).nest
+
+
+def _food_trail_field(world: AntSandboxWorld, colony_id: str) -> dict[tuple[int, int], float]:
+    return world.food_trail[colony_id]
+
+
+def _home_trail_field(world: AntSandboxWorld, colony_id: str) -> dict[tuple[int, int], float]:
+    return world.home_trail[colony_id]
 
 
 def _patch_by_id(world: AntSandboxWorld, patch_id: str | None) -> FoodPatch | None:
@@ -164,12 +180,11 @@ def _patch_respawn_cell(
 ) -> tuple[int, int]:
     rng = make_rng(config.seed, f"ant-sandbox:{tick}:{patch.patch_id}:respawn:{patch.respawn_count}")
     wall_margin = max(5, patch.radius + 2)
-    min_nest_distance = world.nest.radius + patch.radius + 10
     spacing = patch.radius + 10
     candidates: list[tuple[int, int]] = []
     for y in range(wall_margin, world.height - wall_margin):
         for x in range(wall_margin, world.width - wall_margin):
-            if _distance(x, y, world.nest.x, world.nest.y) < min_nest_distance:
+            if any(_distance(x, y, colony.nest.x, colony.nest.y) < colony.nest.radius + patch.radius + 10 for colony in world.colonies.values()):
                 continue
             if _terrain_blocked(world, x, y):
                 continue
@@ -187,14 +202,20 @@ def _patch_respawn_cell(
 def _dampen_food_trails(world: AntSandboxWorld, center_x: int, center_y: int, radius: int) -> None:
     cutoff = radius + 8
     world.food_trail = {
-        cell: value * (0.15 if _distance(cell[0], cell[1], center_x, center_y) <= cutoff else 1.0)
-        for cell, value in world.food_trail.items()
-        if value > 0.02
+        colony_id: {
+            cell: value * (0.15 if _distance(cell[0], cell[1], center_x, center_y) <= cutoff else 1.0)
+            for cell, value in field.items()
+            if value > 0.02
+        }
+        for colony_id, field in world.food_trail.items()
     }
     world.home_trail = {
-        cell: value * (0.35 if _distance(cell[0], cell[1], center_x, center_y) <= cutoff else 1.0)
-        for cell, value in world.home_trail.items()
-        if value > 0.02
+        colony_id: {
+            cell: value * (0.35 if _distance(cell[0], cell[1], center_x, center_y) <= cutoff else 1.0)
+            for cell, value in field.items()
+            if value > 0.02
+        }
+        for colony_id, field in world.home_trail.items()
     }
 
 
@@ -276,7 +297,7 @@ def _best_pheromone_cell(
 ) -> tuple[int, int] | None:
     if not config.ants.pheromone_enabled or config.ants.pheromone_sense_radius <= 0:
         return None
-    field = world.food_trail if target == "food" else world.home_trail
+    field = _food_trail_field(world, ant.colony_id) if target == "food" else _home_trail_field(world, ant.colony_id)
     candidates = []
     task_boost = 0.35 if (ant.target_patch_id is not None or ant.outbound_commit_ticks > 0) else 0.0
     radius = max(2, int(round(config.ants.pheromone_sense_radius * (0.75 + ant.trail_affinity * 1.05 + task_boost))))
@@ -294,11 +315,13 @@ def _best_pheromone_cell(
 
 
 def _task_trail_bonus(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int], target_x: int | None, target_y: int | None) -> float:
+    food_field = _food_trail_field(world, ant.colony_id)
+    home_field = _home_trail_field(world, ant.colony_id)
     if ant.carrying_food:
-        return world.home_trail.get(cell, 0.0) * 0.55
+        return home_field.get(cell, 0.0) * 0.55
     if target_x is not None and target_y is not None:
-        return world.food_trail.get(cell, 0.0) * 0.6
-    return world.food_trail.get(cell, 0.0) * 0.28 - world.home_trail.get(cell, 0.0) * 0.16
+        return food_field.get(cell, 0.0) * 0.6
+    return food_field.get(cell, 0.0) * 0.28 - home_field.get(cell, 0.0) * 0.16
 
 
 def _decay_stale_field(world: AntSandboxWorld) -> None:
@@ -316,16 +339,17 @@ def _choose_step(
     tick: int,
 ) -> tuple[int, int, float]:
     rng = make_rng(config.seed, f"ant-sandbox:{tick}:{ant.ant_id}:move")
+    home_nest = _home_nest(world, ant)
     target_x: int | None = None
     target_y: int | None = None
     hungry = ant.energy <= config.ants.hunger_return_threshold
-    distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
-    launch_exploration = ant.outbound_commit_ticks > 6 and distance_from_nest <= world.nest.radius + 7
+    distance_from_nest = _distance(ant.x, ant.y, home_nest.x, home_nest.y)
+    launch_exploration = ant.outbound_commit_ticks > 6 and distance_from_nest <= home_nest.radius + 7
     task_patch = _task_oriented_patch(world, ant)
 
-    if ant.carrying_food or (hungry and world.nest.stored_food > 0):
-        target_x = world.nest.x
-        target_y = world.nest.y
+    if ant.carrying_food or (hungry and home_nest.stored_food > 0):
+        target_x = home_nest.x
+        target_y = home_nest.y
     else:
         patch = None if launch_exploration else task_patch
         if patch is None:
@@ -334,7 +358,7 @@ def _choose_step(
             target_x = patch.x
             target_y = patch.y
             ant.target_patch_id = patch.patch_id
-        elif ant.outbound_commit_ticks <= 6 or distance_from_nest > world.nest.radius + 5:
+        elif ant.outbound_commit_ticks <= 6 or distance_from_nest > home_nest.radius + 5:
             pheromone_target = _best_pheromone_cell(
                 ant,
                 world,
@@ -350,21 +374,21 @@ def _choose_step(
         target_heading = _target_heading(ant.x, ant.y, target_x, target_y)
     else:
         target_heading = None
-        desired_distance = world.nest.radius + 6 + int(
+        desired_distance = home_nest.radius + 6 + int(
             round(ant.range_bias * max(18, min(world.width, world.height) * 0.45))
         )
-        if ant.carrying_food or (hungry and world.nest.stored_food > 0):
-            base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
+        if ant.carrying_food or (hungry and home_nest.stored_food > 0):
+            base_heading = _target_heading(ant.x, ant.y, home_nest.x, home_nest.y)
         else:
-            outward_heading = _target_heading(world.nest.x, world.nest.y, ant.x, ant.y)
-            if hungry and world.nest.stored_food <= 0:
+            outward_heading = _target_heading(home_nest.x, home_nest.y, ant.x, ant.y)
+            if hungry and home_nest.stored_food <= 0:
                 base_heading = ant.heading
             elif launch_exploration:
                 base_heading = _egress_spread_heading(ant, outward_heading)
             elif distance_from_nest < desired_distance - 2:
                 base_heading = outward_heading
             elif distance_from_nest > desired_distance + 4:
-                base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
+                base_heading = _target_heading(ant.x, ant.y, home_nest.x, home_nest.y)
             else:
                 base_heading = ant.heading
         if ant.x <= 1 or ant.x >= world.width - 2 or ant.y <= 1 or ant.y >= world.height - 2:
@@ -385,21 +409,22 @@ def _choose_step(
         return ant.x, ant.y, target_heading
     near_wall = _wall_margin(world, (ant.x, ant.y)) <= 2
     current_stale = world.stale_field.get((ant.x, ant.y), 0.0)
-    near_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y) <= world.nest.radius + 8
+    near_nest = _distance(ant.x, ant.y, home_nest.x, home_nest.y) <= home_nest.radius + 8
     exploration_phase = (not ant.carrying_food) and (not hungry) and (target_x is None or launch_exploration)
     force_egress = launch_exploration and not ant.carrying_food and not hungry
+    home_field = _home_trail_field(world, ant.colony_id)
     if target_x is None or target_y is None:
         return min(
             free_candidates,
             key=lambda cell: (
-                (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell) + world.home_trail.get(cell, 0.0) * 0.18) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
-                -_distance(cell[0], cell[1], world.nest.x, world.nest.y) if force_egress else 0,
+                (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell) + home_field.get(cell, 0.0) * 0.18) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
+                -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
                 -_task_trail_bonus(world, ant, cell, target_x, target_y),
                 _terrain_move_cost(world, cell[0], cell[1]),
                 -_wall_margin(world, cell) if near_wall else 0,
                 world.stale_field.get(cell, 0.0),
                 abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
-                _distance(cell[0], cell[1], world.nest.x, world.nest.y) if near_wall else 0,
+                _distance(cell[0], cell[1], home_nest.x, home_nest.y) if near_wall else 0,
                 cell[1],
                 cell[0],
             ),
@@ -408,7 +433,7 @@ def _choose_step(
         free_candidates,
         key=lambda cell: (
             (_local_density(world, ant, cell, radius=2) * 0.8 + _revisit_penalty(ant, cell) * 0.2) if launch_exploration else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
-            -_distance(cell[0], cell[1], world.nest.x, world.nest.y) if force_egress else 0,
+            -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
             _distance(cell[0], cell[1], target_x, target_y),
             -_task_trail_bonus(world, ant, cell, target_x, target_y),
             _terrain_move_cost(world, cell[0], cell[1]),
@@ -458,68 +483,78 @@ def _pickup_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
 
 
 def _unload_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int) -> bool:
+    home_colony = _home_colony(world, ant)
+    home_nest = home_colony.nest
     if not ant.carrying_food:
         return False
-    if _distance(ant.x, ant.y, world.nest.x, world.nest.y) > max(world.nest.radius, config.ants.nest_drop_radius):
+    if _distance(ant.x, ant.y, home_nest.x, home_nest.y) > max(home_nest.radius, config.ants.nest_drop_radius):
         return False
     ant.carrying_food = False
     ant.delivered_food += 1
     ant.outbound_commit_ticks = 14
-    world.nest.stored_food += 1
+    home_nest.stored_food += 1
     world.emit(
         Event(
             tick=tick,
             event_type="food_unload",
             organism_id=ant.ant_id,
-            habitat_id="nest",
-            payload={"x": ant.x, "y": ant.y, "nest_food": world.nest.stored_food},
+            habitat_id=home_colony.colony_id,
+            payload={"x": ant.x, "y": ant.y, "nest_food": home_nest.stored_food, "colony_id": home_colony.colony_id},
         )
     )
     return True
 
 
 def _feed_at_nest(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int) -> bool:
-    if _distance(ant.x, ant.y, world.nest.x, world.nest.y) > max(world.nest.radius, config.ants.nest_drop_radius):
+    home_colony = _home_colony(world, ant)
+    home_nest = home_colony.nest
+    if _distance(ant.x, ant.y, home_nest.x, home_nest.y) > max(home_nest.radius, config.ants.nest_drop_radius):
         return False
     if ant.energy >= config.ants.max_energy:
         return False
-    if world.nest.stored_food <= 0:
+    if home_nest.stored_food <= 0:
         return False
-    world.nest.stored_food -= 1
+    home_nest.stored_food -= 1
     ant.energy = min(config.ants.max_energy, ant.energy + config.ants.nest_feed_amount)
     world.emit(
         Event(
             tick=tick,
             event_type="nest_feed",
             organism_id=ant.ant_id,
-            habitat_id="nest",
-            payload={"x": ant.x, "y": ant.y, "energy": round(ant.energy, 3), "nest_food": world.nest.stored_food},
+            habitat_id=home_colony.colony_id,
+            payload={"x": ant.x, "y": ant.y, "energy": round(ant.energy, 3), "nest_food": home_nest.stored_food, "colony_id": home_colony.colony_id},
         )
     )
     return True
 
 
 def _apply_colony_upkeep(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> int:
-    if config.nest.colony_upkeep_per_ant_tick <= 0:
-        return 0
-    world.nest.upkeep_reserve += world.alive_count() * config.nest.colony_upkeep_per_ant_tick
-    consumed = min(int(world.nest.upkeep_reserve), world.nest.stored_food)
-    if consumed <= 0:
-        world.nest.upkeep_reserve = min(world.nest.upkeep_reserve, 0.999)
-        return 0
-    world.nest.stored_food -= consumed
-    world.nest.upkeep_reserve -= consumed
-    world.nest.upkeep_reserve = min(world.nest.upkeep_reserve, 0.999)
-    world.emit(
-        Event(
-            tick=tick,
-            event_type="nest_upkeep",
-            organism_id=None,
-            habitat_id="nest",
-            payload={"consumed": consumed, "nest_food": world.nest.stored_food},
+    consumed_total = 0
+    for colony in world.colonies.values():
+        if colony.nest.upkeep_reserve is None:
+            colony.nest.upkeep_reserve = 0.0
+        upkeep_rate = config.nest.colony_upkeep_per_ant_tick
+        if upkeep_rate <= 0:
+            continue
+        colony.nest.upkeep_reserve += world.alive_count_for_colony(colony.colony_id) * upkeep_rate
+        consumed = min(int(colony.nest.upkeep_reserve), colony.nest.stored_food)
+        if consumed <= 0:
+            colony.nest.upkeep_reserve = min(colony.nest.upkeep_reserve, 0.999)
+            continue
+        colony.nest.stored_food -= consumed
+        colony.nest.upkeep_reserve -= consumed
+        colony.nest.upkeep_reserve = min(colony.nest.upkeep_reserve, 0.999)
+        consumed_total += consumed
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="nest_upkeep",
+                organism_id=None,
+                habitat_id=colony.colony_id,
+                payload={"consumed": consumed, "nest_food": colony.nest.stored_food, "colony_id": colony.colony_id},
+            )
         )
-    )
-    return consumed
+    return consumed_total
 
 
 def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> None:
@@ -547,7 +582,10 @@ def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: i
         for ant in world.ants:
             if not ant.alive:
                 continue
-            if _distance(ant.x, ant.y, world.nest.x, world.nest.y) <= config.disturbance_kill_radius:
+            if any(
+                _distance(ant.x, ant.y, colony.nest.x, colony.nest.y) <= config.disturbance_kill_radius
+                for colony in world.colonies.values()
+            ):
                 ant.alive = False
                 world.emit(
                     Event(
@@ -573,14 +611,12 @@ def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: i
 def _decay_trails(world: AntSandboxWorld, config: AntSandboxConfig) -> None:
     decay = max(0.0, 1.0 - config.ants.trail_decay)
     world.food_trail = {
-        cell: value * decay
-        for cell, value in world.food_trail.items()
-        if value * decay > 0.02
+        colony_id: {cell: value * decay for cell, value in field.items() if value * decay > 0.02}
+        for colony_id, field in world.food_trail.items()
     }
     world.home_trail = {
-        cell: value * decay
-        for cell, value in world.home_trail.items()
-        if value * decay > 0.02
+        colony_id: {cell: value * decay for cell, value in field.items() if value * decay > 0.02}
+        for colony_id, field in world.home_trail.items()
     }
 
 
@@ -588,26 +624,28 @@ def _deposit_trail(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxCo
     if not config.ants.pheromone_enabled:
         return
     key = (ant.x, ant.y)
+    food_field = _food_trail_field(world, ant.colony_id)
+    home_field = _home_trail_field(world, ant.colony_id)
     if ant.carrying_food:
-        world.food_trail[key] = world.food_trail.get(key, 0.0) + config.ants.trail_deposit * _terrain_trail_factor(world, ant.x, ant.y)
+        food_field[key] = food_field.get(key, 0.0) + config.ants.trail_deposit * _terrain_trail_factor(world, ant.x, ant.y)
         world.emit(
             Event(
                 tick=tick,
                 event_type="trail_deposit",
                 organism_id=ant.ant_id,
-                habitat_id=terrain_kind(world, ant.x, ant.y),
-                payload={"trail_kind": "food", "x": ant.x, "y": ant.y, "strength": round(world.food_trail[key], 4)},
+                habitat_id=ant.colony_id,
+                payload={"trail_kind": "food", "x": ant.x, "y": ant.y, "strength": round(food_field[key], 4), "colony_id": ant.colony_id},
             )
         )
     else:
-        world.home_trail[key] = world.home_trail.get(key, 0.0) + config.ants.home_trail_deposit * _terrain_trail_factor(world, ant.x, ant.y)
+        home_field[key] = home_field.get(key, 0.0) + config.ants.home_trail_deposit * _terrain_trail_factor(world, ant.x, ant.y)
         world.emit(
             Event(
                 tick=tick,
                 event_type="trail_deposit",
                 organism_id=ant.ant_id,
-                habitat_id=terrain_kind(world, ant.x, ant.y),
-                payload={"trail_kind": "home", "x": ant.x, "y": ant.y, "strength": round(world.home_trail[key], 4)},
+                habitat_id=ant.colony_id,
+                payload={"trail_kind": "home", "x": ant.x, "y": ant.y, "strength": round(home_field[key], 4), "colony_id": ant.colony_id},
             )
         )
 
@@ -676,49 +714,51 @@ def _update_food_source_competition(world: AntSandboxWorld, tick: int) -> int:
 
 
 def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> bool:
-    if world.nest.stored_food < config.ants.spawn_food_cost:
-        return False
-    if world.alive_count() >= config.ants.max_population:
-        return False
     if tick % config.ants.spawn_interval != 0:
         return False
-    spawn_cells = [
-        (world.nest.x, world.nest.y),
-        (world.nest.x + 1, world.nest.y),
-        (world.nest.x - 1, world.nest.y),
-        (world.nest.x, world.nest.y + 1),
-        (world.nest.x, world.nest.y - 1),
-    ]
-    for x, y in spawn_cells:
-        if (x, y) in world.occupied_cells:
+    if world.alive_count() >= config.ants.max_population * max(1, len(world.colonies)):
+        return False
+    for colony in world.colonies.values():
+        if colony.nest.stored_food < config.ants.spawn_food_cost:
             continue
-        ant_id = world.allocate_ant_id()
-        trait_rng = make_rng(config.seed, f"ant-sandbox:birth-traits:{tick}:{ant_id}")
-        parentless_center = (len(world.ants) % 9) / 8 if world.ants else 0.5
-        ant = SandboxAnt(
-            ant_id=ant_id,
-            x=max(0, min(world.width - 1, x)),
-            y=max(0, min(world.height - 1, y)),
-            heading=0.0,
-            energy=config.ants.initial_energy,
-            range_bias=max(0.0, min(1.0, 0.2 + 0.6 * parentless_center + trait_rng.uniform(-0.18, 0.18))),
-            trail_affinity=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 3) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
-            harvest_drive=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 5) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
-            lineage_id=ant_id,
-        )
-        world.ants.append(ant)
-        world.nest.stored_food -= config.ants.spawn_food_cost
-        world.occupied_cells.add((ant.x, ant.y))
-        world.emit(
-            Event(
-                tick=tick,
-                event_type="ant_birth",
-                organism_id=ant.ant_id,
-                habitat_id="nest",
-                payload={"x": ant.x, "y": ant.y, "nest_food": world.nest.stored_food},
+        spawn_cells = [
+            (colony.nest.x, colony.nest.y),
+            (colony.nest.x + 1, colony.nest.y),
+            (colony.nest.x - 1, colony.nest.y),
+            (colony.nest.x, colony.nest.y + 1),
+            (colony.nest.x, colony.nest.y - 1),
+        ]
+        for x, y in spawn_cells:
+            if (x, y) in world.occupied_cells:
+                continue
+            ant_id = world.allocate_ant_id()
+            trait_rng = make_rng(config.seed, f"ant-sandbox:{colony.colony_id}:birth-traits:{tick}:{ant_id}")
+            parentless_center = (len(world.ants) % 9) / 8 if world.ants else 0.5
+            ant = SandboxAnt(
+                ant_id=ant_id,
+                colony_id=colony.colony_id,
+                x=max(0, min(world.width - 1, x)),
+                y=max(0, min(world.height - 1, y)),
+                heading=0.0,
+                energy=config.ants.initial_energy,
+                range_bias=max(0.0, min(1.0, 0.2 + 0.6 * parentless_center + trait_rng.uniform(-0.18, 0.18))),
+                trail_affinity=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 3) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
+                harvest_drive=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 5) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
+                lineage_id=f"{colony.colony_id}:{ant_id}",
             )
-        )
-        return True
+            world.ants.append(ant)
+            colony.nest.stored_food -= config.ants.spawn_food_cost
+            world.occupied_cells.add((ant.x, ant.y))
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="ant_birth",
+                    organism_id=ant.ant_id,
+                    habitat_id=colony.colony_id,
+                    payload={"x": ant.x, "y": ant.y, "nest_food": colony.nest.stored_food, "colony_id": colony.colony_id},
+                )
+            )
+            return True
     return False
 
 
@@ -790,6 +830,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
             unloads += 1
         _deposit_trail(world, ant, config, tick)
         _update_stale_signal(world, ant)
+        _remember_position(ant)
         world.occupied_cells.add((ant.x, ant.y))
     if _spawn_ant(world, config, tick):
         births += 1
@@ -811,8 +852,8 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "food_reseeds": reseeds,
         "contested_sources": contested_sources,
         "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
-        "food_trail_cells": len(world.food_trail),
-        "home_trail_cells": len(world.home_trail),
+        "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
+        "home_trail_cells": sum(len(field) for field in world.home_trail.values()),
     }
     world.emit(
         Event(

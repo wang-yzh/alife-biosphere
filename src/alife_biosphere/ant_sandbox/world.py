@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from math import atan2, cos, dist, sin, tau
 
-from .config import AntSandboxConfig
+from .config import AntSandboxConfig, ColonyConfig
 from ..events import Event
 from ..rng import make_rng
 
@@ -23,6 +23,14 @@ class Nest:
     radius: int
     stored_food: int = 0
     upkeep_reserve: float = 0.0
+
+
+@dataclass
+class Colony:
+    colony_id: str
+    display_name: str
+    color: str
+    nest: Nest
 
 
 @dataclass
@@ -50,6 +58,7 @@ class FoodPatch:
 @dataclass
 class SandboxAnt:
     ant_id: str
+    colony_id: str
     x: int
     y: int
     heading: float
@@ -73,14 +82,15 @@ class AntSandboxWorld:
     width: int
     height: int
     nest: Nest
+    colonies: dict[str, Colony]
     food_patches: list[FoodPatch]
     ants: list[SandboxAnt]
     tick: int = 0
     next_ant_index: int = 0
     occupied_cells: set[tuple[int, int]] = field(default_factory=set)
     events: list[Event] = field(default_factory=list)
-    food_trail: dict[tuple[int, int], float] = field(default_factory=dict)
-    home_trail: dict[tuple[int, int], float] = field(default_factory=dict)
+    food_trail: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
+    home_trail: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
     stale_field: dict[tuple[int, int], float] = field(default_factory=dict)
     terrain: dict[tuple[int, int], str] = field(default_factory=dict)
 
@@ -97,7 +107,13 @@ class AntSandboxWorld:
         return sum(patch.amount for patch in self.food_patches)
 
     def delivered_food_total(self) -> int:
-        return self.nest.stored_food
+        return sum(colony.nest.stored_food for colony in self.colonies.values())
+
+    def colony_nest(self, colony_id: str) -> Nest:
+        return self.colonies[colony_id].nest
+
+    def alive_count_for_colony(self, colony_id: str) -> int:
+        return sum(1 for ant in self.ants if ant.alive and ant.colony_id == colony_id)
 
     def allocate_ant_id(self) -> str:
         ant_id = f"ant_{self.next_ant_index:03d}"
@@ -120,10 +136,17 @@ class AntSandboxWorld:
             "height": self.height,
             "tick": self.tick,
             "nest": asdict(self.nest),
+            "colonies": {colony_id: {"display_name": colony.display_name, "color": colony.color, "nest": asdict(colony.nest)} for colony_id, colony in self.colonies.items()},
             "food_patches": [asdict(patch) for patch in self.food_patches],
             "ants": [asdict(ant) for ant in self.ants],
-            "food_trail": {f"{x},{y}": value for (x, y), value in self.food_trail.items()},
-            "home_trail": {f"{x},{y}": value for (x, y), value in self.home_trail.items()},
+            "food_trail": {
+                colony_id: {f"{x},{y}": value for (x, y), value in field.items()}
+                for colony_id, field in self.food_trail.items()
+            },
+            "home_trail": {
+                colony_id: {f"{x},{y}": value for (x, y), value in field.items()}
+                for colony_id, field in self.home_trail.items()
+            },
             "stale_field": {f"{x},{y}": value for (x, y), value in self.stale_field.items()},
             "terrain": {f"{x},{y}": kind for (x, y), kind in self.terrain.items()},
         }
@@ -222,19 +245,30 @@ def _generate_terrain(config: AntSandboxConfig) -> dict[tuple[int, int], str]:
             continue
         terrain[(x, shelf_y)] = "rock"
 
-    _clear_safe_zone(terrain, config.nest.x, config.nest.y, config.nest.radius + 6)
+    for colony in config.resolved_colonies():
+        _clear_safe_zone(terrain, colony.nest.x, colony.nest.y, colony.nest.radius + 6)
     for patch in config.food_patches:
         _clear_safe_zone(terrain, patch.x, patch.y, patch.radius + 5)
     return terrain
 
 
 def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
-    nest = Nest(
-        x=_clamp_cell(config.nest.x, 0, config.width - 1),
-        y=_clamp_cell(config.nest.y, 0, config.height - 1),
-        radius=config.nest.radius,
-        stored_food=config.nest.initial_stored_food,
-    )
+    resolved_colonies = config.resolved_colonies()
+    colonies = {
+        colony.colony_id: Colony(
+            colony_id=colony.colony_id,
+            display_name=colony.display_name,
+            color=colony.color,
+            nest=Nest(
+                x=_clamp_cell(colony.nest.x, 0, config.width - 1),
+                y=_clamp_cell(colony.nest.y, 0, config.height - 1),
+                radius=colony.nest.radius,
+                stored_food=colony.nest.initial_stored_food,
+            ),
+        )
+        for colony in resolved_colonies
+    }
+    nest = colonies[resolved_colonies[0].colony_id].nest
     food_patches = [
         FoodPatch(
             patch_id=patch.patch_id,
@@ -253,59 +287,80 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
     terrain = _generate_terrain(config)
     ants: list[SandboxAnt] = []
     occupied_cells: set[tuple[int, int]] = set()
-    candidate_cells = sorted(
-        [
-            (_clamp_cell(nest.x + dx, 0, config.width - 1), _clamp_cell(nest.y + dy, 0, config.height - 1))
-            for radius in range(max(2, nest.radius) + 3)
-            for dy in range(-radius, radius + 1)
-            for dx in range(-radius, radius + 1)
-            if _distance(0, 0, dx, dy) <= max(2, nest.radius) + 1
-            and terrain.get((_clamp_cell(nest.x + dx, 0, config.width - 1), _clamp_cell(nest.y + dy, 0, config.height - 1)), "open_ground") != "rock"
-        ],
-        key=lambda cell: (
-            _distance(cell[0], cell[1], nest.x, nest.y),
-            round(atan2(cell[1] - nest.y, cell[0] - nest.x), 6),
-            cell[1],
-            cell[0],
-        ),
-    )
-    unique_cells: list[tuple[int, int]] = []
-    seen_cells: set[tuple[int, int]] = set()
-    for cell in candidate_cells:
-        if cell in seen_cells:
-            continue
-        seen_cells.add(cell)
-        unique_cells.append(cell)
-    for index in range(config.ants.ant_count):
-        angle = tau * (index / max(config.ants.ant_count, 1))
-        spawn_x, spawn_y = unique_cells[index % len(unique_cells)]
-        trait_rng = make_rng(config.seed, f"ant-sandbox:traits:{index}")
-        count_scale = index / max(1, config.ants.ant_count - 1)
-        range_bias = _clamp_unit(0.12 + 0.76 * count_scale + trait_rng.uniform(-0.12, 0.12))
-        trail_phase = ((index * 7) % max(1, config.ants.ant_count)) / max(1, config.ants.ant_count - 1)
-        trail_affinity = _clamp_unit(0.15 + 0.7 * trail_phase + trait_rng.uniform(-0.15, 0.15))
-        harvest_phase = ((index * 13) % max(1, config.ants.ant_count)) / max(1, config.ants.ant_count - 1)
-        harvest_drive = _clamp_unit(0.18 + 0.66 * harvest_phase + trait_rng.uniform(-0.16, 0.16))
-        ant = SandboxAnt(
-            ant_id=f"ant_{index:03d}",
-            x=spawn_x,
-            y=spawn_y,
-            heading=round(angle, 6),
-            energy=config.ants.initial_energy,
-            range_bias=round(range_bias, 4),
-            trail_affinity=round(trail_affinity, 4),
-            harvest_drive=round(harvest_drive, 4),
-            lineage_id=f"ant_{index:03d}",
+    for colony_index, colony_cfg in enumerate(resolved_colonies):
+        colony = colonies[colony_cfg.colony_id]
+        colony_nest = colony.nest
+        candidate_cells = sorted(
+            [
+                (
+                    _clamp_cell(colony_nest.x + dx, 0, config.width - 1),
+                    _clamp_cell(colony_nest.y + dy, 0, config.height - 1),
+                )
+                for radius in range(max(2, colony_nest.radius) + 4)
+                for dy in range(-radius, radius + 1)
+                for dx in range(-radius, radius + 1)
+                if _distance(0, 0, dx, dy) <= max(2, colony_nest.radius) + 2
+                and terrain.get(
+                    (
+                        _clamp_cell(colony_nest.x + dx, 0, config.width - 1),
+                        _clamp_cell(colony_nest.y + dy, 0, config.height - 1),
+                    ),
+                    "open_ground",
+                )
+                != "rock"
+            ],
+            key=lambda cell: (
+                _distance(cell[0], cell[1], colony_nest.x, colony_nest.y),
+                round(atan2(cell[1] - colony_nest.y, cell[0] - colony_nest.x), 6),
+                cell[1],
+                cell[0],
+            ),
         )
-        ants.append(ant)
-        occupied_cells.add((ant.x, ant.y))
+        unique_cells: list[tuple[int, int]] = []
+        seen_cells: set[tuple[int, int]] = set()
+        for cell in candidate_cells:
+            if cell in seen_cells:
+                continue
+            seen_cells.add(cell)
+            unique_cells.append(cell)
+        for local_index in range(colony_cfg.ant_count):
+            global_index = len(ants)
+            angle = tau * (local_index / max(colony_cfg.ant_count, 1))
+            spawn_x, spawn_y = unique_cells[local_index % len(unique_cells)]
+            while (spawn_x, spawn_y) in occupied_cells:
+                local_index += 1
+                spawn_x, spawn_y = unique_cells[local_index % len(unique_cells)]
+            trait_rng = make_rng(config.seed, f"ant-sandbox:{colony_cfg.colony_id}:traits:{global_index}")
+            count_scale = local_index / max(1, colony_cfg.ant_count - 1)
+            range_bias = _clamp_unit(0.12 + 0.76 * count_scale + trait_rng.uniform(-0.12, 0.12))
+            trail_phase = ((local_index * 7) % max(1, colony_cfg.ant_count)) / max(1, colony_cfg.ant_count - 1)
+            trail_affinity = _clamp_unit(0.15 + 0.7 * trail_phase + trait_rng.uniform(-0.15, 0.15))
+            harvest_phase = ((local_index * 13) % max(1, colony_cfg.ant_count)) / max(1, colony_cfg.ant_count - 1)
+            harvest_drive = _clamp_unit(0.18 + 0.66 * harvest_phase + trait_rng.uniform(-0.16, 0.16))
+            ant = SandboxAnt(
+                ant_id=f"{colony_cfg.colony_id}_{local_index:03d}",
+                colony_id=colony_cfg.colony_id,
+                x=spawn_x,
+                y=spawn_y,
+                heading=round(angle, 6),
+                energy=config.ants.initial_energy,
+                range_bias=round(range_bias, 4),
+                trail_affinity=round(trail_affinity, 4),
+                harvest_drive=round(harvest_drive, 4),
+                lineage_id=f"{colony_cfg.colony_id}_{local_index:03d}",
+            )
+            ants.append(ant)
+            occupied_cells.add((ant.x, ant.y))
     return AntSandboxWorld(
         width=config.width,
         height=config.height,
         nest=nest,
+        colonies=colonies,
         food_patches=food_patches,
         ants=ants,
-        next_ant_index=config.ants.ant_count,
+        next_ant_index=len(ants),
         occupied_cells=occupied_cells,
         terrain=terrain,
+        food_trail={colony_id: {} for colony_id in colonies},
+        home_trail={colony_id: {} for colony_id in colonies},
     )

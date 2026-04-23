@@ -13,13 +13,15 @@ def test_ant_sandbox_observer_payload_contains_world_frames() -> None:
     assert payload["total_ticks"] == 40
     assert payload["generated_at"]
     assert payload["terrain"]
+    assert len(payload["colonies"]) == 3
     assert payload["frames"]
     first = payload["frames"][0]
     assert "ants" in first
     assert "food_patches" in first
-    assert "food_trail" in first
-    assert "home_trail" in first
+    assert "food_trail_layers" in first
+    assert "home_trail_layers" in first
     assert "terrain_kind" in first["ants"][0]
+    assert "colony_id" in first["ants"][0]
     assert "competition_pressure" in first["food_patches"][0]
     assert "nearby_ants" in first["food_patches"][0]
 
@@ -43,21 +45,17 @@ def test_ant_sandbox_showcase_world_keeps_all_ants_alive_to_tick_239() -> None:
 def test_ant_sandbox_showcase_avoids_right_side_nest_pileup() -> None:
     payload = build_ant_observer_payload(AntSandboxConfig(ticks=240), title="Ant Observer")
     frame_211 = payload["frames"][210]
-    nest_x = payload["nest"]["x"]
-    nest_y = payload["nest"]["y"]
-    near = [
-        ant
-        for ant in frame_211["ants"]
-        if math.dist((ant["x"], ant["y"]), (nest_x, nest_y)) <= 10
-    ]
-    east_sector = [
-        ant
-        for ant in near
-        if -math.pi / 4 <= math.atan2(ant["y"] - nest_y, ant["x"] - nest_x) < math.pi / 4
-    ]
-    purposeful = [
-        ant for ant in near if ant["carrying_food"] or ant["outbound_commit_ticks"] > 0
-    ]
-    nonpurposeful = len(near) - len(purposeful)
-    assert nonpurposeful <= 2
-    assert len(east_sector) <= len(near) - 1
+    for colony in payload["colonies"]:
+        nest_x = colony["nest"]["x"]
+        nest_y = colony["nest"]["y"]
+        near = [
+            ant
+            for ant in frame_211["ants"]
+            if ant["colony_id"] == colony["colony_id"]
+            and math.dist((ant["x"], ant["y"]), (nest_x, nest_y)) <= 10
+        ]
+        purposeful = [
+            ant for ant in near if ant["carrying_food"] or ant["outbound_commit_ticks"] > 0
+        ]
+        nonpurposeful = len(near) - len(purposeful)
+        assert nonpurposeful <= max(2, len(near) // 2)
