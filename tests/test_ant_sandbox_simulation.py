@@ -286,6 +286,41 @@ def test_non_carrying_ants_switch_to_much_better_visible_food() -> None:
     assert ant.target_patch_id == "rich_near"
 
 
+def test_pheromone_navigation_does_not_poison_patch_distance_cache() -> None:
+    config = AntSandboxConfig(
+        ticks=1,
+        width=64,
+        height=48,
+        colonies=(),
+        nest=NestConfig(x=12, y=24, radius=3, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("far_food", x=54, y=40, radius=3, amount=20, max_amount=20, value_score=1.0),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=1,
+            food_sense_radius=4,
+            pheromone_enabled=True,
+            pheromone_sense_radius=8,
+            hunger_return_threshold=0.0,
+            initial_energy=18.0,
+            max_energy=20.0,
+        ),
+    )
+    world = initialize_world(config)
+    ant = world.ants[0]
+    ant.x = 12
+    ant.y = 24
+    world.occupied_cells = {(ant.x, ant.y)}
+    world.food_trail[ant.colony_id][(16, 24)] = 5.0
+
+    _choose_step(world, ant, config, tick=1)
+
+    assert "patch:far_food:54:40" not in world.navigation_cache
+    assert "pheromone:solo:food:16:24" in world.navigation_cache
+
+
 def test_depleted_food_patch_reseeds_to_new_site() -> None:
     config = AntSandboxConfig(
         ticks=24,

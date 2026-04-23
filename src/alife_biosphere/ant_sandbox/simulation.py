@@ -709,7 +709,7 @@ def _choose_step(
                 nearest_patch = _nearest_food_patch(world, target_x, target_y)
                 if nearest_patch is not None:
                     ant.target_patch_id = nearest_patch.patch_id
-                    target_key = f"patch:{nearest_patch.patch_id}:{nearest_patch.x}:{nearest_patch.y}"
+                    target_key = f"pheromone:{ant.colony_id}:food:{target_x}:{target_y}"
     if target_x is not None and target_y is not None:
         target_heading = _target_heading(ant.x, ant.y, target_x, target_y)
     else:
