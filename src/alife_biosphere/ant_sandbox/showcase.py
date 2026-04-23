@@ -18,6 +18,7 @@ def _randomized_food_patches(seed: int, colonies: tuple[ColonyConfig, ...]) -> t
         ("food_far_east", 0.86, 0.42, 6, 92, 1.35, 24),
     ]
     patches: list[FoodPatchConfig] = []
+    scarcity_factor = 0.55
     for patch_id, px, py, radius, amount, value_score, respawn_delay in specs:
         jitter_x = rng.randint(-6, 6)
         jitter_y = rng.randint(-5, 5)
@@ -37,7 +38,7 @@ def _randomized_food_patches(seed: int, colonies: tuple[ColonyConfig, ...]) -> t
                     x = candidate_x
                     y = candidate_y
                     break
-        final_amount = max(20, amount + amount_jitter)
+        final_amount = max(12, int(round((amount + amount_jitter) * scarcity_factor)))
         patches.append(
             FoodPatchConfig(
                 patch_id=patch_id,
