@@ -69,6 +69,13 @@ def _patch_by_id(world: AntSandboxWorld, patch_id: str | None) -> FoodPatch | No
     return None
 
 
+def _nearest_food_patch(world: AntSandboxWorld, x: int, y: int) -> FoodPatch | None:
+    active = [patch for patch in world.food_patches if patch.amount > 0]
+    if not active:
+        return None
+    return min(active, key=lambda patch: (_distance(x, y, patch.x, patch.y), patch.patch_id))
+
+
 def _food_within_range(
     world: AntSandboxWorld,
     ant: SandboxAnt,
@@ -267,7 +274,8 @@ def _best_pheromone_cell(
         return None
     field = world.food_trail if target == "food" else world.home_trail
     candidates = []
-    radius = max(2, int(round(config.ants.pheromone_sense_radius * (0.55 + ant.trail_affinity * 0.95))))
+    task_boost = 0.35 if (ant.target_patch_id is not None or ant.outbound_commit_ticks > 0) else 0.0
+    radius = max(2, int(round(config.ants.pheromone_sense_radius * (0.75 + ant.trail_affinity * 1.05 + task_boost))))
     for (x, y), strength in field.items():
         if strength <= 0:
             continue
@@ -279,6 +287,14 @@ def _best_pheromone_cell(
     if not candidates:
         return None
     return max(candidates, key=lambda item: (item[1], item[0][1], item[0][0]))[0]
+
+
+def _task_trail_bonus(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int], target_x: int | None, target_y: int | None) -> float:
+    if ant.carrying_food:
+        return world.home_trail.get(cell, 0.0) * 0.55
+    if target_x is not None and target_y is not None:
+        return world.food_trail.get(cell, 0.0) * 0.6
+    return world.food_trail.get(cell, 0.0) * 0.28 - world.home_trail.get(cell, 0.0) * 0.16
 
 
 def _decay_stale_field(world: AntSandboxWorld) -> None:
@@ -300,7 +316,7 @@ def _choose_step(
     target_y: int | None = None
     hungry = ant.energy <= config.ants.hunger_return_threshold
     distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
-    launch_exploration = ant.outbound_commit_ticks > 0 and distance_from_nest <= world.nest.radius + 11
+    launch_exploration = ant.outbound_commit_ticks > 6 and distance_from_nest <= world.nest.radius + 7
     task_patch = _task_oriented_patch(world, ant)
 
     if ant.carrying_food or (hungry and world.nest.stored_food > 0):
@@ -314,7 +330,7 @@ def _choose_step(
             target_x = patch.x
             target_y = patch.y
             ant.target_patch_id = patch.patch_id
-        elif not launch_exploration and distance_from_nest > world.nest.radius + 10:
+        elif ant.outbound_commit_ticks <= 6 or distance_from_nest > world.nest.radius + 5:
             pheromone_target = _best_pheromone_cell(
                 ant,
                 world,
@@ -323,6 +339,9 @@ def _choose_step(
             )
             if pheromone_target is not None:
                 target_x, target_y = pheromone_target
+                nearest_patch = _nearest_food_patch(world, target_x, target_y)
+                if nearest_patch is not None:
+                    ant.target_patch_id = nearest_patch.patch_id
     if target_x is not None and target_y is not None:
         target_heading = _target_heading(ant.x, ant.y, target_x, target_y)
     else:
@@ -369,8 +388,9 @@ def _choose_step(
         return min(
             free_candidates,
             key=lambda cell: (
-                (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell)) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
+                (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell) + world.home_trail.get(cell, 0.0) * 0.18) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
                 -_distance(cell[0], cell[1], world.nest.x, world.nest.y) if force_egress else 0,
+                -_task_trail_bonus(world, ant, cell, target_x, target_y),
                 _terrain_move_cost(world, cell[0], cell[1]),
                 -_wall_margin(world, cell) if near_wall else 0,
                 world.stale_field.get(cell, 0.0),
@@ -386,6 +406,7 @@ def _choose_step(
             (_local_density(world, ant, cell, radius=2) * 0.8 + _revisit_penalty(ant, cell) * 0.2) if launch_exploration else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
             -_distance(cell[0], cell[1], world.nest.x, world.nest.y) if force_egress else 0,
             _distance(cell[0], cell[1], target_x, target_y),
+            -_task_trail_bonus(world, ant, cell, target_x, target_y),
             _terrain_move_cost(world, cell[0], cell[1]),
             abs(_target_heading(ant.x, ant.y, cell[0], cell[1]) - target_heading),
             world.stale_field.get(cell, 0.0) - current_stale * 0.4,

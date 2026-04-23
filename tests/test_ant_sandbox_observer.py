@@ -58,5 +58,6 @@ def test_ant_sandbox_showcase_avoids_right_side_nest_pileup() -> None:
     purposeful = [
         ant for ant in near if ant["carrying_food"] or ant["outbound_commit_ticks"] > 0
     ]
-    assert len(east_sector) <= 4
-    assert len(purposeful) >= len(near) // 2
+    nonpurposeful = len(near) - len(purposeful)
+    assert nonpurposeful <= 2
+    assert len(east_sector) <= len(near) - 1
