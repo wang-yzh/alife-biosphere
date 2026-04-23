@@ -10,7 +10,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from alife_biosphere.ant_sandbox import AntSandboxConfig
+from alife_biosphere.ant_sandbox import build_showcase_config
 from alife_biosphere.ant_sandbox.observer import _frame_payload, _terrain_points, write_ant_live_observer_html
 from alife_biosphere.ant_sandbox.simulation import step_world
 from alife_biosphere.ant_sandbox.world import initialize_world
@@ -70,7 +70,7 @@ def _write_atomic(path: Path, text: str) -> None:
 
 
 def main() -> None:
-    config = AntSandboxConfig(ticks=360)
+    config = build_showcase_config()
     output_dir = ROOT / "outputs" / "ant_sandbox_live_observer"
     output_dir.mkdir(parents=True, exist_ok=True)
     world = initialize_world(config)

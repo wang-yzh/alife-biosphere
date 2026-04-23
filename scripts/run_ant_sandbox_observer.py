@@ -9,12 +9,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from alife_biosphere.ant_sandbox import AntSandboxConfig
+from alife_biosphere.ant_sandbox import build_showcase_config
 from alife_biosphere.ant_sandbox.observer import build_ant_observer_payload, write_ant_observer_html
 
 
 def main() -> None:
-    config = AntSandboxConfig(ticks=360)
+    config = build_showcase_config()
     payload = build_ant_observer_payload(config, title="Ant Sandbox World")
     output_dir = ROOT / "outputs" / "ant_sandbox_observer"
     output_dir.mkdir(parents=True, exist_ok=True)

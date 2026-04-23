@@ -9,14 +9,14 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from alife_biosphere.ant_sandbox import AntSandboxConfig
+from alife_biosphere.ant_sandbox import build_showcase_config
 from alife_biosphere.ant_sandbox import initialize_world
 from alife_biosphere.ant_sandbox import summarize_food_source_competition
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 
 
 def main() -> None:
-    config = AntSandboxConfig()
+    config = build_showcase_config()
     result = run_simulation(config)
     world = result.world
     output_dir = ROOT / "outputs" / "ant_sandbox_probe"
