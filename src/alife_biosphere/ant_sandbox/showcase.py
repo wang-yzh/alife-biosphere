@@ -10,27 +10,25 @@ from .config import AntAgentConfig, AntSandboxConfig, ColonyConfig, FoodPatchCon
 def _randomized_food_patches(seed: int, colonies: tuple[ColonyConfig, ...]) -> tuple[FoodPatchConfig, ...]:
     rng = make_rng(seed, "ant-sandbox:showcase:food")
     specs = [
-        ("food_northwest", 0.28, 0.24, 4, 34, 0.9, 16),
-        ("food_north", 0.55, 0.18, 5, 56, 1.0, 18),
-        ("food_mid", 0.52, 0.50, 5, 68, 1.1, 20),
-        ("food_southeast", 0.78, 0.72, 7, 120, 1.45, 24),
-        ("food_south", 0.60, 0.82, 6, 84, 1.2, 22),
-        ("food_far_east", 0.86, 0.42, 6, 92, 1.35, 24),
+        ("food_west_flank", 0.36, 0.46, 3, 26, 0.75, 18, True),
+        ("food_north_flank", 0.66, 0.32, 3, 28, 0.8, 18, True),
+        ("food_south_flank", 0.66, 0.64, 3, 28, 0.82, 18, True),
+        ("food_central_prize", 0.58, 0.49, 8, 160, 1.75, 34, False),
     ]
     patches: list[FoodPatchConfig] = []
     scarcity_factor = 0.55
-    for patch_id, px, py, radius, amount, value_score, respawn_delay in specs:
-        jitter_x = rng.randint(-6, 6)
-        jitter_y = rng.randint(-5, 5)
-        amount_jitter = rng.randint(-10, 14)
-        value_jitter = rng.uniform(-0.08, 0.12)
+    for patch_id, px, py, radius, amount, value_score, respawn_delay, jittered in specs:
+        jitter_x = rng.randint(-3, 3) if jittered else rng.randint(-1, 1)
+        jitter_y = rng.randint(-3, 3) if jittered else rng.randint(-1, 1)
+        amount_jitter = rng.randint(-6, 8)
+        value_jitter = rng.uniform(-0.04, 0.08)
         x = max(10, min(118, int(round(128 * px)) + jitter_x))
         y = max(10, min(86, int(round(96 * py)) + jitter_y))
-        min_nest_distance = radius + 16
+        min_nest_distance = radius + 12
         if any(dist((x, y), (colony.nest.x, colony.nest.y)) < min_nest_distance for colony in colonies):
             for _ in range(120):
-                candidate_x = rng.randint(12, 116)
-                candidate_y = rng.randint(12, 84)
+                candidate_x = rng.randint(42, 88) if patch_id == "food_central_prize" else rng.randint(12, 116)
+                candidate_y = rng.randint(32, 66) if patch_id == "food_central_prize" else rng.randint(12, 84)
                 if all(
                     dist((candidate_x, candidate_y), (colony.nest.x, colony.nest.y)) >= min_nest_distance
                     for colony in colonies
@@ -38,7 +36,7 @@ def _randomized_food_patches(seed: int, colonies: tuple[ColonyConfig, ...]) -> t
                     x = candidate_x
                     y = candidate_y
                     break
-        final_amount = max(12, int(round((amount + amount_jitter) * scarcity_factor)))
+        final_amount = max(10, int(round((amount + amount_jitter) * scarcity_factor)))
         patches.append(
             FoodPatchConfig(
                 patch_id=patch_id,
@@ -53,7 +51,6 @@ def _randomized_food_patches(seed: int, colonies: tuple[ColonyConfig, ...]) -> t
             )
         )
     return tuple(patches)
-
 
 def build_showcase_config(seed: int = 7, ticks: int = 1800) -> AntSandboxConfig:
     colonies = (
