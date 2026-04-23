@@ -60,6 +60,7 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "radius": patch.radius,
             "amount": patch.amount,
             "max_amount": patch.max_amount,
+            "value_score": patch.value_score,
             "nearby_ants": patch.nearby_ants,
             "carrying_nearby": patch.carrying_nearby,
             "competition_pressure": patch.competition_pressure,
@@ -567,7 +568,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         ctx.stroke();
         ctx.fillStyle = 'rgba(58, 82, 28, 0.58)';
         ctx.font = '11px Menlo, monospace';
-        ctx.fillText(`${{patch.amount}} · ${{patch.nearby_ants}}`, toCanvasX(patch.x) - 18, toCanvasY(patch.y) + 4);
+        ctx.fillText(`${{patch.amount}} · ${{patch.nearby_ants}} · v${{patch.value_score.toFixed(1)}}`, toCanvasX(patch.x) - 34, toCanvasY(patch.y) + 4);
       }}
     }}
 

@@ -38,6 +38,7 @@ class FoodPatchConfig:
     radius: int
     amount: int
     max_amount: int | None = None
+    value_score: float = 1.0
     regrowth_rate: int = 0
     relocate_on_depletion: bool = True
     respawn_delay_ticks: int = 28
@@ -51,6 +52,8 @@ class FoodPatchConfig:
             raise ValueError("max_amount must be positive when provided")
         if self.max_amount is not None and self.max_amount < self.amount:
             raise ValueError("max_amount must not be less than amount")
+        if self.value_score <= 0:
+            raise ValueError("value_score must be positive")
         if self.regrowth_rate < 0:
             raise ValueError("regrowth_rate must be non-negative")
         if self.respawn_delay_ticks <= 0:
@@ -136,9 +139,9 @@ class AntSandboxConfig:
     nest: NestConfig = field(default_factory=NestConfig)
     food_patches: tuple[FoodPatchConfig, ...] = field(
         default_factory=lambda: (
-            FoodPatchConfig("food_near", x=46, y=34, radius=4, amount=40, max_amount=40, regrowth_rate=0, respawn_delay_ticks=18),
-            FoodPatchConfig("food_gap", x=66, y=32, radius=5, amount=88, max_amount=88, regrowth_rate=0, respawn_delay_ticks=22),
-            FoodPatchConfig("food_far", x=82, y=72, radius=7, amount=168, max_amount=168, regrowth_rate=0, respawn_delay_ticks=26),
+            FoodPatchConfig("food_near", x=46, y=34, radius=4, amount=40, max_amount=40, value_score=0.8, regrowth_rate=0, respawn_delay_ticks=18),
+            FoodPatchConfig("food_gap", x=66, y=32, radius=5, amount=88, max_amount=88, value_score=1.05, regrowth_rate=0, respawn_delay_ticks=22),
+            FoodPatchConfig("food_far", x=82, y=72, radius=7, amount=168, max_amount=168, value_score=1.45, regrowth_rate=0, respawn_delay_ticks=26),
         )
     )
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)

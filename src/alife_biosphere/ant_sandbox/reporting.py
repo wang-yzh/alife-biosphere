@@ -261,6 +261,7 @@ def summarize_food_source_competition(result: AntSandboxResult) -> dict[str, obj
                 "patch_id": patch.patch_id,
                 "amount": patch.amount,
                 "max_amount": patch.max_amount,
+                "value_score": patch.value_score,
                 "nearby_ants": patch.nearby_ants,
                 "carrying_nearby": patch.carrying_nearby,
                 "competition_pressure": round(patch.competition_pressure, 4),

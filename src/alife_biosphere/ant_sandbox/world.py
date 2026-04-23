@@ -33,6 +33,7 @@ class FoodPatch:
     radius: int
     amount: int
     max_amount: int
+    value_score: float = 1.0
     regrowth_rate: int = 0
     relocate_on_depletion: bool = True
     respawn_delay_ticks: int = 28
@@ -242,6 +243,7 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
             radius=patch.radius,
             amount=patch.amount,
             max_amount=patch.amount if patch.max_amount is None else patch.max_amount,
+            value_score=patch.value_score,
             regrowth_rate=patch.regrowth_rate,
             relocate_on_depletion=patch.relocate_on_depletion,
             respawn_delay_ticks=patch.respawn_delay_ticks,

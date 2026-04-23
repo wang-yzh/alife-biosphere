@@ -106,7 +106,11 @@ def _food_within_range(
 def _food_patch_selection_cost(world: AntSandboxWorld, ant: SandboxAnt, patch: FoodPatch) -> float:
     distance = _distance(ant.x, ant.y, patch.x, patch.y)
     richness_ratio = 0.0 if patch.max_amount <= 0 else patch.amount / patch.max_amount
-    value_bonus = richness_ratio * (4.2 + ant.harvest_drive * 3.4) + patch.radius * 0.22
+    value_bonus = (
+        richness_ratio * (3.8 + ant.harvest_drive * 3.2)
+        + patch.radius * 0.18
+        + patch.value_score * (4.5 + ant.harvest_drive * 2.2)
+    )
     pressure_penalty = patch.competition_pressure * (0.18 + ant.harvest_drive * 0.08)
     crowd_penalty = patch.nearby_ants * (0.34 - ant.trail_affinity * 0.08)
     return distance + pressure_penalty + crowd_penalty - value_bonus
