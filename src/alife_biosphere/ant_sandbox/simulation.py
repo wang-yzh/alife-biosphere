@@ -188,6 +188,21 @@ def _enemy_density(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int
     return density
 
 
+def _colony_counts_near_patch(
+    world: AntSandboxWorld,
+    patch: FoodPatch,
+    radius: int,
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for other in world.ants:
+        if not other.alive:
+            continue
+        if _distance(other.x, other.y, patch.x, patch.y) > radius:
+            continue
+        counts[other.colony_id] = counts.get(other.colony_id, 0) + 1
+    return counts
+
+
 def _foreign_trail_pressure(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int]) -> float:
     pressure = 0.0
     for colony_id, field in world.food_trail.items():
@@ -263,6 +278,37 @@ def _task_oriented_patch(world: AntSandboxWorld, ant: SandboxAnt) -> FoodPatch |
     return patch
 
 
+def _set_behavior_state(
+    world: AntSandboxWorld,
+    ant: SandboxAnt,
+    state: str,
+    tick: int,
+    patch: FoodPatch | None = None,
+    enemy_count: int = 0,
+) -> None:
+    previous_state = ant.behavior_state
+    ant.behavior_state = state
+    ant.contest_patch_id = patch.patch_id if state == "contest" and patch is not None else None
+    if state != "contest" or previous_state == "contest" or patch is None:
+        return
+    world.emit(
+        Event(
+            tick=tick,
+            event_type="contest_entry",
+            organism_id=ant.ant_id,
+            habitat_id=patch.patch_id,
+            payload={
+                "x": ant.x,
+                "y": ant.y,
+                "colony_id": ant.colony_id,
+                "enemy_count": enemy_count,
+                "competition_pressure": patch.competition_pressure,
+                "remaining_amount": patch.amount,
+            },
+        )
+    )
+
+
 def _should_switch_to_visible_food(
     world: AntSandboxWorld,
     ant: SandboxAnt,
@@ -296,6 +342,36 @@ def _should_switch_to_visible_food(
         switch_margin -= 1.0
     switch_margin = max(1.0, switch_margin)
     return visible_cost + switch_margin < current_cost
+
+
+def _contest_context(
+    world: AntSandboxWorld,
+    ant: SandboxAnt,
+    config: AntSandboxConfig,
+    patch: FoodPatch | None,
+) -> tuple[bool, int]:
+    if patch is None or patch.amount <= 0 or ant.carrying_food:
+        return False, 0
+    contest_radius = patch.radius + max(5, config.ants.hostility_radius + 3)
+    if _distance(ant.x, ant.y, patch.x, patch.y) > contest_radius:
+        return False, 0
+    counts = _colony_counts_near_patch(world, patch, contest_radius)
+    enemy_count = sum(count for colony_id, count in counts.items() if colony_id != ant.colony_id)
+    if enemy_count > 0:
+        return True, enemy_count
+    if patch.competition_pressure >= 5.0 and patch.nearby_ants >= 2:
+        return True, enemy_count
+    if _foreign_trail_pressure(world, ant, (ant.x, ant.y)) >= 1.8:
+        return True, enemy_count
+    return False, enemy_count
+
+
+def _avoidance_pressure(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig) -> float:
+    if config.ants.hostility_radius <= 0:
+        return 0.0
+    enemy_pressure = _enemy_density(world, ant, (ant.x, ant.y), config.ants.hostility_radius) * config.ants.hostility_weight
+    foreign_pressure = _foreign_trail_pressure(world, ant, (ant.x, ant.y)) * config.ants.foreign_trail_weight
+    return enemy_pressure + foreign_pressure
 
 
 def _patch_respawn_cell(
@@ -570,6 +646,10 @@ def _start_combats(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) 
         enemy.target_patch_id = None
         ant.outbound_commit_ticks = 0
         enemy.outbound_commit_ticks = 0
+        ant.behavior_state = "combat"
+        enemy.behavior_state = "combat"
+        ant.contest_patch_id = None
+        enemy.contest_patch_id = None
         engaged.add(ant.ant_id)
         engaged.add(enemy.ant_id)
         started += 1
@@ -684,6 +764,7 @@ def _choose_step(
         target_x = home_nest.x
         target_y = home_nest.y
         target_key = f"nest:{ant.colony_id}:{home_nest.x}:{home_nest.y}"
+        _set_behavior_state(world, ant, "carry" if ant.carrying_food else "hungry", tick)
     else:
         patch = None if launch_exploration else task_patch
         if patch is not None:
@@ -710,6 +791,15 @@ def _choose_step(
                 if nearest_patch is not None:
                     ant.target_patch_id = nearest_patch.patch_id
                     target_key = f"pheromone:{ant.colony_id}:food:{target_x}:{target_y}"
+        contesting, enemy_count = _contest_context(world, ant, config, patch)
+        if contesting:
+            _set_behavior_state(world, ant, "contest", tick, patch=patch, enemy_count=enemy_count)
+        elif _avoidance_pressure(world, ant, config) >= max(0.9, config.ants.hostility_weight * 0.8):
+            _set_behavior_state(world, ant, "avoid", tick)
+        elif hungry:
+            _set_behavior_state(world, ant, "hungry", tick)
+        else:
+            _set_behavior_state(world, ant, "forage", tick)
     if target_x is not None and target_y is not None:
         target_heading = _target_heading(ant.x, ant.y, target_x, target_y)
     else:
@@ -807,6 +897,7 @@ def _pickup_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
             ant.carrying_food = True
             ant.target_patch_id = patch.patch_id
             ant.outbound_commit_ticks = 0
+            _set_behavior_state(world, ant, "carry", tick)
             patch.recent_pickups += 1
             world.emit(
                 Event(
@@ -843,6 +934,7 @@ def _unload_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
     ant.delivered_food += 1
     ant.outbound_commit_ticks = 14
     home_nest.stored_food += 1
+    _set_behavior_state(world, ant, "forage", tick)
     world.emit(
         Event(
             tick=tick,
@@ -1135,6 +1227,7 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> b
 
 def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> dict[str, int]:
     world.tick = tick
+    tick_event_start_index = len(world.events)
     moves = 0
     pickups = 0
     unloads = 0
@@ -1175,6 +1268,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
             deaths += 1
             continue
         if ant.combat_ticks_remaining > 0:
+            _set_behavior_state(world, ant, "combat", tick)
             world.occupied_cells.add((ant.x, ant.y))
             continue
         if _feed_at_nest(world, ant, config, tick):
@@ -1216,6 +1310,10 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     combat_pairs = _current_combat_pairs(world)
     frozen_ants = combat_pairs * 2
     _advance_combat_state(world, config, tick)
+    contest_entries = sum(1 for event in world.events[tick_event_start_index:] if event.event_type == "contest_entry")
+    contesting_ants = sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "contest")
+    avoidance_turns = sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "avoid")
+    hungry_ants = sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "hungry")
     summary = {
         "ticks": world.tick,
         "alive": world.alive_count(),
@@ -1236,6 +1334,10 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "combat_starts": combat_starts,
         "combat_pairs": combat_pairs,
         "frozen_ants": frozen_ants,
+        "contest_entries": contest_entries,
+        "contesting_ants": contesting_ants,
+        "avoidance_turns": avoidance_turns,
+        "hungry_ants": hungry_ants,
         "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
         "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
         "home_trail_cells": sum(len(field) for field in world.home_trail.values()),

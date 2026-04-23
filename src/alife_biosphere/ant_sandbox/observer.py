@@ -61,6 +61,8 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "terrain_kind": terrain_kind(world, ant.x, ant.y),
             "carrying_food": ant.carrying_food,
             "target_patch_id": ant.target_patch_id,
+            "behavior_state": ant.behavior_state,
+            "contest_patch_id": ant.contest_patch_id,
             "outbound_commit_ticks": ant.outbound_commit_ticks,
             "in_combat": ant.combat_ticks_remaining > 0,
             "combat_ticks_remaining": ant.combat_ticks_remaining,
@@ -106,6 +108,10 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "combat_starts": summary["combat_starts"],
         "combat_pairs": summary["combat_pairs"],
         "frozen_ants": summary["frozen_ants"],
+        "contest_entries": summary["contest_entries"],
+        "contesting_ants": summary["contesting_ants"],
+        "avoidance_turns": summary["avoidance_turns"],
+        "hungry_ants": summary["hungry_ants"],
         "ants": ants,
         "food_patches": food_patches,
         "food_trail_layers": _trail_layers(world.food_trail, world.colonies),
@@ -120,6 +126,7 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "depleted_source_events": _event_dicts(world, tick, "food_source_depleted"),
         "combat_start_events": _event_dicts(world, tick, "combat_start"),
         "combat_end_events": _event_dicts(world, tick, "combat_end"),
+        "contest_entry_events": _event_dicts(world, tick, "contest_entry"),
     }
 
 
@@ -188,6 +195,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       --home-trail: rgba(217, 153, 72, 0.22);
       --ant: #2c241d;
       --ant-carry: #d8893c;
+      --contest: rgba(181, 72, 43, 0.9);
+      --avoid: rgba(55, 90, 127, 0.78);
+      --hungry: rgba(189, 142, 49, 0.85);
       --dense-grass: rgba(106, 141, 84, 0.42);
       --sand: rgba(214, 184, 129, 0.44);
       --rock: rgba(92, 86, 81, 0.78);
@@ -437,6 +447,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <span><i class="dot" style="background: var(--food)"></i>food</span>
         <span><i class="dot" style="background: var(--ant)"></i>ant</span>
         <span><i class="dot" style="background: var(--ant-carry)"></i>carrying food</span>
+        <span><i class="dot" style="background: var(--contest)"></i>contest</span>
+        <span><i class="dot" style="background: var(--avoid)"></i>avoid</span>
+        <span><i class="dot" style="background: var(--hungry)"></i>hungry</span>
         <span><i class="dot" style="background: rgba(173, 48, 48, 0.9)"></i>combat</span>
         <span><i class="dot" style="background: var(--food-trail)"></i>food trail</span>
         <span><i class="dot" style="background: var(--home-trail)"></i>home trail</span>
@@ -449,6 +462,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <div class="card"><h3>Nest Food</h3><strong id="nest-food"></strong></div>
         <div class="card"><h3>Carrying</h3><strong id="carrying"></strong></div>
         <div class="card"><h3>Food Left</h3><strong id="food-left"></strong></div>
+        <div class="card"><h3>Contest</h3><strong id="contest"></strong></div>
+        <div class="card"><h3>Avoid</h3><strong id="avoid"></strong></div>
       </div>
       <section class="section">
         <h2>Moment</h2>
@@ -477,6 +492,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     const nestFoodEl = document.getElementById('nest-food');
     const carryingEl = document.getElementById('carrying');
     const foodLeftEl = document.getElementById('food-left');
+    const contestEl = document.getElementById('contest');
+    const avoidEl = document.getElementById('avoid');
     const generatedAtEl = document.getElementById('generated-at');
     const momentLog = document.getElementById('moment-log');
     const selectedAntEl = document.getElementById('selected-ant');
@@ -660,6 +677,27 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           ctx.arc(headX + dx * 3, headY + dy * 3, 2.3, 0, Math.PI * 2);
           ctx.fill();
         }}
+        if (ant.behavior_state === 'contest') {{
+          ctx.strokeStyle = 'rgba(181, 72, 43, 0.92)';
+          ctx.lineWidth = 2.1;
+          ctx.beginPath();
+          ctx.arc(x, y, 8.4, 0, Math.PI * 2);
+          ctx.stroke();
+        }} else if (ant.behavior_state === 'avoid') {{
+          ctx.strokeStyle = 'rgba(55, 90, 127, 0.76)';
+          ctx.lineWidth = 1.8;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(x, y, 8.0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }} else if (ant.behavior_state === 'hungry') {{
+          ctx.strokeStyle = 'rgba(189, 142, 49, 0.86)';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.arc(x, y, 7.6, 0, Math.PI * 2);
+          ctx.stroke();
+        }}
         if (ant.in_combat) {{
           ctx.strokeStyle = 'rgba(173, 48, 48, 0.92)';
           ctx.lineWidth = 2.4;
@@ -715,9 +753,14 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       nestFoodEl.textContent = frame.nest_food;
       carryingEl.textContent = frame.carrying;
       foodLeftEl.textContent = frame.food_remaining;
+      contestEl.textContent = frame.contesting_ants;
+      avoidEl.textContent = frame.avoidance_turns;
       drawFrame(frame);
       momentLog.innerHTML = '';
       const logItems = [];
+      if (frame.contest_entries) logItems.push(`contest entries +${{frame.contest_entries}}`);
+      if (frame.contesting_ants) logItems.push(`contesting ants ${{frame.contesting_ants}}`);
+      if (frame.avoidance_turns) logItems.push(`avoid turns ${{frame.avoidance_turns}}`);
       if (frame.pickups) logItems.push(`food pickups +${{frame.pickups}}`);
       if (frame.unloads) logItems.push(`nest unloads +${{frame.unloads}}`);
       if (frame.upkeep_events.length) logItems.push(`nest upkeep -${{frame.upkeep_events.reduce((sum, event) => sum + event.payload.consumed, 0)}}`);
@@ -746,7 +789,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <div class="tiny">pos = (${{selected.x}}, ${{selected.y}})</div>
           <div class="tiny">carrying = ${{selected.carrying_food ? 'yes' : 'no'}}</div>
           <div class="tiny">terrain = ${{selected.terrain_kind}}</div>
+          <div class="tiny">state = ${{selected.behavior_state}}</div>
           <div class="tiny">target = ${{selected.target_patch_id || 'none'}}</div>
+          <div class="tiny">contest patch = ${{selected.contest_patch_id || 'none'}}</div>
           <div class="tiny">outbound = ${{selected.outbound_commit_ticks}}</div>
           <div class="tiny">combat = ${{selected.in_combat ? 'yes' : 'no'}}</div>
           <div class="tiny">combat with = ${{selected.combat_with_id || 'none'}}</div>

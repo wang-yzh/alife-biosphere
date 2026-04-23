@@ -321,6 +321,52 @@ def test_pheromone_navigation_does_not_poison_patch_distance_cache() -> None:
     assert "pheromone:solo:food:16:24" in world.navigation_cache
 
 
+def test_resource_contest_state_emerges_near_shared_food() -> None:
+    config = AntSandboxConfig(
+        ticks=8,
+        width=48,
+        height=32,
+        colonies=(
+            ColonyConfig(
+                colony_id="wei",
+                display_name="Wei",
+                color="#375a7f",
+                ant_count=2,
+                nest=NestConfig(x=20, y=16, radius=2, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+            ),
+            ColonyConfig(
+                colony_id="shu",
+                display_name="Shu",
+                color="#b24a3a",
+                ant_count=2,
+                nest=NestConfig(x=28, y=16, radius=2, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+            ),
+        ),
+        food_patches=(
+            FoodPatchConfig("shared_food", x=24, y=16, radius=3, amount=80, max_amount=80, regrowth_rate=0, relocate_on_depletion=False),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=4,
+            max_population=4,
+            food_sense_radius=10,
+            pheromone_enabled=False,
+            combat_enabled=False,
+            hostility_radius=4,
+            hostility_weight=1.0,
+            metabolism_cost=0.01,
+            hunger_return_threshold=0.0,
+        ),
+    )
+    result = run_simulation(config)
+    contest_events = [event for event in result.events if event.event_type == "contest_entry"]
+    summaries = [event.payload for event in result.events if event.event_type == "tick_summary"]
+
+    assert contest_events
+    assert any(summary["contest_entries"] > 0 for summary in summaries)
+    assert any(summary["contesting_ants"] > 0 for summary in summaries)
+
+
 def test_depleted_food_patch_reseeds_to_new_site() -> None:
     config = AntSandboxConfig(
         ticks=24,

@@ -39,9 +39,33 @@ def main() -> None:
         "food_regrows": sum(1 for event in result.events if event.event_type == "food_patch_regrow"),
         "contested_sources": sum(1 for event in result.events if event.event_type == "food_source_contested"),
         "hostility_contacts": sum(summary["hostility_contacts"] for summary in tick_summaries),
+        "contest_entries": sum(summary["contest_entries"] for summary in tick_summaries),
+        "contestant_ticks": sum(summary["contesting_ants"] for summary in tick_summaries),
+        "avoidance_turns": sum(summary["avoidance_turns"] for summary in tick_summaries),
+        "hungry_ant_ticks": sum(summary["hungry_ants"] for summary in tick_summaries),
         "combat_starts": sum(1 for event in result.events if event.event_type == "combat_start"),
         "combat_ends": sum(1 for event in result.events if event.event_type == "combat_end"),
         "combat_pairs": sum(summary["combat_pairs"] for summary in tick_summaries),
+        "colony_pickups": {
+            colony_id: sum(
+                1
+                for event in result.events
+                if event.event_type == "food_pickup"
+                and event.organism_id is not None
+                and event.organism_id.startswith(f"{colony_id}_")
+            )
+            for colony_id in world.colonies
+        },
+        "colony_unloads": {
+            colony_id: sum(
+                1
+                for event in result.events
+                if event.event_type == "food_unload"
+                and event.organism_id is not None
+                and event.organism_id.startswith(f"{colony_id}_")
+            )
+            for colony_id in world.colonies
+        },
         "nest_food": world.delivered_food_total(),
         "colony_food": {colony_id: colony.nest.stored_food for colony_id, colony in world.colonies.items()},
         "food_remaining": world.food_remaining(),

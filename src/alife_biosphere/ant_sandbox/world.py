@@ -73,6 +73,8 @@ class SandboxAnt:
     combat_with_id: str | None = None
     combat_ticks_remaining: int = 0
     combat_cooldown_ticks: int = 0
+    behavior_state: str = "forage"
+    contest_patch_id: str | None = None
     recent_positions: list[tuple[int, int]] = field(default_factory=list)
     age: int = 0
     alive: bool = True
