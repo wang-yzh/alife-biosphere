@@ -100,7 +100,7 @@ class AntAgentConfig:
     trail_decay: float = 0.03
     initial_energy: float = 18.0
     max_energy: float = 20.0
-    metabolism_cost: float = 0.03
+    metabolism_cost: float = 0.04
     hunger_return_threshold: float = 6.0
     nest_feed_amount: float = 4.0
 
@@ -152,7 +152,7 @@ class AntAgentConfig:
 @dataclass(frozen=True)
 class AntSandboxConfig:
     seed: int = 7
-    ticks: int = 180
+    ticks: int = 320
     width: int = 128
     height: int = 96
     nest: NestConfig = field(default_factory=NestConfig)
@@ -163,21 +163,21 @@ class AntSandboxConfig:
                 display_name="Wei",
                 color="#375a7f",
                 ant_count=11,
-                nest=NestConfig(x=22, y=48, radius=4, initial_stored_food=16, colony_upkeep_per_ant_tick=0.002),
+                nest=NestConfig(x=18, y=48, radius=4, initial_stored_food=14, colony_upkeep_per_ant_tick=0.0025),
             ),
             ColonyConfig(
                 colony_id="shu",
                 display_name="Shu",
                 color="#b24a3a",
                 ant_count=11,
-                nest=NestConfig(x=20, y=28, radius=4, initial_stored_food=16, colony_upkeep_per_ant_tick=0.002),
+                nest=NestConfig(x=96, y=20, radius=4, initial_stored_food=14, colony_upkeep_per_ant_tick=0.0025),
             ),
             ColonyConfig(
                 colony_id="wu",
                 display_name="Wu",
                 color="#2f8f5b",
                 ant_count=10,
-                nest=NestConfig(x=20, y=70, radius=4, initial_stored_food=16, colony_upkeep_per_ant_tick=0.002),
+                nest=NestConfig(x=96, y=76, radius=4, initial_stored_food=14, colony_upkeep_per_ant_tick=0.0025),
             ),
         )
     )

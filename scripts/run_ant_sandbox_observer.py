@@ -14,7 +14,7 @@ from alife_biosphere.ant_sandbox.observer import build_ant_observer_payload, wri
 
 
 def main() -> None:
-    config = AntSandboxConfig(ticks=240)
+    config = AntSandboxConfig(ticks=360)
     payload = build_ant_observer_payload(config, title="Ant Sandbox World")
     output_dir = ROOT / "outputs" / "ant_sandbox_observer"
     output_dir.mkdir(parents=True, exist_ok=True)
