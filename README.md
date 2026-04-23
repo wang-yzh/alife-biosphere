@@ -1,148 +1,196 @@
 # Alife Biosphere
 
-This project starts a clean artificial-life research line after archiving:
+`alife_biosphere` is currently being developed as an instinct-first ant sandbox.
 
-- `maze_novelty`
-- `market_novelty`
+The active branch work is no longer centered on the old habitat-graph ecology
+prototype. The current project world is a terrain-aware outdoor sandbox where:
 
-The goal is not to build another benchmark trainer. The goal is to build a
-persistent world where:
+- ants move in local 2D space
+- multiple colonies share the same map
+- food sources have persistent identity and depletion
+- pheromone trails shape route formation
+- walls and terrain create routing pressure
+- replay observers let you inspect the world visually
 
-- organisms are born, compete, reproduce, disperse, and die
-- populations differentiate across habitats instead of collapsing immediately
-  to one winner
-- disturbance, recovery, and recolonization can happen without hidden resets
-- habitats retain traces of occupancy, depletion, and recovery history
+The current showcase direction is:
 
-Current status:
+```text
+surface ecology -> food competition -> multi-colony overlap -> conflict ->
+death consequences -> inherited instinct variation -> long-run evolution
+```
 
-- design phase
-- M0 executable scaffold exists
-- ecology-first north star: `docs/ecology_north_star_v1.md`
-- baseline world design: `docs/world_design_v0.md`
-- mechanism-rich predecessor design: `docs/world_design_v1.md`
-- current world design: `docs/world_design_v2.md`
-- observable target phenomena and red flags:
-  `docs/observable_phenomena_and_failure_modes_v1.md`
-- the genetics literature pass is in
-  `docs/genetics_bibliography_v0.md`
-- the first inheritance mechanism proposal is in
-  `docs/inheritance_architecture_v0.md`
-- the formal dual-inheritance / recombination models review is in
-  `docs/formal_dual_inheritance_and_recombination_models_review_v0.md`
-- the first literature gap review is in
-  `docs/literature_gap_review_v0.md`
-- the second literature gap review is in
-  `docs/literature_secondary_gaps_v1.md`
-- the resilience / regime-shift / signaling review is in
-  `docs/resilience_regime_shift_and_signal_review_v1.md`
-- the substrate / semantics / development blind-spot review is in
-  `docs/substrate_artificial_chemistry_and_semantic_closure_review_v0.md`
-- the open-endedness measurement review is in
-  `docs/open_endedness_measurement_review_v0.md`
-- the group reproduction / higher-level selection review is in
-  `docs/group_reproduction_and_higher_level_selection_review_v0.md`
-- the higher-level individuality claim standard is in
-  `docs/higher_level_individuality_claim_standard_v0.md`
-- the genotype–phenotype map / developmental constraints review is in
-  `docs/genotype_phenotype_map_and_developmental_constraints_review_v0.md`
-- the adaptive-cycle / trust mechanism note is in
-  `docs/adaptive_cycle_and_trust_mechanisms_v1.md`
-- the connectedness / trust-channel design note is in
-  `docs/connectedness_and_trust_channel_design_v1.md`
-- the antagonist lifecycle / parasite design review is in
-  `docs/antagonist_lifecycle_and_parasite_design_review_v0.md`
-- the parasite management / host-defense review is in
-  `docs/parasite_management_and_host_defense_review_v0.md`
-- the integrated research synthesis is in
-  `docs/research_synthesis_v1.md`
-- the warning / uncertainty design note is in
-  `docs/warning_metrics_and_uncertainty_design_v1.md`
-- the archive domain / provenance design note is in
-  `docs/archive_domain_tags_and_provenance_design_v1.md`
-- the unified bibliography is in
-  `docs/unified_bibliography_v1.md`
-- the unresolved-question register is in
-  `docs/unresolved_question_register_v1.md`
-- the disagreement / caution register is in
-  `docs/disagreement_and_caution_register_v1.md`
-- the theory contradiction map is in
-  `docs/theory_contradiction_map_v1.md`
-- the terminology index is in
-  `docs/terminology_index_v1.md`
-- the library inventory / gap map is in
-  `docs/library_inventory_and_gap_map_v1.md`
-- the experiment ledger is in
-  `docs/experiment_ledger_v1.md`
-- the negative-results ledger is in
-  `docs/negative_results_ledger_v1.md`
-- the claim-to-evidence table is in
-  `docs/claim_to_evidence_table_v1.md`
-- the ablation history is in
-  `docs/ablation_history_v1.md`
-- the minimal M1/M2 metric bundle note is in
-  `docs/minimal_metric_bundle_for_m1_m2.md`
-- the archive visibility / overload thresholds review is in
-  `docs/archive_visibility_and_overload_thresholds_review_v0.md`
-- baseline build plan: `docs/build_plan_v0.md`
-- mechanism-heavy predecessor build plan: `docs/build_plan_v1.md`
-- current build plan: `docs/build_plan_v2.md`
-- current M1 ecology spec: `docs/m1_ecology_kernel_spec_v2.md`
-- current working status: `docs/current_build_status_and_next_steps.md`
-- documentation library index: `docs/README.md`
-- documentation catalog: `docs/document_catalog_v1.md`
+## Current Branch State
 
-Near-term build order:
+The active sandbox branch has already passed its first core gates under the
+current probe setup:
 
-1. Ecology kernel
-2. Reproduction and lineage
-3. Disturbance and recovery
-4. Habitat history and ecological memory
-5. Niche formation and long-run ecology probes
-6. Optional higher-order mechanisms
+- local spatial movement instead of abstract habitat hops
+- working foraging loop
+- pheromone usefulness over pheromone-off baselines
+- colony persistence under bounded pressure
+- role-like behavior clustering
+- disturbance recovery
 
-Non-goals for the first version:
+The current visible world also includes:
 
-- realistic economics
-- photorealistic worlds
-- large neural models
-- leaderboard optimization
+- three colonies: `Wei`, `Shu`, `Wu`
+- a larger `128 x 96` showcase map
+- terrain types such as `dense_grass`, `sand`, and `rock`
+- wall-heavy showcase layouts for routing stress tests
 
-Active library for re-entry:
+For the current branch-level status page, see:
 
-1. `docs/README.md`
-2. `docs/current_build_status_and_next_steps.md`
-3. `docs/ecology_north_star_v1.md`
-4. `docs/world_design_v2.md`
-5. `docs/observable_phenomena_and_failure_modes_v1.md`
-6. `docs/build_plan_v2.md`
-7. `docs/m1_ecology_kernel_spec_v2.md`
-8. `docs/document_catalog_v1.md`
-9. `docs/claim_to_evidence_table_v1.md`
-10. `docs/experiment_ledger_v1.md`
-11. `docs/negative_results_ledger_v1.md`
-12. `docs/ablation_history_v1.md`
+- [ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
 
-Background support:
+## Quick Start
 
-- the remaining files in `docs/` are topic reviews, cautions, and detailed
-  mechanism notes that back the active library, but are not required for a
-  first-pass handoff.
+Requirements:
 
-## Development
+- Python `>=3.11`
 
-Recommended local workflow:
+Install:
 
 ```bash
 python -m pip install -e ".[dev]"
-python -m pytest
-python scripts/run_smoke.py
-python scripts/run_ecology_probe.py
-python scripts/run_live_observer.py
 ```
 
-Repository workflow:
+Run tests:
 
-- contribution guide: `CONTRIBUTING.md`
-- CI workflow: `.github/workflows/ci.yml`
-- PR template: `.github/pull_request_template.md`
+```bash
+python -m pytest
+```
+
+## Run The Sandbox
+
+### Replay Observer
+
+Generate the current showcase replay:
+
+```bash
+python scripts/run_ant_sandbox_observer.py
+```
+
+Open:
+
+- [outputs/ant_sandbox_observer/observer.html](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_observer/observer.html)
+
+This is the best entry point if you want to inspect colony traffic, food
+competition, terrain routing, and wall behavior.
+
+### Live Observer
+
+Generate the live file-refresh observer:
+
+```bash
+python scripts/run_ant_sandbox_live_observer.py
+```
+
+Open:
+
+- [outputs/ant_sandbox_live_observer/live_observer.html](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_live_observer/live_observer.html)
+
+This is useful for monitoring a single run while it is advancing.
+
+## Run Probes
+
+General showcase probe:
+
+```bash
+python scripts/run_ant_sandbox_probe.py
+```
+
+Pheromone comparison:
+
+```bash
+python scripts/run_ant_sandbox_pheromone_probe.py
+```
+
+Persistence probe:
+
+```bash
+python scripts/run_ant_sandbox_persistence_probe.py
+```
+
+Role clustering probe:
+
+```bash
+python scripts/run_ant_sandbox_role_probe.py
+```
+
+Disturbance recovery probe:
+
+```bash
+python scripts/run_ant_sandbox_disturbance_probe.py
+```
+
+Validation matrix:
+
+```bash
+python scripts/run_ant_sandbox_validation_matrix.py
+```
+
+Probe outputs are written under:
+
+- [outputs/ant_sandbox_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_probe)
+- [outputs/ant_sandbox_pheromone_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_pheromone_probe)
+- [outputs/ant_sandbox_persistence_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_persistence_probe)
+- [outputs/ant_sandbox_validation_matrix](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_validation_matrix)
+
+## Repository Map
+
+Core ant sandbox implementation:
+
+- [config.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/config.py)
+- [world.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/world.py)
+- [simulation.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/simulation.py)
+- [observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/observer.py)
+- [reporting.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/reporting.py)
+- [validation.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/validation.py)
+- [showcase.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/showcase.py)
+
+Main runnable scripts:
+
+- [run_ant_sandbox_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_observer.py)
+- [run_ant_sandbox_live_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_live_observer.py)
+- [run_ant_sandbox_probe.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_probe.py)
+- [run_ant_sandbox_validation_matrix.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_validation_matrix.py)
+
+## Documentation
+
+Shortest re-entry path for the current ant sandbox line:
+
+1. [docs/README.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/README.md)
+2. [docs/ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
+3. [docs/ant_sandbox_world_design_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_world_design_v2.md)
+4. [docs/ant_sandbox_build_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_build_plan_v2.md)
+5. [docs/ant_sandbox_m7_scale_up_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m7_scale_up_spec_v1.md)
+6. [docs/ant_sandbox_long_horizon_construction_route_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_long_horizon_construction_route_v1.md)
+
+If you need the full document catalog:
+
+- [docs/document_catalog_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/document_catalog_v1.md)
+
+## Near-Term Roadmap
+
+The current near-term work is not culture or heavy social systems.
+
+It is:
+
+- stronger multi-source resource competition
+- clearer multi-colony overlap
+- better obstacle routing under pressure
+- conflict after competition is already legible
+- stronger death consequences before inheritance
+- inherited instinct variation only after those pressures matter
+
+## Legacy Note
+
+This repository still contains the earlier ecology-graph line, observer, and
+probe scripts. They remain useful as historical scaffolding, but they are not
+the current product direction on the active ant-sandbox branch.
+
+Development workflow files:
+
+- [CONTRIBUTING.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/CONTRIBUTING.md)
+- [.github/workflows/ci.yml](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/.github/workflows/ci.yml)
+- [.github/pull_request_template.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/.github/pull_request_template.md)
