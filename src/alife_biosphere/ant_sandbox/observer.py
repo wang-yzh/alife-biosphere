@@ -62,6 +62,10 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "carrying_food": ant.carrying_food,
             "target_patch_id": ant.target_patch_id,
             "outbound_commit_ticks": ant.outbound_commit_ticks,
+            "in_combat": ant.combat_ticks_remaining > 0,
+            "combat_ticks_remaining": ant.combat_ticks_remaining,
+            "combat_with_id": ant.combat_with_id,
+            "combat_cooldown_ticks": ant.combat_cooldown_ticks,
             "delivered_food": ant.delivered_food,
             "age": ant.age,
             "range_bias": ant.range_bias,
@@ -99,6 +103,9 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "unloads": summary["unloads"],
         "births": summary["births"],
         "deaths": summary["deaths"],
+        "combat_starts": summary["combat_starts"],
+        "combat_pairs": summary["combat_pairs"],
+        "frozen_ants": summary["frozen_ants"],
         "ants": ants,
         "food_patches": food_patches,
         "food_trail_layers": _trail_layers(world.food_trail, world.colonies),
@@ -111,6 +118,8 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "upkeep_events": _event_dicts(world, tick, "nest_upkeep"),
         "contested_source_events": _event_dicts(world, tick, "food_source_contested"),
         "depleted_source_events": _event_dicts(world, tick, "food_source_depleted"),
+        "combat_start_events": _event_dicts(world, tick, "combat_start"),
+        "combat_end_events": _event_dicts(world, tick, "combat_end"),
     }
 
 
@@ -428,6 +437,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <span><i class="dot" style="background: var(--food)"></i>food</span>
         <span><i class="dot" style="background: var(--ant)"></i>ant</span>
         <span><i class="dot" style="background: var(--ant-carry)"></i>carrying food</span>
+        <span><i class="dot" style="background: rgba(173, 48, 48, 0.9)"></i>combat</span>
         <span><i class="dot" style="background: var(--food-trail)"></i>food trail</span>
         <span><i class="dot" style="background: var(--home-trail)"></i>home trail</span>
       </div>
@@ -650,6 +660,13 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           ctx.arc(headX + dx * 3, headY + dy * 3, 2.3, 0, Math.PI * 2);
           ctx.fill();
         }}
+        if (ant.in_combat) {{
+          ctx.strokeStyle = 'rgba(173, 48, 48, 0.92)';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.arc(x, y, 9.5, 0, Math.PI * 2);
+          ctx.stroke();
+        }}
         const highlighted = ant.ant_id === (pinnedAntId || hoverAntId);
         if (highlighted) {{
           ctx.strokeStyle = 'rgba(38, 73, 59, 0.95)';
@@ -706,6 +723,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       if (frame.upkeep_events.length) logItems.push(`nest upkeep -${{frame.upkeep_events.reduce((sum, event) => sum + event.payload.consumed, 0)}}`);
       if (frame.reseed_events.length) logItems.push(`food reseeds +${{frame.reseed_events.length}}`);
       if (frame.contested_source_events.length) logItems.push(`source contests +${{frame.contested_source_events.length}}`);
+      if (frame.combat_start_events.length) logItems.push(`combat starts +${{frame.combat_start_events.length}}`);
+      if (frame.combat_pairs) logItems.push(`combat pairs ${{frame.combat_pairs}}`);
       if (frame.depleted_source_events.length) logItems.push(`sources depleted +${{frame.depleted_source_events.length}}`);
       if (frame.births) logItems.push(`ant births +${{frame.births}}`);
       if (frame.death_events.length) logItems.push(`ant deaths +${{frame.death_events.length}}`);
@@ -729,6 +748,10 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <div class="tiny">terrain = ${{selected.terrain_kind}}</div>
           <div class="tiny">target = ${{selected.target_patch_id || 'none'}}</div>
           <div class="tiny">outbound = ${{selected.outbound_commit_ticks}}</div>
+          <div class="tiny">combat = ${{selected.in_combat ? 'yes' : 'no'}}</div>
+          <div class="tiny">combat with = ${{selected.combat_with_id || 'none'}}</div>
+          <div class="tiny">combat ticks = ${{selected.combat_ticks_remaining}}</div>
+          <div class="tiny">combat cooldown = ${{selected.combat_cooldown_ticks}}</div>
           <div class="tiny">delivered = ${{selected.delivered_food}}</div>
           <div class="tiny">age = ${{selected.age}}</div>
           <div class="tiny">range = ${{selected.range_bias.toFixed(2)}}</div>

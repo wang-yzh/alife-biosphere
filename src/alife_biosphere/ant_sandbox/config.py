@@ -108,6 +108,11 @@ class AntAgentConfig:
     hostility_radius: int = 3
     hostility_weight: float = 1.0
     foreign_trail_weight: float = 0.25
+    combat_enabled: bool = False
+    combat_radius: int = 1
+    combat_duration: int = 6
+    combat_cooldown: int = 4
+    combat_decision_threshold: float = 1.2
 
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
@@ -158,6 +163,14 @@ class AntAgentConfig:
             raise ValueError("hunger_return_threshold must be non-negative")
         if self.nest_feed_amount <= 0:
             raise ValueError("nest_feed_amount must be positive")
+        if self.combat_radius < 0:
+            raise ValueError("combat_radius must be non-negative")
+        if self.combat_duration < 0:
+            raise ValueError("combat_duration must be non-negative")
+        if self.combat_cooldown < 0:
+            raise ValueError("combat_cooldown must be non-negative")
+        if self.combat_decision_threshold < 0:
+            raise ValueError("combat_decision_threshold must be non-negative")
 
 
 @dataclass(frozen=True)

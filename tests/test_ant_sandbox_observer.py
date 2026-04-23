@@ -22,6 +22,7 @@ def test_ant_sandbox_observer_payload_contains_world_frames() -> None:
     assert "home_trail_layers" in first
     assert "terrain_kind" in first["ants"][0]
     assert "colony_id" in first["ants"][0]
+    assert "in_combat" in first["ants"][0]
     assert "competition_pressure" in first["food_patches"][0]
     assert "nearby_ants" in first["food_patches"][0]
 

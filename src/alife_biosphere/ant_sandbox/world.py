@@ -70,6 +70,9 @@ class SandboxAnt:
     carrying_food: bool = False
     target_patch_id: str | None = None
     outbound_commit_ticks: int = 0
+    combat_with_id: str | None = None
+    combat_ticks_remaining: int = 0
+    combat_cooldown_ticks: int = 0
     recent_positions: list[tuple[int, int]] = field(default_factory=list)
     age: int = 0
     alive: bool = True

@@ -446,6 +446,181 @@ def _hostility_penalty(
     )
 
 
+def _ant_by_id(world: AntSandboxWorld, ant_id: str | None) -> SandboxAnt | None:
+    if ant_id is None:
+        return None
+    for ant in world.ants:
+        if ant.ant_id == ant_id:
+            return ant
+    return None
+
+
+def _combat_balance(world: AntSandboxWorld, ant: SandboxAnt, radius: int) -> tuple[int, int]:
+    allies = 0
+    enemies = 0
+    for other in world.ants:
+        if not other.alive or other.ant_id == ant.ant_id:
+            continue
+        if max(abs(other.x - ant.x), abs(other.y - ant.y)) > radius:
+            continue
+        if other.colony_id == ant.colony_id:
+            allies += 1
+        else:
+            enemies += 1
+    return allies, enemies
+
+
+def _engage_score(world: AntSandboxWorld, ant: SandboxAnt, enemy: SandboxAnt, config: AntSandboxConfig) -> float:
+    if not config.ants.combat_enabled:
+        return -1.0
+    if not ant.alive or ant.combat_ticks_remaining > 0 or ant.combat_cooldown_ticks > 0:
+        return -1.0
+    score = 0.0
+    home_nest = _home_nest(world, ant)
+    if _distance(ant.x, ant.y, home_nest.x, home_nest.y) <= home_nest.radius + 10:
+        score += 0.9
+    if ant.carrying_food:
+        score -= 1.15
+    if ant.energy <= config.ants.hunger_return_threshold + 1.5:
+        score -= 0.75
+    if enemy.carrying_food:
+        score += 0.35
+    allies, enemies = _combat_balance(world, ant, config.ants.combat_radius + 1)
+    score += max(-0.8, min(0.9, (allies - enemies) * 0.45))
+    if ant.target_patch_id is not None and ant.target_patch_id == enemy.target_patch_id:
+        score += 0.25
+    for patch in world.food_patches:
+        if patch.amount <= 0:
+            continue
+        if _distance(ant.x, ant.y, patch.x, patch.y) <= patch.radius + 5:
+            score += 0.45 + patch.value_score * 0.22
+            break
+    score += ant.harvest_drive * 0.35 + ant.trail_affinity * 0.15
+    score += min(0.45, _foreign_trail_pressure(world, ant, (ant.x, ant.y)) * 0.08)
+    return score
+
+
+def _start_combats(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> int:
+    if not config.ants.combat_enabled or config.ants.combat_duration <= 0 or config.ants.combat_radius <= 0:
+        return 0
+    candidates: list[tuple[float, str, str]] = []
+    ants = [ant for ant in world.ants if ant.alive and ant.combat_ticks_remaining <= 0 and ant.combat_cooldown_ticks <= 0]
+    for index, ant in enumerate(ants):
+        for enemy in ants[index + 1:]:
+            if enemy.colony_id == ant.colony_id:
+                continue
+            if max(abs(enemy.x - ant.x), abs(enemy.y - ant.y)) > config.ants.combat_radius:
+                continue
+            ant_score = _engage_score(world, ant, enemy, config)
+            enemy_score = _engage_score(world, enemy, ant, config)
+            if (
+                ant_score >= config.ants.combat_decision_threshold
+                and enemy_score >= config.ants.combat_decision_threshold
+            ):
+                candidates.append((ant_score + enemy_score, ant.ant_id, enemy.ant_id))
+    engaged: set[str] = set()
+    started = 0
+    for _, ant_id, enemy_id in sorted(candidates, reverse=True):
+        if ant_id in engaged or enemy_id in engaged:
+            continue
+        ant = _ant_by_id(world, ant_id)
+        enemy = _ant_by_id(world, enemy_id)
+        if ant is None or enemy is None or not ant.alive or not enemy.alive:
+            continue
+        ant.combat_with_id = enemy.ant_id
+        enemy.combat_with_id = ant.ant_id
+        ant.combat_ticks_remaining = config.ants.combat_duration
+        enemy.combat_ticks_remaining = config.ants.combat_duration
+        ant.target_patch_id = None
+        enemy.target_patch_id = None
+        ant.outbound_commit_ticks = 0
+        enemy.outbound_commit_ticks = 0
+        engaged.add(ant.ant_id)
+        engaged.add(enemy.ant_id)
+        started += 1
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="combat_start",
+                organism_id=None,
+                habitat_id="world",
+                payload={
+                    "ant_a": ant.ant_id,
+                    "ant_b": enemy.ant_id,
+                    "colony_a": ant.colony_id,
+                    "colony_b": enemy.colony_id,
+                    "x": round((ant.x + enemy.x) / 2, 2),
+                    "y": round((ant.y + enemy.y) / 2, 2),
+                    "duration": config.ants.combat_duration,
+                },
+            )
+        )
+    return started
+
+
+def _current_combat_pairs(world: AntSandboxWorld) -> int:
+    seen: set[tuple[str, str]] = set()
+    for ant in world.ants:
+        if not ant.alive or ant.combat_ticks_remaining <= 0 or ant.combat_with_id is None:
+            continue
+        pair = tuple(sorted((ant.ant_id, ant.combat_with_id)))
+        seen.add(pair)
+    return len(seen)
+
+
+def _advance_combat_state(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> int:
+    active_pairs = 0
+    handled: set[str] = set()
+    for ant in world.ants:
+        if not ant.alive or ant.ant_id in handled:
+            continue
+        if ant.combat_ticks_remaining <= 0 or ant.combat_with_id is None:
+            if ant.combat_cooldown_ticks > 0:
+                ant.combat_cooldown_ticks -= 1
+            continue
+        enemy = _ant_by_id(world, ant.combat_with_id)
+        if enemy is None or not enemy.alive:
+            ant.combat_with_id = None
+            ant.combat_ticks_remaining = 0
+            if ant.combat_cooldown_ticks > 0:
+                ant.combat_cooldown_ticks -= 1
+            continue
+        handled.add(ant.ant_id)
+        handled.add(enemy.ant_id)
+        active_pairs += 1
+        ant.combat_ticks_remaining = max(0, ant.combat_ticks_remaining - 1)
+        enemy.combat_ticks_remaining = max(0, enemy.combat_ticks_remaining - 1)
+        if ant.combat_ticks_remaining == 0 or enemy.combat_ticks_remaining == 0:
+            ant.combat_with_id = None
+            enemy.combat_with_id = None
+            ant.combat_ticks_remaining = 0
+            enemy.combat_ticks_remaining = 0
+            ant.combat_cooldown_ticks = max(ant.combat_cooldown_ticks, config.ants.combat_cooldown)
+            enemy.combat_cooldown_ticks = max(enemy.combat_cooldown_ticks, config.ants.combat_cooldown)
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="combat_end",
+                    organism_id=None,
+                    habitat_id="world",
+                    payload={
+                        "ant_a": ant.ant_id,
+                        "ant_b": enemy.ant_id,
+                        "colony_a": ant.colony_id,
+                        "colony_b": enemy.colony_id,
+                        "x": round((ant.x + enemy.x) / 2, 2),
+                        "y": round((ant.y + enemy.y) / 2, 2),
+                    },
+                )
+            )
+    for ant in world.ants:
+        if not ant.alive or ant.ant_id in handled:
+            continue
+        if ant.combat_ticks_remaining <= 0 and ant.combat_cooldown_ticks > 0:
+            ant.combat_cooldown_ticks -= 1
+    return active_pairs
+
+
 def _decay_stale_field(world: AntSandboxWorld) -> None:
     world.stale_field = {
         cell: value * 0.92
@@ -931,12 +1106,14 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     reseeds = 0
     contested_sources = 0
     hostility_contacts = 0
+    combat_starts = 0
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
     _decay_stale_field(world)
     upkeep += _apply_colony_upkeep(world, config, tick)
     reseeds += _regrow_food(world, config, tick)
     world.occupied_cells = {(ant.x, ant.y) for ant in world.ants if ant.alive}
+    combat_starts += _start_combats(world, config, tick)
     for ant in world.ants:
         if not ant.alive:
             continue
@@ -957,6 +1134,9 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
                 )
             )
             deaths += 1
+            continue
+        if ant.combat_ticks_remaining > 0:
+            world.occupied_cells.add((ant.x, ant.y))
             continue
         if _feed_at_nest(world, ant, config, tick):
             feeds += 1
@@ -994,6 +1174,9 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         births += 1
     contested_sources += _update_food_source_competition(world, tick)
     hostility_contacts += _count_hostility_contacts(world, config)
+    combat_pairs = _current_combat_pairs(world)
+    frozen_ants = combat_pairs * 2
+    _advance_combat_state(world, config, tick)
     summary = {
         "ticks": world.tick,
         "alive": world.alive_count(),
@@ -1011,6 +1194,9 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "food_reseeds": reseeds,
         "contested_sources": contested_sources,
         "hostility_contacts": hostility_contacts,
+        "combat_starts": combat_starts,
+        "combat_pairs": combat_pairs,
+        "frozen_ants": frozen_ants,
         "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
         "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
         "home_trail_cells": sum(len(field) for field in world.home_trail.values()),

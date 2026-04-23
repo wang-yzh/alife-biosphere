@@ -1,6 +1,7 @@
 from alife_biosphere.ant_sandbox import (
     AntAgentConfig,
     AntSandboxConfig,
+    ColonyConfig,
     FoodPatchConfig,
     NestConfig,
     TerrainConfig,
@@ -332,6 +333,58 @@ def test_showcase_config_disables_births_and_extends_lifespan() -> None:
     config = build_showcase_config(ticks=240)
     assert config.ants.allow_spawning is False
     assert config.ants.max_age > config.ticks
+
+
+def test_combat_freezes_both_ants_until_resolution() -> None:
+    config = AntSandboxConfig(
+        ticks=12,
+        width=48,
+        height=32,
+        colonies=(
+            ColonyConfig(
+                colony_id="wei",
+                display_name="Wei",
+                color="#375a7f",
+                ant_count=1,
+                nest=NestConfig(x=16, y=16, radius=2, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+            ),
+            ColonyConfig(
+                colony_id="shu",
+                display_name="Shu",
+                color="#b24a3a",
+                ant_count=1,
+                nest=NestConfig(x=19, y=16, radius=2, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+            ),
+        ),
+        food_patches=(
+            FoodPatchConfig("food_a", x=40, y=16, radius=2, amount=20, max_amount=20, regrowth_rate=0, relocate_on_depletion=False),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=2,
+            max_population=2,
+            pheromone_enabled=False,
+            metabolism_cost=0.01,
+            food_sense_radius=6,
+            combat_enabled=True,
+            combat_radius=3,
+            combat_duration=4,
+            combat_cooldown=2,
+            combat_decision_threshold=0.0,
+        ),
+    )
+    result = run_simulation(config)
+    combat_start = next(event for event in result.events if event.event_type == "combat_start")
+    combat_end = next(event for event in result.events if event.event_type == "combat_end")
+    engaged_ids = {combat_start.payload["ant_a"], combat_start.payload["ant_b"]}
+    moves_during_combat = [
+        event
+        for event in result.events
+        if event.event_type == "move"
+        and event.organism_id in engaged_ids
+        and combat_start.tick <= event.tick <= combat_end.tick
+    ]
+    assert not moves_during_combat
 
 
 def test_validation_status_evaluates_expected_metric_states() -> None:

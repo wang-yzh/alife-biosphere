@@ -93,6 +93,11 @@ def build_showcase_config(seed: int = 7, ticks: int = 1800) -> AntSandboxConfig:
         hostility_radius=4,
         hostility_weight=1.15,
         foreign_trail_weight=0.3,
+        combat_enabled=True,
+        combat_radius=2,
+        combat_duration=8,
+        combat_cooldown=5,
+        combat_decision_threshold=0.85,
     )
     return AntSandboxConfig(
         seed=seed,
