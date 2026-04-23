@@ -22,6 +22,8 @@ The current status is based on:
 - `M3` persistence probe
 - `M4` role clustering summary
 - `M5` disturbance recovery probe
+- current showcase lifecycle probe with three colonies, terrain, walls, and
+  simple reproduction / death enabled
 
 and a multi-seed validation matrix over:
 
@@ -39,6 +41,20 @@ and a multi-seed validation matrix over:
 | `M4 colony persistence` | `pass` | the branch now shows births, deaths, and bounded alive counts in longer runs without total collapse under the current persistence configuration |
 | `M5 role differentiation` | `pass` | the branch now produces multiple role-like behavior clusters from trace summaries |
 | `M6 disturbance recovery` | `pass` | the branch now recovers a substantial fraction of prior function after local-space disturbance in the current probe setup |
+| `M10A simple lifecycle` | `pass` | the branch now supports starvation and old-age death plus nest-food-driven reproduction with parent and lineage bookkeeping, without mutation |
+
+## Current Lifecycle Snapshot
+
+Latest showcase lifecycle probe:
+
+- `births=52`
+- `deaths=51`
+- `death_reasons={'old_age': 9, 'starvation': 42}`
+- `births_by_colony={'wei': 16, 'shu': 17, 'wu': 19}`
+- `deaths_by_colony={'wei': 16, 'shu': 16, 'wu': 19}`
+- `final_population_by_colony={'wei': 11, 'shu': 12, 'wu': 10}`
+- `pickups=1049`
+- `unloads=1009`
 
 ## Important Caution
 
@@ -59,18 +75,21 @@ Still provisional:
 - wider food layout robustness
 - stronger role interpretation
 - disturbance recovery under harder settings
-- observer integration of role and disturbance overlays
+- observer integration of longer-run lifecycle overlays
+- inheritance beyond parent and lineage bookkeeping
+- mutation and trait drift under selection pressure
 
 ## Next Phase
 
-The next active phase is no longer “prove the small sandbox works”.
+The next active phase is no longer "prove the small sandbox works".
 
 It is:
 
-- larger showcase map
-- terrain-aware surface world
-- persistent food-source identity
-- richer observer presentation
+- longer-run three-colony lifecycle balance
+- stronger resource pressure and turnover under scarcity
+- inheritance contract before mutation
+- mutation only after lineage and comparison metrics are stable
+- combat as optional later pressure rather than the current branch center
 
 The next current planning set is:
 
@@ -89,5 +108,8 @@ It is now a real early ant sandbox with:
 - bounded persistence
 - behavior clustering
 - local-space recovery
+- starvation and old-age death
+- nest-food-driven reproduction
+- parent and lineage tracking across births
 
 That is enough to treat it as the real project world, not just a sketch.

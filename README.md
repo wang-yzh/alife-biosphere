@@ -1,6 +1,7 @@
 # Alife Biosphere
 
-`alife_biosphere` is currently being developed as an instinct-first ant sandbox.
+`alife_biosphere` is currently being developed as an instinct-first ant sandbox
+with a simple open lifecycle.
 
 The active branch work is no longer centered on the old habitat-graph ecology
 prototype. The current project world is a terrain-aware outdoor sandbox where:
@@ -15,8 +16,9 @@ prototype. The current project world is a terrain-aware outdoor sandbox where:
 The current showcase direction is:
 
 ```text
-surface ecology -> food competition -> multi-colony overlap -> conflict ->
-death consequences -> inherited instinct variation -> long-run evolution
+surface ecology -> food competition -> multi-colony overlap ->
+death and reproduction -> inheritance contract -> inherited instinct
+variation -> long-run evolution
 ```
 
 ## Current Branch State
@@ -30,6 +32,8 @@ current probe setup:
 - colony persistence under bounded pressure
 - role-like behavior clustering
 - disturbance recovery
+- simple lifecycle with starvation and old-age death
+- nest-food-driven reproduction with parent and lineage tracking
 
 The current visible world also includes:
 
@@ -37,6 +41,15 @@ The current visible world also includes:
 - a larger `128 x 96` showcase map
 - terrain types such as `dense_grass`, `sand`, and `rock`
 - wall-heavy showcase layouts for routing stress tests
+
+Latest showcase lifecycle snapshot:
+
+- `births=52`
+- `deaths=51`
+- `death_reasons={'old_age': 9, 'starvation': 42}`
+- `final_population_by_colony={'wei': 11, 'shu': 12, 'wu': 10}`
+- `pickups=1049`
+- `unloads=1009`
 
 For the current branch-level status page, see:
 
@@ -75,7 +88,7 @@ Open:
 - [outputs/ant_sandbox_observer/observer.html](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_observer/observer.html)
 
 This is the best entry point if you want to inspect colony traffic, food
-competition, terrain routing, and wall behavior.
+competition, terrain routing, wall behavior, and lifecycle turnover.
 
 ### Live Observer
 
@@ -98,6 +111,15 @@ General showcase probe:
 ```bash
 python scripts/run_ant_sandbox_probe.py
 ```
+
+This probe now reports both behavior and lifecycle summaries, including:
+
+- `births`
+- `deaths`
+- `death_reasons`
+- `births_by_colony`
+- `deaths_by_colony`
+- `final_population_by_colony`
 
 Pheromone comparison:
 
@@ -161,10 +183,11 @@ Shortest re-entry path for the current ant sandbox line:
 
 1. [docs/README.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/README.md)
 2. [docs/ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
-3. [docs/ant_sandbox_world_design_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_world_design_v2.md)
-4. [docs/ant_sandbox_build_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_build_plan_v2.md)
-5. [docs/ant_sandbox_m7_scale_up_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m7_scale_up_spec_v1.md)
-6. [docs/ant_sandbox_long_horizon_construction_route_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_long_horizon_construction_route_v1.md)
+3. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
+4. [docs/ant_sandbox_world_design_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_world_design_v2.md)
+5. [docs/ant_sandbox_build_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_build_plan_v2.md)
+6. [docs/ant_sandbox_m7_scale_up_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m7_scale_up_spec_v1.md)
+7. [docs/ant_sandbox_long_horizon_construction_route_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_long_horizon_construction_route_v1.md)
 
 If you need the full document catalog:
 
@@ -172,16 +195,16 @@ If you need the full document catalog:
 
 ## Near-Term Roadmap
 
-The current near-term work is not culture or heavy social systems.
+The current near-term work is not culture, learning, or heavy social systems.
 
 It is:
 
-- stronger multi-source resource competition
-- clearer multi-colony overlap
-- better obstacle routing under pressure
-- conflict after competition is already legible
-- stronger death consequences before inheritance
-- inherited instinct variation only after those pressures matter
+- stronger long-run three-colony lifecycle balance
+- clearer resource pressure and turnover under scarcity
+- better obstacle routing under extended runs
+- a clean inheritance contract before mutation
+- inherited instinct variation only after lineage and comparison metrics are stable
+- conflict as optional later pressure rather than the current branch center
 
 ## Legacy Note
 

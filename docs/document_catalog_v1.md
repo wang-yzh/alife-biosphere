@@ -13,17 +13,21 @@ library.
 
 ## 1. Entry And Current Control Layer
 
-These documents coordinate the current ecology-first project state and should
-be checked first before making cross-cutting decisions.
+These documents coordinate the current active ant-sandbox branch and should be
+checked first before making cross-cutting decisions.
 
 - `README.md`: docs-library entry map and status guide
-- `current_build_status_and_next_steps.md`: shortest current re-entry summary
-- `ecology_north_star_v1.md`: one-page statement of current destination
-- `world_design_v2.md`: current ecology-first world design
-- `observable_phenomena_and_failure_modes_v1.md`: target phenomena and red
-  flags
-- `build_plan_v2.md`: current milestone ordering
-- `m1_ecology_kernel_spec_v2.md`: current first implementation spec
+- `ant_sandbox_status_v1.md`: branch-level status for the active sandbox line
+- `ant_sandbox_north_star_v1.md`: one-page statement of the sandbox target
+- `ant_sandbox_world_design_v2.md`: current sandbox world design
+- `ant_sandbox_build_plan_v2.md`: current milestone ordering for the active
+  sandbox line
+- `ant_sandbox_m7_scale_up_spec_v1.md`: scale-up freeze for the current
+  world-first branch
+- `ant_sandbox_long_horizon_construction_route_v1.md`: dependency-ordered
+  future route after the current scale-up and lifecycle work
+- `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`: first simple lifecycle
+  slice with births, deaths, and lineage bookkeeping
 - `document_catalog_v1.md`: full library catalog by role
 - `drift_cleanup_report_2026-04-20.md`: cleanup log for the working-copy
   library
@@ -71,25 +75,24 @@ They are no longer the shortest current control path.
   the first real-time self-refreshing sandbox window
 - `m4_habitat_memory_slice_2026-04-21.md`: short implementation note for the
   first habitat-memory and recovery-lag slice
+- `current_build_status_and_next_steps.md`: predecessor re-entry summary from
+  the earlier ecology-first line
+- `ecology_north_star_v1.md`: predecessor statement of destination from the
+  earlier ecology-first line
+- `world_design_v2.md`: predecessor ecology-first world design
+- `observable_phenomena_and_failure_modes_v1.md`: predecessor target
+  phenomena and failure flags
+- `build_plan_v2.md`: predecessor ecology-first milestone ordering
+- `m1_ecology_kernel_spec_v2.md`: predecessor ecology-kernel freeze
 - `ant_sandbox_hard_metrics_v1.md`: hard gates for deciding whether the system
   is actually becoming an ant sandbox
 - `ant_sandbox_gap_audit_v1.md`: current code audit against those ant-sandbox
   gates
-- `ant_sandbox_north_star_v1.md`: north star for the new ant-sandbox branch
 - `ant_sandbox_world_design_v1.md`: current design contract for the sandbox
   world type
-- `ant_sandbox_world_design_v2.md`: scale-up design contract for larger maps,
-  terrain, richer observer presentation, and persistent food-source identity
 - `ant_sandbox_build_plan_v1.md`: milestone order for the new sandbox branch
-- `ant_sandbox_build_plan_v2.md`: scale-up milestone order after the first
-  sandbox core has passed its hard gates
 - `ant_sandbox_m0_substrate_spec_v1.md`: first substrate spec for local-space
   world initialization
-- `ant_sandbox_m7_scale_up_spec_v1.md`: next implementation freeze for larger
-  maps, terrain, and richer world-first presentation
-- `ant_sandbox_long_horizon_construction_route_v1.md`: dependency-ordered
-  future route for competition, multi-colony conflict, stronger death ecology,
-  and inherited variation
 - `ant_sandbox_m1_foraging_slice_2026-04-21.md`: first behavior slice for
   local movement, pickup, return, and unload
 - `ant_sandbox_m2_pheromone_slice_2026-04-21.md`: first trace-field and
@@ -214,12 +217,12 @@ They are best used selectively after the control layer is clear.
 ### Fast re-entry
 
 1. `README.md`
-2. `current_build_status_and_next_steps.md`
-3. `ecology_north_star_v1.md`
-4. `world_design_v2.md`
-5. `observable_phenomena_and_failure_modes_v1.md`
-6. `build_plan_v2.md`
-7. `m1_ecology_kernel_spec_v2.md`
+2. `ant_sandbox_status_v1.md`
+3. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
+4. `ant_sandbox_world_design_v2.md`
+5. `ant_sandbox_build_plan_v2.md`
+6. `ant_sandbox_m7_scale_up_spec_v1.md`
+7. `ant_sandbox_long_horizon_construction_route_v1.md`
 
 ### Evidence and honesty pass
 
@@ -245,4 +248,4 @@ of these files together:
 
 - `README.md`
 - `document_catalog_v1.md`
-- `current_build_status_and_next_steps.md`
+- `ant_sandbox_status_v1.md`

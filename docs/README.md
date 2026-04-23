@@ -4,9 +4,9 @@
 
 This file is the entry map for the `alife_biosphere` documentation library.
 
-The repository has grown through multiple reading passes, design revisions, and
-handoff notes. The goal here is not to rewrite every historical document. The
-goal is to say clearly:
+The repository has grown through multiple reading passes, design revisions,
+handoff notes, and branch pivots. The goal here is not to rewrite every
+historical document. The goal is to say clearly:
 
 - what is current
 - what is supporting material
@@ -16,28 +16,34 @@ No documents were moved during this cleanup pass.
 Organization is provided through this index and through status notes on drifted
 historical files.
 
+The current active implementation line is the instinct-first ant sandbox.
+Older ecology-first documents are still useful, but they are no longer the
+control layer for the active branch.
+
 ## Start Here
 
-For the shortest reliable re-entry path, read in this order:
+For the shortest reliable re-entry path on the active branch, read in this
+order:
 
 1. `../README.md`
-2. `current_build_status_and_next_steps.md`
-3. `ecology_north_star_v1.md`
-4. `world_design_v2.md`
-5. `observable_phenomena_and_failure_modes_v1.md`
-6. `build_plan_v2.md`
-7. `m1_ecology_kernel_spec_v2.md`
+2. `ant_sandbox_status_v1.md`
+3. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
+4. `ant_sandbox_world_design_v2.md`
+5. `ant_sandbox_build_plan_v2.md`
+6. `ant_sandbox_m7_scale_up_spec_v1.md`
+7. `ant_sandbox_long_horizon_construction_route_v1.md`
 
 ## Current Control Documents
 
-These are the documents that currently coordinate the project:
+These are the documents that currently coordinate the active branch:
 
-- `ecology_north_star_v1.md`
-- `world_design_v2.md`
-- `observable_phenomena_and_failure_modes_v1.md`
-- `build_plan_v2.md`
-- `m1_ecology_kernel_spec_v2.md`
-- `current_build_status_and_next_steps.md`
+- `ant_sandbox_north_star_v1.md`
+- `ant_sandbox_world_design_v2.md`
+- `ant_sandbox_build_plan_v2.md`
+- `ant_sandbox_m7_scale_up_spec_v1.md`
+- `ant_sandbox_long_horizon_construction_route_v1.md`
+- `ant_sandbox_status_v1.md`
+- `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
 - `document_catalog_v1.md`
 - `unified_bibliography_v1.md`
 - `terminology_index_v1.md`
@@ -67,14 +73,9 @@ These are still useful, but they are not the shortest entry path:
 - `m4_habitat_memory_slice_2026-04-21.md`
 - `ant_sandbox_hard_metrics_v1.md`
 - `ant_sandbox_gap_audit_v1.md`
-- `ant_sandbox_north_star_v1.md`
 - `ant_sandbox_world_design_v1.md`
-- `ant_sandbox_world_design_v2.md`
 - `ant_sandbox_build_plan_v1.md`
-- `ant_sandbox_build_plan_v2.md`
 - `ant_sandbox_m0_substrate_spec_v1.md`
-- `ant_sandbox_m7_scale_up_spec_v1.md`
-- `ant_sandbox_long_horizon_construction_route_v1.md`
 - `ant_sandbox_m1_foraging_slice_2026-04-21.md`
 - `ant_sandbox_m2_pheromone_slice_2026-04-21.md`
 - `ant_sandbox_m3_persistence_slice_2026-04-21.md`
@@ -86,7 +87,11 @@ These are still useful, but they are not the shortest entry path:
 - `ant_sandbox_m7_m8_scale_up_slice_2026-04-22.md`
 - `ant_sandbox_r1_food_source_competition_slice_2026-04-22.md`
 - `ant_sandbox_r2_three_tribe_shared_world_slice_2026-04-23.md`
-- `ant_sandbox_status_v1.md`
+- `ecology_north_star_v1.md`
+- `world_design_v2.md`
+- `observable_phenomena_and_failure_modes_v1.md`
+- `build_plan_v2.md`
+- `m1_ecology_kernel_spec_v2.md`
 - `inheritance_architecture_v0.md`
 - `adaptive_cycle_and_trust_mechanisms_v1.md`
 - `connectedness_and_trust_channel_design_v1.md`
@@ -120,7 +125,7 @@ project contract:
 - `repository_architecture_v0.md`
 
 Use them for project history, discarded branches, and design lineage.
-Use the ecology-first current docs for current implementation decisions.
+Use the active ant-sandbox control docs for current implementation decisions.
 
 ## Naming Conventions
 
@@ -135,19 +140,16 @@ Use the ecology-first current docs for current implementation decisions.
 
 ## Update Rule
 
-When the project state changes materially, update these files together:
+When the ant-sandbox branch changes materially, update these files together:
 
 - `../README.md`
 - `README.md`
 - `document_catalog_v1.md`
-- `current_build_status_and_next_steps.md`
-- `ecology_north_star_v1.md`
-- `world_design_v2.md`
-- `observable_phenomena_and_failure_modes_v1.md`
-- `build_plan_v2.md`
-- `m1_ecology_kernel_spec_v2.md`
-- `claim_to_evidence_table_v1.md`
-- `experiment_ledger_v1.md`
-- `ablation_history_v1.md`
+- `ant_sandbox_status_v1.md`
+- `ant_sandbox_world_design_v2.md`
+- `ant_sandbox_build_plan_v2.md`
+- `ant_sandbox_m7_scale_up_spec_v1.md`
+- `ant_sandbox_long_horizon_construction_route_v1.md`
+- latest active ant-sandbox slice note
 
 That small set is the minimum needed to keep the library from drifting again.
