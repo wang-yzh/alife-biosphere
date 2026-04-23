@@ -3,12 +3,13 @@ from alife_biosphere.ant_sandbox import (
     AntSandboxConfig,
     ColonyConfig,
     FoodPatchConfig,
+    initialize_world,
     NestConfig,
     TerrainConfig,
     build_showcase_config,
 )
 from alife_biosphere.ant_sandbox.reporting import summarize_behavior_roles
-from alife_biosphere.ant_sandbox.simulation import run_simulation
+from alife_biosphere.ant_sandbox.simulation import _choose_step, run_simulation
 from alife_biosphere.ant_sandbox.validation import summarize_validation_status, ValidationCase
 
 
@@ -249,6 +250,40 @@ def test_food_source_contention_events_can_emerge() -> None:
     contested_events = [event for event in result.events if event.event_type == "food_source_contested"]
     assert contested_events
     assert any(patch.competition_pressure > 0 for patch in result.world.food_patches)
+
+
+def test_non_carrying_ants_switch_to_much_better_visible_food() -> None:
+    config = AntSandboxConfig(
+        ticks=1,
+        width=64,
+        height=48,
+        colonies=(),
+        nest=NestConfig(x=12, y=24, radius=3, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("stale_far", x=56, y=40, radius=3, amount=10, max_amount=10, value_score=0.7),
+            FoodPatchConfig("rich_near", x=28, y=24, radius=4, amount=80, max_amount=80, value_score=1.8),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=1,
+            food_sense_radius=12,
+            pheromone_enabled=False,
+            hunger_return_threshold=0.0,
+            initial_energy=18.0,
+            max_energy=20.0,
+        ),
+    )
+    world = initialize_world(config)
+    ant = world.ants[0]
+    ant.x = 26
+    ant.y = 24
+    ant.target_patch_id = "stale_far"
+    world.occupied_cells = {(ant.x, ant.y)}
+
+    _choose_step(world, ant, config, tick=1)
+
+    assert ant.target_patch_id == "rich_near"
 
 
 def test_depleted_food_patch_reseeds_to_new_site() -> None:

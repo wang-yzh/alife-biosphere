@@ -263,6 +263,41 @@ def _task_oriented_patch(world: AntSandboxWorld, ant: SandboxAnt) -> FoodPatch |
     return patch
 
 
+def _should_switch_to_visible_food(
+    world: AntSandboxWorld,
+    ant: SandboxAnt,
+    config: AntSandboxConfig,
+    current_patch: FoodPatch | None,
+    visible_patch: FoodPatch | None,
+) -> bool:
+    if current_patch is None or visible_patch is None:
+        return False
+    if current_patch.patch_id == visible_patch.patch_id:
+        return False
+    if ant.carrying_food:
+        return False
+    current_cost = _food_patch_selection_cost(world, ant, current_patch)
+    visible_cost = _food_patch_selection_cost(world, ant, visible_patch)
+    current_ratio = 0.0 if current_patch.max_amount <= 0 else current_patch.amount / current_patch.max_amount
+    visible_ratio = 0.0 if visible_patch.max_amount <= 0 else visible_patch.amount / visible_patch.max_amount
+    visible_edge_distance = max(0.0, _distance(ant.x, ant.y, visible_patch.x, visible_patch.y) - visible_patch.radius)
+
+    # Keep task-stage stability, but do not let stale targets override obvious nearby food.
+    switch_margin = 3.5 + ant.trail_affinity * 1.5
+    if current_ratio < 0.35:
+        switch_margin -= 1.0
+    if visible_ratio > current_ratio + 0.25:
+        switch_margin -= 0.8
+    if visible_edge_distance <= max(3, visible_patch.radius + config.ants.food_pickup_radius + 1):
+        switch_margin = min(switch_margin, 1.4)
+    if _local_density(world, ant, (ant.x, ant.y), radius=3) >= 4:
+        switch_margin -= 1.0
+    if config.ants.hostility_radius > 0 and _enemy_density(world, ant, (ant.x, ant.y), config.ants.hostility_radius) > 0:
+        switch_margin -= 1.0
+    switch_margin = max(1.0, switch_margin)
+    return visible_cost + switch_margin < current_cost
+
+
 def _patch_respawn_cell(
     world: AntSandboxWorld,
     patch: FoodPatch,
@@ -651,6 +686,10 @@ def _choose_step(
         target_key = f"nest:{ant.colony_id}:{home_nest.x}:{home_nest.y}"
     else:
         patch = None if launch_exploration else task_patch
+        if patch is not None:
+            visible_patch = _food_within_range(world, ant, world.food_patches, config.ants.food_sense_radius)
+            if _should_switch_to_visible_food(world, ant, config, patch, visible_patch):
+                patch = visible_patch
         if patch is None:
             patch = _food_within_range(world, ant, world.food_patches, config.ants.food_sense_radius)
         if patch is not None:
