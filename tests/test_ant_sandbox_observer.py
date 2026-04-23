@@ -55,5 +55,8 @@ def test_ant_sandbox_showcase_avoids_right_side_nest_pileup() -> None:
         for ant in near
         if -math.pi / 4 <= math.atan2(ant["y"] - nest_y, ant["x"] - nest_x) < math.pi / 4
     ]
-    assert len(near) <= 10
-    assert len(east_sector) <= 6
+    purposeful = [
+        ant for ant in near if ant["carrying_food"] or ant["outbound_commit_ticks"] > 0
+    ]
+    assert len(east_sector) <= 4
+    assert len(purposeful) >= len(near) // 2

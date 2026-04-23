@@ -136,8 +136,9 @@ class AntSandboxConfig:
     nest: NestConfig = field(default_factory=NestConfig)
     food_patches: tuple[FoodPatchConfig, ...] = field(
         default_factory=lambda: (
-            FoodPatchConfig("food_a", x=54, y=24, radius=5, amount=96, max_amount=96, regrowth_rate=0, respawn_delay_ticks=20),
-            FoodPatchConfig("food_b", x=70, y=72, radius=6, amount=144, max_amount=144, regrowth_rate=0, respawn_delay_ticks=24),
+            FoodPatchConfig("food_near", x=46, y=34, radius=4, amount=40, max_amount=40, regrowth_rate=0, respawn_delay_ticks=18),
+            FoodPatchConfig("food_gap", x=66, y=32, radius=5, amount=88, max_amount=88, regrowth_rate=0, respawn_delay_ticks=22),
+            FoodPatchConfig("food_far", x=82, y=72, radius=7, amount=168, max_amount=168, regrowth_rate=0, respawn_delay_ticks=26),
         )
     )
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)

@@ -273,9 +273,9 @@ def summarize_food_source_competition(result: AntSandboxResult) -> dict[str, obj
     top_sources = sorted(
         per_source,
         key=lambda item: (
-            item["competition_pressure"],
             item["contested_ticks"],
             item["pickup_count"],
+            item["competition_pressure"],
         ),
         reverse=True,
     )

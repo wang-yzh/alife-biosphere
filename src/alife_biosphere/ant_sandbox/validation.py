@@ -45,14 +45,13 @@ def _base_config(seed: int) -> AntSandboxConfig:
         height=48,
         nest=NestConfig(x=16, y=24, radius=3, initial_stored_food=18, colony_upkeep_per_ant_tick=0.0),
         food_patches=(
-            FoodPatchConfig("food_a", x=38, y=14, radius=3, amount=48, max_amount=48, regrowth_rate=0, respawn_delay_ticks=16),
-            FoodPatchConfig("food_b", x=48, y=35, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
+            FoodPatchConfig("food_a", x=46, y=14, radius=4, amount=72, max_amount=72, regrowth_rate=0, respawn_delay_ticks=18),
         ),
-        terrain=TerrainConfig(enabled=False),
+        terrain=TerrainConfig(enabled=True),
         ants=AntAgentConfig(
-            food_sense_radius=14,
+            food_sense_radius=10,
             pheromone_sense_radius=12,
-            trail_deposit=1.8,
+            trail_deposit=2.0,
             trail_decay=0.02,
             hunger_return_threshold=5.0,
             nest_feed_amount=4.0,

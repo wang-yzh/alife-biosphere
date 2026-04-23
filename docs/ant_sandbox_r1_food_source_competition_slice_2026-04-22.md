@@ -30,6 +30,17 @@ The simulation now emits:
 
 when source pressure crosses clear thresholds.
 
+This pass also upgrades the default showcase layout into a clearer competition
+field with three source roles:
+
+- `food_near`
+- `food_gap`
+- `food_far`
+
+The goal is not perfect balance yet.
+The goal is to make ants choose among distinct sources instead of converging on
+one undifferentiated food pool.
+
 ## Observer Change
 
 The observer now renders source pressure visually.
@@ -55,12 +66,35 @@ with per-source competition summaries and top competition hotspots.
 
 In the current default probe run:
 
-- `food_pickups = 33`
-- `food_unloads = 28`
-- `contested_sources = 20`
+- `food_pickups = 70`
+- `food_unloads = 64`
+- `contested_sources = 77`
+
+In the current default `240`-tick showcase run:
+
+- `food_near` is heavily contested and can fully deplete
+- `food_gap` also receives meaningful traffic
+- `food_far` is visible but still lightly used in this early layout
+
+This means the branch has crossed from “one source happens to be active” into
+“multiple named sources participate in the same surface economy”.
 
 and the final world retains source-specific pressure differences rather than
 treating all food as one global pool.
+
+## Nest Traffic Note
+
+During this competition pass, outbound ants after unloading were also adjusted
+so they do not reform the same pathological nest-side right-cluster.
+
+The current logic now combines:
+
+- short outbound task commitment
+- nest-edge fan-out after unloading
+- local density avoidance near the nest
+
+This keeps source competition from collapsing into a single stuck nest-edge
+blob.
 
 ## Why This Matters
 
