@@ -105,6 +105,7 @@ class AntAgentConfig:
     metabolism_cost: float = 0.04
     hunger_return_threshold: float = 6.0
     nest_feed_amount: float = 4.0
+    starvation_grace_ticks: int = 60
     hostility_radius: int = 3
     hostility_weight: float = 1.0
     foreign_trail_weight: float = 0.25
@@ -163,6 +164,8 @@ class AntAgentConfig:
             raise ValueError("hunger_return_threshold must be non-negative")
         if self.nest_feed_amount <= 0:
             raise ValueError("nest_feed_amount must be positive")
+        if self.starvation_grace_ticks < 0:
+            raise ValueError("starvation_grace_ticks must be non-negative")
         if self.combat_radius < 0:
             raise ValueError("combat_radius must be non-negative")
         if self.combat_duration < 0:

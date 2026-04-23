@@ -958,6 +958,7 @@ def _feed_at_nest(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxCon
         return False
     home_nest.stored_food -= 1
     ant.energy = min(config.ants.max_energy, ant.energy + config.ants.nest_feed_amount)
+    ant.starvation_ticks = 0
     world.emit(
         Event(
             tick=tick,
@@ -1028,16 +1029,7 @@ def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: i
                 _distance(ant.x, ant.y, colony.nest.x, colony.nest.y) <= config.disturbance_kill_radius
                 for colony in world.colonies.values()
             ):
-                ant.alive = False
-                world.emit(
-                    Event(
-                        tick=tick,
-                        event_type="ant_death",
-                        organism_id=ant.ant_id,
-                        habitat_id="world",
-                        payload={"x": ant.x, "y": ant.y, "age": ant.age, "reason": "disturbance"},
-                    )
-                )
+                _kill_ant(world, ant, tick, "disturbance")
                 killed += 1
         world.emit(
             Event(
@@ -1174,29 +1166,98 @@ def _count_hostility_contacts(world: AntSandboxWorld, config: AntSandboxConfig) 
     return contacts
 
 
-def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> bool:
+def _kill_ant(world: AntSandboxWorld, ant: SandboxAnt, tick: int, reason: str) -> None:
+    ant.alive = False
+    ant.carrying_food = False
+    ant.behavior_state = "dead"
+    ant.contest_patch_id = None
+    ant.combat_with_id = None
+    ant.combat_ticks_remaining = 0
+    world.occupied_cells.discard((ant.x, ant.y))
+    world.emit(
+        Event(
+            tick=tick,
+            event_type="ant_death",
+            organism_id=ant.ant_id,
+            habitat_id=ant.colony_id,
+            payload={
+                "x": ant.x,
+                "y": ant.y,
+                "age": ant.age,
+                "birth_tick": ant.birth_tick,
+                "energy": round(ant.energy, 3),
+                "reason": reason,
+                "colony_id": ant.colony_id,
+                "lineage_id": ant.lineage_id,
+            },
+        )
+    )
+
+
+def _update_starvation_state(
+    world: AntSandboxWorld,
+    ant: SandboxAnt,
+    config: AntSandboxConfig,
+    tick: int,
+) -> bool:
+    if ant.energy > 0:
+        ant.starvation_ticks = 0
+        return False
+    ant.starvation_ticks += 1
+    _set_behavior_state(world, ant, "hungry", tick)
+    if ant.starvation_ticks <= config.ants.starvation_grace_ticks:
+        return False
+    _kill_ant(world, ant, tick, "starvation")
+    return True
+
+
+def _spawn_cells_around_nest(world: AntSandboxWorld, colony: Colony) -> list[tuple[int, int]]:
+    cells: list[tuple[int, int]] = []
+    seen: set[tuple[int, int]] = set()
+    radius = colony.nest.radius + 5
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            x = _clamp(colony.nest.x + dx, 0, world.width - 1)
+            y = _clamp(colony.nest.y + dy, 0, world.height - 1)
+            if (x, y) in seen:
+                continue
+            if _distance(x, y, colony.nest.x, colony.nest.y) > radius:
+                continue
+            if _terrain_blocked(world, x, y):
+                continue
+            seen.add((x, y))
+            cells.append((x, y))
+    return sorted(cells, key=lambda cell: (_distance(cell[0], cell[1], colony.nest.x, colony.nest.y), cell[1], cell[0]))
+
+
+def _reproduction_parent(world: AntSandboxWorld, colony_id: str) -> SandboxAnt | None:
+    candidates = [ant for ant in world.ants if ant.alive and ant.colony_id == colony_id]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda ant: (ant.delivered_food, ant.energy, ant.age, ant.ant_id))
+
+
+def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> int:
     if not config.ants.allow_spawning:
-        return False
+        return 0
     if tick % config.ants.spawn_interval != 0:
-        return False
+        return 0
     if world.alive_count() >= config.ants.max_population * max(1, len(world.colonies)):
-        return False
+        return 0
+    births = 0
     for colony in world.colonies.values():
+        if world.alive_count_for_colony(colony.colony_id) >= config.ants.max_population:
+            continue
         if colony.nest.stored_food < config.ants.spawn_food_cost:
             continue
-        spawn_cells = [
-            (colony.nest.x, colony.nest.y),
-            (colony.nest.x + 1, colony.nest.y),
-            (colony.nest.x - 1, colony.nest.y),
-            (colony.nest.x, colony.nest.y + 1),
-            (colony.nest.x, colony.nest.y - 1),
-        ]
+        parent = _reproduction_parent(world, colony.colony_id)
+        if parent is None:
+            continue
+        spawn_cells = _spawn_cells_around_nest(world, colony)
         for x, y in spawn_cells:
             if (x, y) in world.occupied_cells:
                 continue
-            ant_id = world.allocate_ant_id()
-            trait_rng = make_rng(config.seed, f"ant-sandbox:{colony.colony_id}:birth-traits:{tick}:{ant_id}")
-            parentless_center = (len(world.ants) % 9) / 8 if world.ants else 0.5
+            ant_id = world.allocate_ant_id(colony.colony_id)
             ant = SandboxAnt(
                 ant_id=ant_id,
                 colony_id=colony.colony_id,
@@ -1204,10 +1265,12 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> b
                 y=max(0, min(world.height - 1, y)),
                 heading=0.0,
                 energy=config.ants.initial_energy,
-                range_bias=max(0.0, min(1.0, 0.2 + 0.6 * parentless_center + trait_rng.uniform(-0.18, 0.18))),
-                trail_affinity=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 3) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
-                harvest_drive=max(0.0, min(1.0, 0.2 + 0.6 * ((len(world.ants) * 5) % 9) / 8 + trait_rng.uniform(-0.18, 0.18))),
-                lineage_id=f"{colony.colony_id}:{ant_id}",
+                range_bias=parent.range_bias,
+                trail_affinity=parent.trail_affinity,
+                harvest_drive=parent.harvest_drive,
+                birth_tick=tick,
+                parent_id=parent.ant_id,
+                lineage_id=parent.lineage_id or parent.ant_id,
             )
             world.ants.append(ant)
             colony.nest.stored_food -= config.ants.spawn_food_cost
@@ -1218,11 +1281,20 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> b
                     event_type="ant_birth",
                     organism_id=ant.ant_id,
                     habitat_id=colony.colony_id,
-                    payload={"x": ant.x, "y": ant.y, "nest_food": colony.nest.stored_food, "colony_id": colony.colony_id},
+                    payload={
+                        "x": ant.x,
+                        "y": ant.y,
+                        "nest_food": colony.nest.stored_food,
+                        "colony_id": colony.colony_id,
+                        "parent_id": parent.ant_id,
+                        "lineage_id": ant.lineage_id,
+                        "birth_tick": tick,
+                    },
                 )
             )
-            return True
-    return False
+            births += 1
+            break
+    return births
 
 
 def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> dict[str, int]:
@@ -1254,25 +1326,21 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         ant.age += 1
         ant.energy = max(0.0, ant.energy - config.ants.metabolism_cost)
         if ant.age > config.ants.max_age:
-            ant.alive = False
-            world.occupied_cells.discard((ant.x, ant.y))
-            world.emit(
-                Event(
-                    tick=tick,
-                    event_type="ant_death",
-                    organism_id=ant.ant_id,
-                    habitat_id="world",
-                    payload={"x": ant.x, "y": ant.y, "age": ant.age},
-                )
-            )
+            _kill_ant(world, ant, tick, "old_age")
             deaths += 1
             continue
         if ant.combat_ticks_remaining > 0:
+            if _update_starvation_state(world, ant, config, tick):
+                deaths += 1
+                continue
             _set_behavior_state(world, ant, "combat", tick)
             world.occupied_cells.add((ant.x, ant.y))
             continue
         if _feed_at_nest(world, ant, config, tick):
             feeds += 1
+        if _update_starvation_state(world, ant, config, tick):
+            deaths += 1
+            continue
         world.occupied_cells.discard((ant.x, ant.y))
         next_x, next_y, next_heading = _choose_step(world, ant, config, tick)
         if (next_x, next_y) != (ant.x, ant.y):
@@ -1303,8 +1371,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         _update_stale_signal(world, ant)
         _remember_position(ant)
         world.occupied_cells.add((ant.x, ant.y))
-    if _spawn_ant(world, config, tick):
-        births += 1
+    births += _spawn_ant(world, config, tick)
     contested_sources += _update_food_source_competition(world, tick)
     hostility_contacts += _count_hostility_contacts(world, config)
     combat_pairs = _current_combat_pairs(world)

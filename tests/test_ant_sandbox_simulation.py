@@ -445,10 +445,76 @@ def test_depleted_food_patch_can_regrow_in_place_after_delay() -> None:
     assert (event.payload["x"], event.payload["y"]) == (18, 24)
 
 
-def test_showcase_config_disables_births_and_extends_lifespan() -> None:
+def test_showcase_config_enables_bounded_lifecycle() -> None:
     config = build_showcase_config(ticks=240)
-    assert config.ants.allow_spawning is False
+    assert config.ants.allow_spawning is True
+    assert config.ants.spawn_food_cost > 0
+    assert config.ants.starvation_grace_ticks > 0
     assert config.ants.max_age > config.ticks
+
+
+def test_starvation_death_emits_reason() -> None:
+    config = AntSandboxConfig(
+        ticks=12,
+        colonies=(),
+        nest=NestConfig(x=8, y=8, radius=2, initial_stored_food=0, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("far_food", x=40, y=30, radius=2, amount=10, max_amount=10, regrowth_rate=0, relocate_on_depletion=False),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=1,
+            allow_spawning=False,
+            initial_energy=1.0,
+            max_energy=1.0,
+            metabolism_cost=0.5,
+            hunger_return_threshold=0.5,
+            starvation_grace_ticks=2,
+            food_sense_radius=3,
+            pheromone_enabled=False,
+        ),
+    )
+    result = run_simulation(config)
+    death = next(event for event in result.events if event.event_type == "ant_death")
+
+    assert death.payload["reason"] == "starvation"
+    assert death.payload["colony_id"] == "solo"
+
+
+def test_birth_clones_parent_traits_without_mutation() -> None:
+    config = AntSandboxConfig(
+        ticks=2,
+        colonies=(),
+        nest=NestConfig(x=12, y=12, radius=2, initial_stored_food=5, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("food_a", x=30, y=12, radius=2, amount=10, max_amount=10, regrowth_rate=0, relocate_on_depletion=False),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=2,
+            allow_spawning=True,
+            spawn_food_cost=1,
+            spawn_interval=1,
+            initial_energy=10.0,
+            max_energy=10.0,
+            metabolism_cost=0.01,
+            hunger_return_threshold=0.0,
+            pheromone_enabled=False,
+        ),
+    )
+    result = run_simulation(config)
+    birth = next(event for event in result.events if event.event_type == "ant_birth")
+    parent = next(ant for ant in result.world.ants if ant.ant_id == birth.payload["parent_id"])
+    child = next(ant for ant in result.world.ants if ant.ant_id == birth.organism_id)
+
+    assert child.parent_id == parent.ant_id
+    assert child.lineage_id == parent.lineage_id
+    assert child.birth_tick == birth.tick
+    assert child.range_bias == parent.range_bias
+    assert child.trail_affinity == parent.trail_affinity
+    assert child.harvest_drive == parent.harvest_drive
 
 
 def test_combat_freezes_both_ants_until_resolution() -> None:

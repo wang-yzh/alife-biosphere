@@ -29,8 +29,27 @@ def main() -> None:
     )
     (output_dir / "world.json").write_text(json.dumps(world.to_dict(), indent=2), encoding="utf-8")
     tick_summaries = [event.payload for event in result.events if event.event_type == "tick_summary"]
+    birth_events = [event for event in result.events if event.event_type == "ant_birth"]
+    death_events = [event for event in result.events if event.event_type == "ant_death"]
     derived = {
-        "births": sum(1 for event in result.events if event.event_type == "ant_birth"),
+        "births": len(birth_events),
+        "deaths": len(death_events),
+        "death_reasons": {
+            reason: sum(1 for event in death_events if event.payload.get("reason") == reason)
+            for reason in sorted({event.payload.get("reason", "unknown") for event in death_events})
+        },
+        "births_by_colony": {
+            colony_id: sum(1 for event in birth_events if event.payload.get("colony_id") == colony_id)
+            for colony_id in world.colonies
+        },
+        "deaths_by_colony": {
+            colony_id: sum(1 for event in death_events if event.payload.get("colony_id") == colony_id)
+            for colony_id in world.colonies
+        },
+        "final_population_by_colony": {
+            colony_id: world.alive_count_for_colony(colony_id)
+            for colony_id in world.colonies
+        },
         "pickups": sum(1 for event in result.events if event.event_type == "food_pickup"),
         "unloads": sum(1 for event in result.events if event.event_type == "food_unload"),
         "feeds": sum(1 for event in result.events if event.event_type == "nest_feed"),

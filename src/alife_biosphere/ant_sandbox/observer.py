@@ -68,8 +68,13 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "combat_ticks_remaining": ant.combat_ticks_remaining,
             "combat_with_id": ant.combat_with_id,
             "combat_cooldown_ticks": ant.combat_cooldown_ticks,
+            "energy": round(ant.energy, 3),
+            "starvation_ticks": ant.starvation_ticks,
             "delivered_food": ant.delivered_food,
             "age": ant.age,
+            "birth_tick": ant.birth_tick,
+            "parent_id": ant.parent_id,
+            "lineage_id": ant.lineage_id,
             "range_bias": ant.range_bias,
             "trail_affinity": ant.trail_affinity,
             "harvest_drive": ant.harvest_drive,
@@ -94,6 +99,21 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         }
         for patch in world.food_patches
     ]
+    birth_events = _event_dicts(world, tick, "ant_birth")
+    death_events = _event_dicts(world, tick, "ant_death")
+    colony_stats = [
+        {
+            "colony_id": colony.colony_id,
+            "display_name": colony.display_name,
+            "color": colony.color,
+            "alive": world.alive_count_for_colony(colony.colony_id),
+            "carrying": sum(1 for ant in world.ants if ant.alive and ant.colony_id == colony.colony_id and ant.carrying_food),
+            "births": sum(1 for event in birth_events if event["payload"].get("colony_id") == colony.colony_id),
+            "deaths": sum(1 for event in death_events if event["payload"].get("colony_id") == colony.colony_id),
+            "nest_food": colony.nest.stored_food,
+        }
+        for colony in world.colonies.values()
+    ]
     return {
         "tick": tick,
         "alive": summary["alive"],
@@ -114,10 +134,11 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "hungry_ants": summary["hungry_ants"],
         "ants": ants,
         "food_patches": food_patches,
+        "colony_stats": colony_stats,
         "food_trail_layers": _trail_layers(world.food_trail, world.colonies),
         "home_trail_layers": _trail_layers(world.home_trail, world.colonies),
-        "birth_events": _event_dicts(world, tick, "ant_birth"),
-        "death_events": _event_dicts(world, tick, "ant_death"),
+        "birth_events": birth_events,
+        "death_events": death_events,
         "pickup_events": _event_dicts(world, tick, "food_pickup"),
         "unload_events": _event_dicts(world, tick, "food_unload"),
         "reseed_events": _event_dicts(world, tick, "food_patch_reseed"),
@@ -470,6 +491,10 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <div id="moment-log" class="log"></div>
       </section>
       <section class="section">
+        <h2>Colonies</h2>
+        <div id="colony-log" class="log"></div>
+      </section>
+      <section class="section">
         <h2>Selected Ant</h2>
         <div id="selected-ant" class="selected-ant">
           <strong>No selection</strong>
@@ -496,6 +521,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     const avoidEl = document.getElementById('avoid');
     const generatedAtEl = document.getElementById('generated-at');
     const momentLog = document.getElementById('moment-log');
+    const colonyLog = document.getElementById('colony-log');
     const selectedAntEl = document.getElementById('selected-ant');
 
     const widthScale = canvas.width / data.width;
@@ -757,6 +783,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       avoidEl.textContent = frame.avoidance_turns;
       drawFrame(frame);
       momentLog.innerHTML = '';
+      colonyLog.innerHTML = '';
       const logItems = [];
       if (frame.contest_entries) logItems.push(`contest entries +${{frame.contest_entries}}`);
       if (frame.contesting_ants) logItems.push(`contesting ants ${{frame.contesting_ants}}`);
@@ -779,6 +806,16 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         row.innerHTML = `<strong>${{item}}</strong>`;
         momentLog.appendChild(row);
       }});
+      frame.colony_stats.forEach(colony => {{
+        const row = document.createElement('div');
+        row.className = 'log-row';
+        row.innerHTML = `
+          <strong style="color: ${{colony.color}}">${{colony.display_name}}</strong>
+          <div class="tiny">alive = ${{colony.alive}} · carrying = ${{colony.carrying}} · nest = ${{colony.nest_food}}</div>
+          <div class="tiny">births +${{colony.births}} · deaths +${{colony.deaths}}</div>
+        `;
+        colonyLog.appendChild(row);
+      }});
 
       const selectedId = pinnedAntId || hoverAntId;
       const selected = selectedId ? frame.ants.find(ant => ant.ant_id === selectedId) : null;
@@ -792,6 +829,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <div class="tiny">state = ${{selected.behavior_state}}</div>
           <div class="tiny">target = ${{selected.target_patch_id || 'none'}}</div>
           <div class="tiny">contest patch = ${{selected.contest_patch_id || 'none'}}</div>
+          <div class="tiny">energy = ${{selected.energy.toFixed(2)}} · starvation = ${{selected.starvation_ticks}}</div>
           <div class="tiny">outbound = ${{selected.outbound_commit_ticks}}</div>
           <div class="tiny">combat = ${{selected.in_combat ? 'yes' : 'no'}}</div>
           <div class="tiny">combat with = ${{selected.combat_with_id || 'none'}}</div>
@@ -799,6 +837,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <div class="tiny">combat cooldown = ${{selected.combat_cooldown_ticks}}</div>
           <div class="tiny">delivered = ${{selected.delivered_food}}</div>
           <div class="tiny">age = ${{selected.age}}</div>
+          <div class="tiny">born = ${{selected.birth_tick}} · parent = ${{selected.parent_id || 'founder'}}</div>
+          <div class="tiny">lineage = ${{selected.lineage_id || selected.ant_id}}</div>
           <div class="tiny">range = ${{selected.range_bias.toFixed(2)}}</div>
           <div class="tiny">trail = ${{selected.trail_affinity.toFixed(2)}}</div>
           <div class="tiny">harvest = ${{selected.harvest_drive.toFixed(2)}}</div>

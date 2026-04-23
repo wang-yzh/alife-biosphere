@@ -75,8 +75,10 @@ class SandboxAnt:
     combat_cooldown_ticks: int = 0
     behavior_state: str = "forage"
     contest_patch_id: str | None = None
+    starvation_ticks: int = 0
     recent_positions: list[tuple[int, int]] = field(default_factory=list)
     age: int = 0
+    birth_tick: int = 0
     alive: bool = True
     parent_id: str | None = None
     lineage_id: str | None = None
@@ -122,8 +124,9 @@ class AntSandboxWorld:
     def alive_count_for_colony(self, colony_id: str) -> int:
         return sum(1 for ant in self.ants if ant.alive and ant.colony_id == colony_id)
 
-    def allocate_ant_id(self) -> str:
-        ant_id = f"ant_{self.next_ant_index:03d}"
+    def allocate_ant_id(self, colony_id: str | None = None) -> str:
+        prefix = colony_id or "ant"
+        ant_id = f"{prefix}_{self.next_ant_index:03d}"
         self.next_ant_index += 1
         return ant_id
 
