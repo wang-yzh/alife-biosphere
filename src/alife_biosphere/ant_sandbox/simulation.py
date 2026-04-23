@@ -158,6 +158,15 @@ def _revisit_penalty(ant: SandboxAnt, cell: tuple[int, int]) -> float:
     return penalty
 
 
+def _edge_stuck(world: AntSandboxWorld, ant: SandboxAnt) -> bool:
+    if _wall_margin(world, (ant.x, ant.y)) > 2:
+        return False
+    recent = ant.recent_positions[-8:]
+    if len(recent) < 6:
+        return False
+    return len(set(recent)) <= 4
+
+
 def _egress_spread_heading(ant: SandboxAnt, base_heading: float) -> float:
     # Spread outbound ants into a fan so they do not all re-form the same nest-side clump.
     spread = (ant.range_bias - 0.5) * 0.9 + (ant.trail_affinity - 0.5) * 0.55
@@ -408,6 +417,7 @@ def _choose_step(
     if not free_candidates:
         return ant.x, ant.y, target_heading
     near_wall = _wall_margin(world, (ant.x, ant.y)) <= 2
+    edge_stuck = _edge_stuck(world, ant)
     current_stale = world.stale_field.get((ant.x, ant.y), 0.0)
     near_nest = _distance(ant.x, ant.y, home_nest.x, home_nest.y) <= home_nest.radius + 8
     exploration_phase = (not ant.carrying_food) and (not hungry) and (target_x is None or launch_exploration)
@@ -418,6 +428,7 @@ def _choose_step(
             free_candidates,
             key=lambda cell: (
                 (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell) + home_field.get(cell, 0.0) * 0.18) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
+                -_wall_margin(world, cell) * 4 if edge_stuck else 0,
                 -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
                 -_task_trail_bonus(world, ant, cell, target_x, target_y),
                 _terrain_move_cost(world, cell[0], cell[1]),
@@ -433,6 +444,7 @@ def _choose_step(
         free_candidates,
         key=lambda cell: (
             (_local_density(world, ant, cell, radius=2) * 0.8 + _revisit_penalty(ant, cell) * 0.2) if launch_exploration else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
+            -_wall_margin(world, cell) * 4 if edge_stuck else 0,
             -_distance(cell[0], cell[1], home_nest.x, home_nest.y) if force_egress else 0,
             _distance(cell[0], cell[1], target_x, target_y),
             -_task_trail_bonus(world, ant, cell, target_x, target_y),

@@ -170,22 +170,22 @@ class AntSandboxConfig:
                 display_name="Shu",
                 color="#b24a3a",
                 ant_count=11,
-                nest=NestConfig(x=96, y=20, radius=4, initial_stored_food=14, colony_upkeep_per_ant_tick=0.0025),
+                nest=NestConfig(x=92, y=20, radius=4, initial_stored_food=14, colony_upkeep_per_ant_tick=0.0025),
             ),
             ColonyConfig(
                 colony_id="wu",
                 display_name="Wu",
                 color="#2f8f5b",
                 ant_count=10,
-                nest=NestConfig(x=96, y=76, radius=4, initial_stored_food=14, colony_upkeep_per_ant_tick=0.0025),
+                nest=NestConfig(x=80, y=66, radius=4, initial_stored_food=14, colony_upkeep_per_ant_tick=0.0025),
             ),
         )
     )
     food_patches: tuple[FoodPatchConfig, ...] = field(
         default_factory=lambda: (
-            FoodPatchConfig("food_near", x=46, y=34, radius=4, amount=40, max_amount=40, value_score=0.8, regrowth_rate=0, respawn_delay_ticks=18),
-            FoodPatchConfig("food_gap", x=66, y=32, radius=5, amount=88, max_amount=88, value_score=1.05, regrowth_rate=0, respawn_delay_ticks=22),
-            FoodPatchConfig("food_far", x=82, y=72, radius=7, amount=168, max_amount=168, value_score=1.45, regrowth_rate=0, respawn_delay_ticks=26),
+            FoodPatchConfig("food_near", x=58, y=30, radius=4, amount=36, max_amount=36, value_score=0.85, regrowth_rate=0, respawn_delay_ticks=18),
+            FoodPatchConfig("food_gap", x=66, y=50, radius=5, amount=80, max_amount=80, value_score=1.08, regrowth_rate=0, respawn_delay_ticks=22),
+            FoodPatchConfig("food_far", x=92, y=58, radius=7, amount=160, max_amount=160, value_score=1.5, regrowth_rate=0, respawn_delay_ticks=26),
         )
     )
     ants: AntAgentConfig = field(default_factory=AntAgentConfig)
