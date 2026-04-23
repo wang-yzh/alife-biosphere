@@ -115,10 +115,34 @@ def _local_density(world: AntSandboxWorld, ant: SandboxAnt, cell: tuple[int, int
     return density
 
 
+def _remember_position(ant: SandboxAnt) -> None:
+    ant.recent_positions.append((ant.x, ant.y))
+    if len(ant.recent_positions) > 12:
+        ant.recent_positions.pop(0)
+
+
+def _revisit_penalty(ant: SandboxAnt, cell: tuple[int, int]) -> float:
+    penalty = 0.0
+    for index, recent in enumerate(reversed(ant.recent_positions[-8:]), start=1):
+        if recent == cell:
+            penalty += 1.4 / index
+        elif max(abs(recent[0] - cell[0]), abs(recent[1] - cell[1])) <= 1:
+            penalty += 0.35 / index
+    return penalty
+
+
 def _egress_spread_heading(ant: SandboxAnt, base_heading: float) -> float:
     # Spread outbound ants into a fan so they do not all re-form the same nest-side clump.
     spread = (ant.range_bias - 0.5) * 0.9 + (ant.trail_affinity - 0.5) * 0.55
     return (base_heading + spread) % tau
+
+
+def _task_oriented_patch(world: AntSandboxWorld, ant: SandboxAnt) -> FoodPatch | None:
+    patch = _patch_by_id(world, ant.target_patch_id)
+    if patch is None or patch.amount <= 0:
+        ant.target_patch_id = None
+        return None
+    return patch
 
 
 def _patch_respawn_cell(
@@ -275,19 +299,22 @@ def _choose_step(
     target_x: int | None = None
     target_y: int | None = None
     hungry = ant.energy <= config.ants.hunger_return_threshold
-    committed_patch = _patch_by_id(world, ant.target_patch_id)
+    distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
+    launch_exploration = ant.outbound_commit_ticks > 0 and distance_from_nest <= world.nest.radius + 11
+    task_patch = _task_oriented_patch(world, ant)
+
     if ant.carrying_food or (hungry and world.nest.stored_food > 0):
         target_x = world.nest.x
         target_y = world.nest.y
     else:
-        patch = committed_patch if ant.outbound_commit_ticks > 0 and committed_patch is not None and committed_patch.amount > 0 else None
+        patch = None if launch_exploration else task_patch
         if patch is None:
             patch = _food_within_range(world, ant, world.food_patches, config.ants.food_sense_radius)
         if patch is not None:
             target_x = patch.x
             target_y = patch.y
             ant.target_patch_id = patch.patch_id
-        else:
+        elif not launch_exploration and distance_from_nest > world.nest.radius + 10:
             pheromone_target = _best_pheromone_cell(
                 ant,
                 world,
@@ -300,7 +327,6 @@ def _choose_step(
         target_heading = _target_heading(ant.x, ant.y, target_x, target_y)
     else:
         target_heading = None
-        distance_from_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y)
         desired_distance = world.nest.radius + 6 + int(
             round(ant.range_bias * max(18, min(world.width, world.height) * 0.45))
         )
@@ -310,14 +336,14 @@ def _choose_step(
             outward_heading = _target_heading(world.nest.x, world.nest.y, ant.x, ant.y)
             if hungry and world.nest.stored_food <= 0:
                 base_heading = ant.heading
+            elif launch_exploration:
+                base_heading = _egress_spread_heading(ant, outward_heading)
             elif distance_from_nest < desired_distance - 2:
                 base_heading = outward_heading
             elif distance_from_nest > desired_distance + 4:
                 base_heading = _target_heading(ant.x, ant.y, world.nest.x, world.nest.y)
             else:
                 base_heading = ant.heading
-            if ant.outbound_commit_ticks > 0 and distance_from_nest <= world.nest.radius + 9:
-                base_heading = _egress_spread_heading(ant, outward_heading)
         if ant.x <= 1 or ant.x >= world.width - 2 or ant.y <= 1 or ant.y >= world.height - 2:
             center_x = world.width // 2
             center_y = world.height // 2
@@ -337,17 +363,13 @@ def _choose_step(
     near_wall = _wall_margin(world, (ant.x, ant.y)) <= 2
     current_stale = world.stale_field.get((ant.x, ant.y), 0.0)
     near_nest = _distance(ant.x, ant.y, world.nest.x, world.nest.y) <= world.nest.radius + 8
-    force_egress = (
-        ant.outbound_commit_ticks > 0
-        and not ant.carrying_food
-        and not hungry
-        and _distance(ant.x, ant.y, world.nest.x, world.nest.y) <= world.nest.radius + 9
-    )
+    exploration_phase = (not ant.carrying_food) and (not hungry) and (target_x is None or launch_exploration)
+    force_egress = launch_exploration and not ant.carrying_food and not hungry
     if target_x is None or target_y is None:
         return min(
             free_candidates,
             key=lambda cell: (
-                _local_density(world, ant, cell, radius=2) if near_nest else 0,
+                (_local_density(world, ant, cell, radius=2) * 1.45 + _revisit_penalty(ant, cell)) if exploration_phase else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
                 -_distance(cell[0], cell[1], world.nest.x, world.nest.y) if force_egress else 0,
                 _terrain_move_cost(world, cell[0], cell[1]),
                 -_wall_margin(world, cell) if near_wall else 0,
@@ -361,7 +383,7 @@ def _choose_step(
     return min(
         free_candidates,
         key=lambda cell: (
-            _local_density(world, ant, cell, radius=2) if near_nest else 0,
+            (_local_density(world, ant, cell, radius=2) * 0.8 + _revisit_penalty(ant, cell) * 0.2) if launch_exploration else (_local_density(world, ant, cell, radius=2) if near_nest else 0),
             -_distance(cell[0], cell[1], world.nest.x, world.nest.y) if force_egress else 0,
             _distance(cell[0], cell[1], target_x, target_y),
             _terrain_move_cost(world, cell[0], cell[1]),
