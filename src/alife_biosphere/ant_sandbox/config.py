@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, field
 @dataclass(frozen=True)
 class TerrainConfig:
     enabled: bool = True
-    layout: str = "surface_v1"
+    layout: str = "surface_showcase_walls"
 
     def __post_init__(self) -> None:
         if not self.layout:

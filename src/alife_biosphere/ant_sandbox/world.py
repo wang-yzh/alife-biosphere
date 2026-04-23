@@ -246,6 +246,35 @@ def _generate_terrain(config: AntSandboxConfig) -> dict[tuple[int, int], str]:
             continue
         terrain[(x, shelf_y)] = "rock"
 
+    if config.terrain.layout == "surface_showcase_walls":
+        wall_sets = [
+            # northwest choke
+            ((width * 3) // 10, (height * 3) // 10, (height * 9) // 20, "vertical", {height // 3}),
+            # central maze wall
+            ((width * 7) // 12, (height * 5) // 24, (height * 19) // 24, "vertical", {height // 2, (height * 2) // 3}),
+            # southeast stagger
+            ((width * 4) // 5, (height * 9) // 16, (height * 7) // 8, "vertical", {(height * 11) // 16}),
+            # lower middle shelf
+            ((width * 9) // 20, (height * 7) // 10, (width * 11) // 16, "horizontal", {(width * 11) // 20}),
+        ]
+        for anchor, start, end, orientation, gaps in wall_sets:
+            if orientation == "vertical":
+                x = anchor
+                for y in range(start, end):
+                    if any(abs(y - gap) <= 2 for gap in gaps):
+                        continue
+                    terrain[(x, y)] = "rock"
+                    if y % 3 != 0:
+                        terrain[(x + 1, y)] = "rock"
+            else:
+                y = start
+                for x in range(anchor, end):
+                    if any(abs(x - gap) <= 2 for gap in gaps):
+                        continue
+                    terrain[(x, y)] = "rock"
+                    if x % 3 != 0:
+                        terrain[(x, y + 1)] = "rock"
+
     for colony in config.resolved_colonies():
         _clear_safe_zone(terrain, colony.nest.x, colony.nest.y, colony.nest.radius + 6)
     for patch in config.food_patches:
