@@ -98,5 +98,5 @@ def build_showcase_config(seed: int = 7, ticks: int = 1080) -> AntSandboxConfig:
         colonies=colonies,
         food_patches=_randomized_food_patches(seed, colonies),
         ants=ants,
-        terrain=TerrainConfig(enabled=True, layout="surface_v1"),
+        terrain=TerrainConfig(enabled=True, layout="surface_showcase_walls"),
     )
