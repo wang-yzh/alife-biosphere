@@ -70,8 +70,14 @@ def main() -> None:
         "corpse_creations": sum(1 for event in result.events if event.event_type == "corpse_create"),
         "corpse_expirations": sum(1 for event in result.events if event.event_type == "corpse_expire"),
         "corpse_count": world.corpse_count(),
+        "decomposer_patch_count": world.decomposer_patch_count(),
+        "decomposer_emerges": sum(1 for event in result.events if event.event_type == "decomposer_emerge"),
+        "decomposer_feeds": sum(1 for event in result.events if event.event_type == "decomposer_feed"),
+        "decomposer_spreads": sum(1 for event in result.events if event.event_type == "decomposer_spread"),
+        "decomposer_decays": sum(1 for event in result.events if event.event_type == "decomposer_decay"),
         "residue_cell_count": world.residue_cell_count(),
         "residue_total_value": world.residue_total_value(),
+        "enriched_residue_cell_count": world.enriched_residue_cell_count(),
         "colony_pickups": {
             colony_id: sum(
                 1

@@ -166,16 +166,28 @@ def _family_niche_occupancy(family: dict[str, object]) -> dict[str, object]:
             reason="Food classes are not implemented yet.",
         ),
         "corpse_use_events": _metric(
-            "requires_m16",
-            reason="No successor organism exists yet to consume corpse substrate.",
+            "available",
+            family_id=family["family_id"],
+            values={
+                branch["provenance"]["branch_id"]: _outcome_value(branch, "decomposer_feed_count")
+                for branch in branches
+            },
         ),
         "residue_use_events": _metric(
-            "requires_m16",
-            reason="No successor organism exists yet to exploit residue substrate directly.",
+            "available",
+            family_id=family["family_id"],
+            values={
+                branch["provenance"]["branch_id"]: _outcome_value(branch, "decomposer_feed_count")
+                for branch in branches
+            },
         ),
         "successor_occupied_zones": _metric(
-            "requires_m16",
-            reason="Successor life layers are not implemented yet.",
+            "available",
+            family_id=family["family_id"],
+            values={
+                branch["provenance"]["branch_id"]: _outcome_value(branch, "decomposer_patch_count")
+                for branch in branches
+            },
         ),
     }
 
@@ -225,35 +237,67 @@ def _family_stepping_stone_persistence(family: dict[str, object]) -> dict[str, o
             reason="Stable territory partitions are not tracked yet.",
         ),
         "successor_patch_persistence": _metric(
-            "requires_m16",
-            reason="Successor organism patches do not exist yet.",
+            "proxy",
+            family_id=family["family_id"],
+            values={
+                branch["provenance"]["branch_id"]: {
+                    "decomposer_patch_count": _outcome_value(branch, "decomposer_patch_count"),
+                    "decomposer_decay_count": _outcome_value(branch, "decomposer_decay_count"),
+                    "enriched_residue_cell_count": _spatial_value(branch, "enriched_residue_cell_count"),
+                }
+                for branch in branches
+            },
+            reason="Successor patch persistence is inferred from final patch counts, decay counts, and enriched residue footprints.",
         ),
     }
 
 
 def _family_ecological_dependency(family: dict[str, object]) -> dict[str, object]:
+    branches = list(family["branches"])
     return {
-        "dependency_edge_count": _metric(
-            "requires_m16",
-            reason="Dependency edges beyond substrate creation require successor life.",
+        "corpse_to_decomposer_edges": _metric(
+            "available",
+            family_id=family["family_id"],
+            values={
+                branch["provenance"]["branch_id"]: _outcome_value(branch, "decomposer_emerge_count")
+                for branch in branches
+            },
         ),
         "maximum_dependency_depth": _metric(
-            "requires_m16",
-            reason="Dependency depth cannot be measured before successor life exists.",
+            "available",
+            family_id=family["family_id"],
+            values={
+                branch["provenance"]["branch_id"]: 1 if _outcome_value(branch, "decomposer_emerge_count") > 0 else 0
+                for branch in branches
+            },
         ),
         "dependency_events_by_type": _metric(
-            "requires_m16",
-            reason="No successor organism dependency events are emitted yet.",
+            "available",
+            family_id=family["family_id"],
+            values={
+                branch["provenance"]["branch_id"]: {
+                    "decomposer_emerge": _outcome_value(branch, "decomposer_emerge_count"),
+                    "decomposer_feed": _outcome_value(branch, "decomposer_feed_count"),
+                    "decomposer_spread": _outcome_value(branch, "decomposer_spread_count"),
+                    "decomposer_decay": _outcome_value(branch, "decomposer_decay_count"),
+                }
+                for branch in branches
+            },
         ),
-        "future_dependency_graph": _metric(
-            "requires_m16",
+        "current_dependency_graph": _metric(
+            "available",
             family_id=family["family_id"],
             values=[
-                {"from": "corpse", "to": "decomposer", "status": "requires_m16"},
-                {"from": "residue", "to": "fungus", "status": "requires_m16"},
-                {"from": "ant_transport", "to": "seed_patch", "status": "requires_m16"},
+                {"from": "corpse", "to": "decomposer", "status": "available"},
             ],
-            reason="These edges are defined as the next dependency targets, not current implemented observations.",
+        ),
+        "future_dependency_graph": _metric(
+            "not_implemented",
+            values=[
+                {"from": "residue", "to": "fungus", "status": "not_implemented"},
+                {"from": "ant_transport", "to": "seed_patch", "status": "not_implemented"},
+            ],
+            reason="Only the first corpse-to-decomposer dependency is implemented so far.",
         ),
     }
 

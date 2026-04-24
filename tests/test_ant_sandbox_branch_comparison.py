@@ -82,7 +82,9 @@ def test_branch_comparison_preserves_provenance_and_metrics(tmp_path: Path) -> N
     assert "occupied_cell_count" in spatial
     assert "trail_cell_count_by_colony" in spatial
     assert "corpse_count" in outcomes
+    assert "decomposer_patch_count" in outcomes
     assert "residue_cell_count" in spatial
+    assert "enriched_residue_cell_count" in spatial
     assert "top_food_source" in spatial
 
 

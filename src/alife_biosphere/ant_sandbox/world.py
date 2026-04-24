@@ -111,6 +111,9 @@ class Corpse:
     decay_ticks_remaining: int
     death_reason: str
 
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "Corpse":
         return cls(
@@ -123,6 +126,34 @@ class Corpse:
             energy_value=float(payload["energy_value"]),
             decay_ticks_remaining=int(payload["decay_ticks_remaining"]),
             death_reason=str(payload["death_reason"]),
+        )
+
+
+@dataclass
+class DecomposerPatch:
+    patch_id: str
+    x: int
+    y: int
+    biomass: float
+    age: int = 0
+    source_corpse_id: str | None = None
+    source_type: str = "corpse"
+    spread_count: int = 0
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "DecomposerPatch":
+        return cls(
+            patch_id=str(payload["patch_id"]),
+            x=int(payload["x"]),
+            y=int(payload["y"]),
+            biomass=float(payload["biomass"]),
+            age=int(payload.get("age", 0)),
+            source_corpse_id=None if payload.get("source_corpse_id") is None else str(payload["source_corpse_id"]),
+            source_type=str(payload.get("source_type", "corpse")),
+            spread_count=int(payload.get("spread_count", 0)),
         )
 
 
@@ -298,6 +329,7 @@ class AntSandboxWorld:
     food_patches: list[FoodPatch]
     ants: list[SandboxAnt]
     corpses: list[Corpse] = field(default_factory=list)
+    decomposer_patches: list[DecomposerPatch] = field(default_factory=list)
     tick: int = 0
     next_ant_index: int = 0
     next_genome_index: int = 0
@@ -328,11 +360,17 @@ class AntSandboxWorld:
     def corpse_count(self) -> int:
         return len(self.corpses)
 
+    def decomposer_patch_count(self) -> int:
+        return len(self.decomposer_patches)
+
     def residue_cell_count(self) -> int:
         return len(self.residue_field)
 
     def residue_total_value(self) -> float:
         return round(sum(float(entry["value"]) for entry in self.residue_field.values()), 4)
+
+    def enriched_residue_cell_count(self) -> int:
+        return sum(1 for entry in self.residue_field.values() if bool(entry.get("enriched", False)))
 
     def colony_nest(self, colony_id: str) -> Nest:
         return self.colonies[colony_id].nest
@@ -360,8 +398,10 @@ class AntSandboxWorld:
             "nest_food": self.delivered_food_total(),
             "food_remaining": self.food_remaining(),
             "corpse_count": self.corpse_count(),
+            "decomposer_patch_count": self.decomposer_patch_count(),
             "residue_cell_count": self.residue_cell_count(),
             "residue_total_value": self.residue_total_value(),
+            "enriched_residue_cell_count": self.enriched_residue_cell_count(),
             "events": len(self.events),
         }
 
@@ -377,6 +417,7 @@ class AntSandboxWorld:
             "food_patches": [asdict(patch) for patch in self.food_patches],
             "ants": [ant.to_dict() for ant in self.ants],
             "corpses": [asdict(corpse) for corpse in self.corpses],
+            "decomposer_patches": [asdict(patch) for patch in self.decomposer_patches],
             "occupied_cells": [[x, y] for x, y in sorted(self.occupied_cells)],
             "events": [event.to_dict() for event in self.events],
             "food_trail": {
@@ -392,6 +433,7 @@ class AntSandboxWorld:
                 f"{x},{y}": {
                     "value": round(float(entry["value"]), 6),
                     "source_type": str(entry.get("source_type", "unknown")),
+                    "enriched": bool(entry.get("enriched", False)),
                 }
                 for (x, y), entry in self.residue_field.items()
             },
@@ -425,6 +467,7 @@ class AntSandboxWorld:
             food_patches=[FoodPatch.from_dict(dict(patch)) for patch in payload.get("food_patches", [])],
             ants=ants,
             corpses=[Corpse.from_dict(dict(corpse)) for corpse in payload.get("corpses", [])],
+            decomposer_patches=[DecomposerPatch.from_dict(dict(patch)) for patch in payload.get("decomposer_patches", [])],
             tick=int(payload.get("tick", 0)),
             next_ant_index=int(payload.get("next_ant_index", len(ants))),
             next_genome_index=int(payload.get("next_genome_index", len(ants))),
@@ -464,6 +507,7 @@ def _residue_cell_map(payload: dict[str, object]) -> dict[tuple[int, int], dict[
         _cell_from_key(key): {
             "value": float(dict(value).get("value", 0.0)),
             "source_type": str(dict(value).get("source_type", "unknown")),
+            "enriched": bool(dict(value).get("enriched", False)),
         }
         for key, value in payload.items()
     }

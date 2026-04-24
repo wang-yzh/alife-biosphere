@@ -11,6 +11,7 @@ from .world import (
     AntSandboxWorld,
     Colony,
     Corpse,
+    DecomposerPatch,
     FoodPatch,
     InstinctGenome,
     Nest,
@@ -1068,17 +1069,218 @@ def _decay_trails(world: AntSandboxWorld, config: AntSandboxConfig) -> None:
     }
 
 
-def _deposit_residue(world: AntSandboxWorld, x: int, y: int, amount: float, source_type: str) -> None:
+def _deposit_residue(
+    world: AntSandboxWorld,
+    x: int,
+    y: int,
+    amount: float,
+    source_type: str,
+    *,
+    enriched: bool = False,
+) -> None:
     if amount <= 0:
         return
     key = (x, y)
     if key not in world.residue_field:
-        world.residue_field[key] = {"value": round(amount, 6), "source_type": source_type}
+        world.residue_field[key] = {"value": round(amount, 6), "source_type": source_type, "enriched": enriched}
         return
     world.residue_field[key] = {
         "value": round(float(world.residue_field[key]["value"]) + amount, 6),
         "source_type": source_type,
+        "enriched": bool(world.residue_field[key].get("enriched", False) or enriched),
     }
+
+
+def _advance_decomposers(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> None:
+    if not config.ants.decomposer_enabled:
+        world.decomposer_patches = []
+        return
+
+    occupied_cells = {(patch.x, patch.y) for patch in world.decomposer_patches}
+    for corpse in world.corpses:
+        cell = (corpse.x, corpse.y)
+        if cell in occupied_cells:
+            continue
+        if tick - corpse.death_tick < config.ants.decomposer_emerge_delay_ticks:
+            continue
+        if corpse.energy_value <= 0.05:
+            continue
+        patch = DecomposerPatch(
+            patch_id=f"decomp_{corpse.corpse_id}",
+            x=corpse.x,
+            y=corpse.y,
+            biomass=round(max(0.18, min(0.65, corpse.energy_value * 0.55)), 4),
+            age=0,
+            source_corpse_id=corpse.corpse_id,
+            source_type="corpse",
+        )
+        world.decomposer_patches.append(patch)
+        occupied_cells.add(cell)
+        world.emit(
+            Event(
+                tick=tick,
+                event_type="decomposer_emerge",
+                organism_id=None,
+                habitat_id=corpse.colony_id,
+                payload={
+                    "patch_id": patch.patch_id,
+                    "x": patch.x,
+                    "y": patch.y,
+                    "source_corpse_id": corpse.corpse_id,
+                    "source_type": "corpse",
+                    "colony_id": corpse.colony_id,
+                },
+            )
+        )
+
+    corpse_by_cell = {(corpse.x, corpse.y): corpse for corpse in world.corpses}
+    next_patches: list[DecomposerPatch] = []
+    spawned_patches: list[DecomposerPatch] = []
+    occupied_cells = {(patch.x, patch.y) for patch in world.decomposer_patches}
+    for patch in world.decomposer_patches:
+        patch.age += 1
+        cell = (patch.x, patch.y)
+        corpse = corpse_by_cell.get(cell)
+        residue_entry = world.residue_field.get(cell)
+        residue_value = 0.0 if residue_entry is None else float(residue_entry["value"])
+        biomass_gain = 0.0
+
+        if corpse is not None and corpse.energy_value > 0:
+            corpse_feed = min(corpse.energy_value, config.ants.decomposer_feed_rate)
+            corpse.energy_value = round(max(0.0, corpse.energy_value - corpse_feed), 4)
+            biomass_gain += corpse_feed * 0.9
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="decomposer_feed",
+                    organism_id=None,
+                    habitat_id=corpse.colony_id,
+                    payload={
+                        "patch_id": patch.patch_id,
+                        "x": patch.x,
+                        "y": patch.y,
+                        "source_type": "corpse",
+                        "source_corpse_id": corpse.corpse_id,
+                        "amount": round(corpse_feed, 4),
+                    },
+                )
+            )
+
+        if residue_value >= config.ants.decomposer_residue_threshold:
+            residue_feed = min(residue_value, config.ants.decomposer_feed_rate * 0.55)
+            world.residue_field[cell] = {
+                "value": round(max(0.0, residue_value - residue_feed), 6),
+                "source_type": str(residue_entry.get("source_type", "unknown")),
+                "enriched": bool(residue_entry.get("enriched", False)),
+            }
+            biomass_gain += residue_feed * 0.35
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="decomposer_feed",
+                    organism_id=None,
+                    habitat_id=None,
+                    payload={
+                        "patch_id": patch.patch_id,
+                        "x": patch.x,
+                        "y": patch.y,
+                        "source_type": "residue",
+                        "amount": round(residue_feed, 4),
+                    },
+                )
+            )
+
+        if biomass_gain > 0 and config.ants.residue_enabled and config.ants.decomposer_enrich_residue > 0:
+            enriched_amount = round(config.ants.decomposer_enrich_residue * max(1.0, biomass_gain * 2.0), 6)
+            _deposit_residue(world, patch.x, patch.y, enriched_amount, "decomposer", enriched=True)
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="residue_enriched",
+                    organism_id=None,
+                    habitat_id=None,
+                    payload={
+                        "patch_id": patch.patch_id,
+                        "x": patch.x,
+                        "y": patch.y,
+                        "amount": enriched_amount,
+                    },
+                )
+            )
+
+        patch.biomass = round(patch.biomass + biomass_gain - config.ants.decomposer_decay, 4)
+        if patch.biomass <= 0.04:
+            occupied_cells.discard(cell)
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="decomposer_decay",
+                    organism_id=None,
+                    habitat_id=None,
+                    payload={
+                        "patch_id": patch.patch_id,
+                        "x": patch.x,
+                        "y": patch.y,
+                        "age": patch.age,
+                        "reason": "starvation",
+                    },
+                )
+            )
+            continue
+
+        if patch.age % config.ants.decomposer_spread_interval == 0 and patch.biomass >= 0.42:
+            candidates: list[tuple[float, int, int, str | None]] = []
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    if dx == 0 and dy == 0:
+                        continue
+                    nx = _clamp(patch.x + dx, 0, world.width - 1)
+                    ny = _clamp(patch.y + dy, 0, world.height - 1)
+                    if _terrain_blocked(world, nx, ny) or (nx, ny) in occupied_cells:
+                        continue
+                    local_residue = float(world.residue_field.get((nx, ny), {}).get("value", 0.0))
+                    local_corpse = corpse_by_cell.get((nx, ny))
+                    local_signal = local_residue + (0.35 if local_corpse is not None else 0.0)
+                    if local_signal < config.ants.decomposer_residue_threshold:
+                        continue
+                    source_corpse_id = None if local_corpse is None else local_corpse.corpse_id
+                    candidates.append((-local_signal, ny, nx, source_corpse_id))
+            if candidates:
+                _, ny, nx, source_corpse_id = sorted(candidates)[0]
+                child = DecomposerPatch(
+                    patch_id=f"{patch.patch_id}_s{patch.spread_count + 1}",
+                    x=nx,
+                    y=ny,
+                    biomass=round(min(0.26, patch.biomass * 0.35), 4),
+                    age=0,
+                    source_corpse_id=source_corpse_id,
+                    source_type="corpse" if source_corpse_id is not None else "residue",
+                    spread_count=0,
+                )
+                patch.biomass = round(max(0.05, patch.biomass - child.biomass * 0.45), 4)
+                patch.spread_count += 1
+                spawned_patches.append(child)
+                occupied_cells.add((child.x, child.y))
+                world.emit(
+                    Event(
+                        tick=tick,
+                        event_type="decomposer_spread",
+                        organism_id=None,
+                        habitat_id=None,
+                        payload={
+                            "from_patch_id": patch.patch_id,
+                            "patch_id": child.patch_id,
+                            "x": child.x,
+                            "y": child.y,
+                            "source_type": child.source_type,
+                            "source_corpse_id": child.source_corpse_id,
+                        },
+                    )
+                )
+
+        next_patches.append(patch)
+
+    world.decomposer_patches = next_patches + spawned_patches
 
 
 def _decay_substrates(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> None:
@@ -1088,6 +1290,7 @@ def _decay_substrates(world: AntSandboxWorld, config: AntSandboxConfig, tick: in
             cell: {
                 "value": round(float(entry["value"]) * residue_decay, 6),
                 "source_type": str(entry.get("source_type", "unknown")),
+                "enriched": bool(entry.get("enriched", False)),
             }
             for cell, entry in world.residue_field.items()
             if float(entry["value"]) * residue_decay > 0.015
@@ -1099,11 +1302,13 @@ def _decay_substrates(world: AntSandboxWorld, config: AntSandboxConfig, tick: in
         world.corpses = []
         return
 
+    decomposer_cells = {(patch.x, patch.y) for patch in world.decomposer_patches}
     remaining_corpses: list[Corpse] = []
     for corpse in world.corpses:
         release = 0.0
         if config.ants.residue_enabled:
-            release = min(corpse.energy_value, config.ants.corpse_residue_release)
+            passive_rate = config.ants.corpse_residue_release * (0.35 if (corpse.x, corpse.y) in decomposer_cells else 1.0)
+            release = min(corpse.energy_value, passive_rate)
             if release > 0:
                 _deposit_residue(world, corpse.x, corpse.y, release, "corpse")
         corpse.energy_value = round(max(0.0, corpse.energy_value - release), 4)
@@ -1523,6 +1728,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     contested_sources = 0
     hostility_contacts = 0
     combat_starts = 0
+    _advance_decomposers(world, config, tick)
     _decay_substrates(world, config, tick)
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
@@ -1619,8 +1825,10 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "avoidance_turns": avoidance_turns,
         "hungry_ants": hungry_ants,
         "corpse_count": world.corpse_count(),
+        "decomposer_patch_count": world.decomposer_patch_count(),
         "residue_cell_count": world.residue_cell_count(),
         "residue_total_value": world.residue_total_value(),
+        "enriched_residue_cell_count": world.enriched_residue_cell_count(),
         "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
         "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
         "home_trail_cells": sum(len(field) for field in world.home_trail.values()),

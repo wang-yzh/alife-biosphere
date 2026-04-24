@@ -72,12 +72,15 @@ def test_open_endedness_metric_status_labels_are_present(tmp_path: Path) -> None
                 assert metric["status"] in STATUS_VALUES
 
 
-def test_ecological_dependency_metrics_remain_requires_m16(tmp_path: Path) -> None:
+def test_ecological_dependency_metrics_become_available_after_m16(tmp_path: Path) -> None:
     payload = build_open_endedness_payload(_comparison_payload(tmp_path))
     dependency_family = payload["metric_families"]["ecological_dependency"]["metrics"]
     for metrics in dependency_family.values():
-        for metric in metrics.values():
-            assert metric["status"] == "requires_m16"
+        assert metrics["corpse_to_decomposer_edges"]["status"] == "available"
+        assert metrics["maximum_dependency_depth"]["status"] == "available"
+        assert metrics["dependency_events_by_type"]["status"] == "available"
+        assert metrics["current_dependency_graph"]["status"] == "available"
+        assert metrics["future_dependency_graph"]["status"] == "not_implemented"
 
 
 def test_open_endedness_output_does_not_emit_single_scalar_score(tmp_path: Path) -> None:

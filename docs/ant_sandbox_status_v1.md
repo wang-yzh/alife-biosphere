@@ -49,6 +49,7 @@ and a multi-seed validation matrix over:
 | `M13 branch comparison ledger` | `pass` | the branch can group related checkpoints into branch families and emit JSON plus Markdown reports with provenance, outcome metrics, spatial signatures, and pairwise deltas |
 | `M14 niche substrate` | `pass` | the branch now generates corpse and residue substrates from ant death, trail use, nest unloads, and nest feeding, and those substrates survive checkpoints and appear in observer plus branch comparison outputs |
 | `M15 open-endedness metrics` | `pass` | the branch now converts checkpoint-family comparison outputs into five explicit metric families with status labels, while avoiding any single universal fitness score |
+| `M16 successor life layer` | `pass` | the branch now supports a weak decomposer patch layer that emerges from corpse substrate, feeds locally, enriches residue, survives checkpoints, appears in the observer, and upgrades the first dependency edge to an implemented metric |
 
 ## Current Lifecycle Snapshot
 
@@ -103,7 +104,7 @@ Still provisional:
 - stronger mutation baselines and longer-run trait drift under selection pressure
 - automated branch comparison for niche discovery or collapse
 - stronger substrate diversity beyond corpse and residue
-- true dependency metrics still waiting on M16 successor life
+- successor diversity still limited to one weak decomposer layer
 
 ## Next Phase
 
@@ -113,7 +114,7 @@ It is:
 
 - branch comparison before stronger open-ended evolution claims
 - open-endedness metrics that do not collapse into one fitness score
-- successor life only after a measurable ant-created substrate exists
+- multi-niche successor ecology beyond the first decomposer layer
 - combat as optional later pressure rather than the current branch center
 
 The next current planning set is:
@@ -128,6 +129,7 @@ The next current planning set is:
 - `ant_sandbox_m14_niche_substrate_spec_v1.md`
 - `ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md`
 - `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+- `ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md`
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 - `ant_sandbox_world_design_v2.md`
 - `ant_sandbox_build_plan_v2.md`

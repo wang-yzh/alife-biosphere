@@ -19,7 +19,7 @@ from .reporting import summarize_behavior_roles, summarize_food_source_competiti
 from .showcase import build_showcase_config
 from .simulation import AntSandboxResult, run_simulation, run_world_until, step_world
 from .validation import DEFAULT_VALIDATION_SEEDS, run_validation_cases, summarize_validation_status
-from .world import AntSandboxWorld, Corpse, FoodPatch, InstinctGenome, Nest, SandboxAnt, initialize_world
+from .world import AntSandboxWorld, Corpse, DecomposerPatch, FoodPatch, InstinctGenome, Nest, SandboxAnt, initialize_world
 
 __all__ = [
     "AntAgentConfig",
@@ -28,6 +28,7 @@ __all__ = [
     "AntSandboxResult",
     "ColonyConfig",
     "Corpse",
+    "DecomposerPatch",
     "FoodPatch",
     "FoodPatchConfig",
     "InstinctGenome",

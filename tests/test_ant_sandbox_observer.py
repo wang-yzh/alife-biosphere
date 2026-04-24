@@ -39,8 +39,11 @@ def test_ant_sandbox_observer_payload_contains_world_frames() -> None:
     assert "contesting_ants" in first
     assert "avoidance_turns" in first
     assert "corpse_count" in first
+    assert "decomposer_patch_count" in first
     assert "residue_cell_count" in first
+    assert "enriched_residue_cell_count" in first
     assert "corpses" in first
+    assert "decomposer_patches" in first
     assert "residue_points" in first
     assert "colony_stats" in first
     assert "competition_pressure" in first["food_patches"][0]

@@ -175,6 +175,13 @@ class AntAgentConfig:
     trail_residue_deposit: float = 0.008
     nest_residue_deposit: float = 0.16
     corpse_residue_release: float = 0.14
+    decomposer_enabled: bool = True
+    decomposer_emerge_delay_ticks: int = 4
+    decomposer_feed_rate: float = 0.14
+    decomposer_decay: float = 0.05
+    decomposer_spread_interval: int = 12
+    decomposer_residue_threshold: float = 0.28
+    decomposer_enrich_residue: float = 0.09
 
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
@@ -251,6 +258,18 @@ class AntAgentConfig:
             raise ValueError("nest_residue_deposit must be non-negative")
         if self.corpse_residue_release < 0:
             raise ValueError("corpse_residue_release must be non-negative")
+        if self.decomposer_emerge_delay_ticks < 0:
+            raise ValueError("decomposer_emerge_delay_ticks must be non-negative")
+        if self.decomposer_feed_rate < 0:
+            raise ValueError("decomposer_feed_rate must be non-negative")
+        if self.decomposer_decay < 0:
+            raise ValueError("decomposer_decay must be non-negative")
+        if self.decomposer_spread_interval <= 0:
+            raise ValueError("decomposer_spread_interval must be positive")
+        if self.decomposer_residue_threshold < 0:
+            raise ValueError("decomposer_residue_threshold must be non-negative")
+        if self.decomposer_enrich_residue < 0:
+            raise ValueError("decomposer_enrich_residue must be non-negative")
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "AntAgentConfig":
@@ -307,6 +326,23 @@ class AntAgentConfig:
             ),
             corpse_residue_release=float(
                 _payload_value(payload, "corpse_residue_release", default.corpse_residue_release)
+            ),
+            decomposer_enabled=bool(_payload_value(payload, "decomposer_enabled", default.decomposer_enabled)),
+            decomposer_emerge_delay_ticks=int(
+                _payload_value(payload, "decomposer_emerge_delay_ticks", default.decomposer_emerge_delay_ticks)
+            ),
+            decomposer_feed_rate=float(
+                _payload_value(payload, "decomposer_feed_rate", default.decomposer_feed_rate)
+            ),
+            decomposer_decay=float(_payload_value(payload, "decomposer_decay", default.decomposer_decay)),
+            decomposer_spread_interval=int(
+                _payload_value(payload, "decomposer_spread_interval", default.decomposer_spread_interval)
+            ),
+            decomposer_residue_threshold=float(
+                _payload_value(payload, "decomposer_residue_threshold", default.decomposer_residue_threshold)
+            ),
+            decomposer_enrich_residue=float(
+                _payload_value(payload, "decomposer_enrich_residue", default.decomposer_enrich_residue)
             ),
         )
 
