@@ -18,7 +18,7 @@ The current showcase direction is:
 ```text
 surface ecology -> food competition -> multi-colony overlap ->
 death and reproduction -> inheritance contract -> inherited instinct
-variation -> long-run evolution
+variation -> checkpointed long-run branching -> open-ended evolution
 ```
 
 ## Current Branch State
@@ -36,6 +36,7 @@ current probe setup:
 - nest-food-driven reproduction with parent and lineage tracking
 - `Genome v1` scaffolding with explicit genome ids and generation tracking
 - bounded point mutation plus `clone / mutate / resample` ablation controls
+- checkpoint / resume / fork runtime for long-run experiment branches
 
 The current visible world also includes:
 
@@ -105,6 +106,30 @@ Open:
 - [outputs/ant_sandbox_live_observer/live_observer.html](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_live_observer/live_observer.html)
 
 This is useful for monitoring a single run while it is advancing.
+
+### Infinite Experiment Runner
+
+Start a checkpointed long run:
+
+```bash
+python scripts/run_ant_sandbox_infinite_experiment.py --branch-id root --target-tick 1800 --checkpoint-every 300
+```
+
+Resume from a saved checkpoint:
+
+```bash
+python scripts/run_ant_sandbox_infinite_experiment.py --checkpoint outputs/ant_sandbox_infinite_experiment/root/checkpoint_final.json --additional-ticks 900
+```
+
+Fork a branch from a saved checkpoint:
+
+```bash
+python scripts/run_ant_sandbox_infinite_experiment.py --checkpoint outputs/ant_sandbox_infinite_experiment/root/checkpoint_final.json --branch-id root_seed_99 --seed 99 --additional-ticks 900
+```
+
+Outputs are written under:
+
+- [outputs/ant_sandbox_infinite_experiment](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_infinite_experiment)
 
 ## Run Probes
 
@@ -178,6 +203,7 @@ Core ant sandbox implementation:
 - [reporting.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/reporting.py)
 - [validation.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/validation.py)
 - [showcase.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/showcase.py)
+- [checkpoint.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/checkpoint.py)
 
 Main runnable scripts:
 
@@ -185,6 +211,7 @@ Main runnable scripts:
 - [run_ant_sandbox_live_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_live_observer.py)
 - [run_ant_sandbox_probe.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_probe.py)
 - [run_ant_sandbox_validation_matrix.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_validation_matrix.py)
+- [run_ant_sandbox_infinite_experiment.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_infinite_experiment.py)
 
 ## Documentation
 
@@ -195,10 +222,11 @@ Shortest re-entry path for the current ant sandbox line:
 3. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
 4. [docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md)
 5. [docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md)
-6. [docs/ant_sandbox_world_design_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_world_design_v2.md)
-7. [docs/ant_sandbox_build_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_build_plan_v2.md)
-8. [docs/ant_sandbox_m7_scale_up_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m7_scale_up_spec_v1.md)
-9. [docs/ant_sandbox_long_horizon_construction_route_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_long_horizon_construction_route_v1.md)
+6. [docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md)
+7. [docs/ant_sandbox_world_design_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_world_design_v2.md)
+8. [docs/ant_sandbox_build_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_build_plan_v2.md)
+9. [docs/ant_sandbox_m7_scale_up_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m7_scale_up_spec_v1.md)
+10. [docs/ant_sandbox_long_horizon_construction_route_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_long_horizon_construction_route_v1.md)
 
 If you need the full document catalog:
 
@@ -214,7 +242,7 @@ It is:
 - clearer resource pressure and turnover under scarcity
 - better obstacle routing under extended runs
 - comparison and ablation under bounded mutation
-- inherited instinct variation only after lineage and comparison metrics are stable
+- checkpointed branch comparison before stronger open-ended evolution claims
 - conflict as optional later pressure rather than the current branch center
 
 ## Legacy Note

@@ -1508,8 +1508,13 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     return summary
 
 
-def run_simulation(config: AntSandboxConfig) -> AntSandboxResult:
-    world = initialize_world(config)
-    for tick in range(1, config.ticks + 1):
+def run_world_until(world: AntSandboxWorld, config: AntSandboxConfig, target_tick: int) -> AntSandboxResult:
+    if target_tick < world.tick:
+        raise ValueError("target_tick must be greater than or equal to the current world tick")
+    for tick in range(world.tick + 1, target_tick + 1):
         step_world(world, config, tick)
     return AntSandboxResult(world=world)
+
+
+def run_simulation(config: AntSandboxConfig) -> AntSandboxResult:
+    return run_world_until(initialize_world(config), config, config.ticks)

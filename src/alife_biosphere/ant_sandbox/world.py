@@ -24,6 +24,16 @@ class Nest:
     stored_food: int = 0
     upkeep_reserve: float = 0.0
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "Nest":
+        return cls(
+            x=int(payload["x"]),
+            y=int(payload["y"]),
+            radius=int(payload["radius"]),
+            stored_food=int(payload.get("stored_food", 0)),
+            upkeep_reserve=float(payload.get("upkeep_reserve", 0.0)),
+        )
+
 
 @dataclass
 class Colony:
@@ -31,6 +41,15 @@ class Colony:
     display_name: str
     color: str
     nest: Nest
+
+    @classmethod
+    def from_dict(cls, colony_id: str, payload: dict[str, object]) -> "Colony":
+        return cls(
+            colony_id=str(payload.get("colony_id", colony_id)),
+            display_name=str(payload["display_name"]),
+            color=str(payload["color"]),
+            nest=Nest.from_dict(dict(payload["nest"])),
+        )
 
 
 @dataclass
@@ -55,6 +74,30 @@ class FoodPatch:
     contested_ticks: int = 0
     depletion_count: int = 0
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "FoodPatch":
+        return cls(
+            patch_id=str(payload["patch_id"]),
+            x=int(payload["x"]),
+            y=int(payload["y"]),
+            radius=int(payload["radius"]),
+            amount=int(payload["amount"]),
+            max_amount=int(payload["max_amount"]),
+            value_score=float(payload.get("value_score", 1.0)),
+            regrowth_rate=int(payload.get("regrowth_rate", 0)),
+            relocate_on_depletion=bool(payload.get("relocate_on_depletion", True)),
+            respawn_delay_ticks=int(payload.get("respawn_delay_ticks", 28)),
+            regrow_only_when_empty=bool(payload.get("regrow_only_when_empty", False)),
+            empty_ticks=int(payload.get("empty_ticks", 0)),
+            respawn_count=int(payload.get("respawn_count", 0)),
+            nearby_ants=int(payload.get("nearby_ants", 0)),
+            carrying_nearby=int(payload.get("carrying_nearby", 0)),
+            recent_pickups=int(payload.get("recent_pickups", 0)),
+            competition_pressure=float(payload.get("competition_pressure", 0.0)),
+            contested_ticks=int(payload.get("contested_ticks", 0)),
+            depletion_count=int(payload.get("depletion_count", 0)),
+        )
+
 
 @dataclass
 class InstinctGenome:
@@ -69,6 +112,19 @@ class InstinctGenome:
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "InstinctGenome":
+        return cls(
+            genome_id=str(payload["genome_id"]),
+            parent_genome_id=None if payload.get("parent_genome_id") is None else str(payload["parent_genome_id"]),
+            generation=int(payload.get("generation", 0)),
+            range_bias=float(payload.get("range_bias", 0.5)),
+            trail_affinity=float(payload.get("trail_affinity", 0.5)),
+            harvest_drive=float(payload.get("harvest_drive", 0.5)),
+            mutation_count=int(payload.get("mutation_count", 0)),
+            mutation_log=[str(item) for item in payload.get("mutation_log", [])],
+        )
 
 
 @dataclass
@@ -176,6 +232,35 @@ class SandboxAnt:
             "delivered_food": self.delivered_food,
         }
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "SandboxAnt":
+        genome_payload = dict(payload.get("genome", payload))
+        return cls(
+            ant_id=str(payload["ant_id"]),
+            colony_id=str(payload["colony_id"]),
+            x=int(payload["x"]),
+            y=int(payload["y"]),
+            heading=float(payload["heading"]),
+            energy=float(payload["energy"]),
+            genome=InstinctGenome.from_dict(genome_payload),
+            carrying_food=bool(payload.get("carrying_food", False)),
+            target_patch_id=None if payload.get("target_patch_id") is None else str(payload["target_patch_id"]),
+            outbound_commit_ticks=int(payload.get("outbound_commit_ticks", 0)),
+            combat_with_id=None if payload.get("combat_with_id") is None else str(payload["combat_with_id"]),
+            combat_ticks_remaining=int(payload.get("combat_ticks_remaining", 0)),
+            combat_cooldown_ticks=int(payload.get("combat_cooldown_ticks", 0)),
+            behavior_state=str(payload.get("behavior_state", "forage")),
+            contest_patch_id=None if payload.get("contest_patch_id") is None else str(payload["contest_patch_id"]),
+            starvation_ticks=int(payload.get("starvation_ticks", 0)),
+            recent_positions=[_cell_from_sequence(cell) for cell in payload.get("recent_positions", [])],
+            age=int(payload.get("age", 0)),
+            birth_tick=int(payload.get("birth_tick", 0)),
+            alive=bool(payload.get("alive", True)),
+            parent_id=None if payload.get("parent_id") is None else str(payload["parent_id"]),
+            lineage_id=None if payload.get("lineage_id") is None else str(payload["lineage_id"]),
+            delivered_food=int(payload.get("delivered_food", 0)),
+        )
+
 
 @dataclass
 class AntSandboxWorld:
@@ -244,10 +329,14 @@ class AntSandboxWorld:
             "width": self.width,
             "height": self.height,
             "tick": self.tick,
+            "next_ant_index": self.next_ant_index,
+            "next_genome_index": self.next_genome_index,
             "nest": asdict(self.nest),
             "colonies": {colony_id: {"display_name": colony.display_name, "color": colony.color, "nest": asdict(colony.nest)} for colony_id, colony in self.colonies.items()},
             "food_patches": [asdict(patch) for patch in self.food_patches],
             "ants": [ant.to_dict() for ant in self.ants],
+            "occupied_cells": [[x, y] for x, y in sorted(self.occupied_cells)],
+            "events": [event.to_dict() for event in self.events],
             "food_trail": {
                 colony_id: {f"{x},{y}": value for (x, y), value in field.items()}
                 for colony_id, field in self.food_trail.items()
@@ -258,8 +347,65 @@ class AntSandboxWorld:
             },
             "stale_field": {f"{x},{y}": value for (x, y), value in self.stale_field.items()},
             "terrain": {f"{x},{y}": kind for (x, y), kind in self.terrain.items()},
-            "next_genome_index": self.next_genome_index,
         }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "AntSandboxWorld":
+        colonies_payload = dict(payload["colonies"])
+        colonies = {
+            str(colony_id): Colony.from_dict(str(colony_id), dict(colony_payload))
+            for colony_id, colony_payload in colonies_payload.items()
+        }
+        nest = Nest.from_dict(dict(payload["nest"]))
+        if colonies:
+            first_colony = next(iter(colonies.values()))
+            if (nest.x, nest.y, nest.radius) == (first_colony.nest.x, first_colony.nest.y, first_colony.nest.radius):
+                nest = first_colony.nest
+        ants = [SandboxAnt.from_dict(dict(ant_payload)) for ant_payload in payload.get("ants", [])]
+        occupied_payload = payload.get("occupied_cells")
+        occupied_cells = (
+            {_cell_from_sequence(cell) for cell in occupied_payload}
+            if occupied_payload is not None
+            else {(ant.x, ant.y) for ant in ants if ant.alive}
+        )
+        return cls(
+            width=int(payload["width"]),
+            height=int(payload["height"]),
+            nest=nest,
+            colonies=colonies,
+            food_patches=[FoodPatch.from_dict(dict(patch)) for patch in payload.get("food_patches", [])],
+            ants=ants,
+            tick=int(payload.get("tick", 0)),
+            next_ant_index=int(payload.get("next_ant_index", len(ants))),
+            next_genome_index=int(payload.get("next_genome_index", len(ants))),
+            occupied_cells=occupied_cells,
+            events=[Event.from_dict(dict(event)) for event in payload.get("events", [])],
+            food_trail={
+                str(colony_id): _cell_float_map(dict(field))
+                for colony_id, field in dict(payload.get("food_trail", {})).items()
+            },
+            home_trail={
+                str(colony_id): _cell_float_map(dict(field))
+                for colony_id, field in dict(payload.get("home_trail", {})).items()
+            },
+            stale_field=_cell_float_map(dict(payload.get("stale_field", {}))),
+            terrain={_cell_from_key(key): str(kind) for key, kind in dict(payload.get("terrain", {})).items()},
+            navigation_cache={},
+        )
+
+
+def _cell_from_key(key: str) -> tuple[int, int]:
+    x_text, y_text = key.split(",", 1)
+    return int(x_text), int(y_text)
+
+
+def _cell_from_sequence(cell: object) -> tuple[int, int]:
+    x, y = cell
+    return int(x), int(y)
+
+
+def _cell_float_map(payload: dict[str, object]) -> dict[tuple[int, int], float]:
+    return {_cell_from_key(key): float(value) for key, value in payload.items()}
 
 
 def _clamp_cell(value: int, lower: int, upper: int) -> int:

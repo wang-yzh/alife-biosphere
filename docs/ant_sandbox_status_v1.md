@@ -44,6 +44,7 @@ and a multi-seed validation matrix over:
 | `M10A simple lifecycle` | `pass` | the branch now supports starvation and old-age death plus nest-food-driven reproduction with parent and lineage bookkeeping, without mutation |
 | `M10B genome contract` | `pass` | the branch now wraps inherited instinct traits in an explicit genome structure with `genome_id`, `parent_genome_id`, `generation`, and mutation bookkeeping, while keeping mutation disabled |
 | `M10C mutation and ablation controls` | `pass` | the branch now supports bounded point mutation plus `clone / mutate / resample` comparison runs, with generation-level summaries and mutation event bookkeeping |
+| `M11 infinite experiment runtime` | `pass` | the branch can checkpoint, reload, resume, and fork a live sandbox world with provenance metadata |
 
 ## Current Lifecycle Snapshot
 
@@ -96,6 +97,8 @@ Still provisional:
 - observer integration of longer-run lifecycle overlays
 - inheritance beyond parent, lineage, and genome bookkeeping
 - stronger mutation baselines and longer-run trait drift under selection pressure
+- observer replay directly from forked checkpoint branches
+- automated branch comparison for niche discovery or collapse
 
 ## Next Phase
 
@@ -106,7 +109,8 @@ It is:
 - longer-run three-colony lifecycle balance
 - stronger resource pressure and turnover under scarcity
 - controlled mutation and ablation after the genome contract
-- longer-run lineage comparison after the first mutation controls
+- checkpointed long-run branches before stronger open-ended evolution claims
+- longer-run lineage and branch comparison after the runtime layer
 - combat as optional later pressure rather than the current branch center
 
 The next current planning set is:
@@ -131,5 +135,6 @@ It is now a real early ant sandbox with:
 - parent and lineage tracking across births
 - explicit genome ids and generation tracking
 - bounded mutation and ablation controls
+- checkpoint / resume / fork runtime
 
 That is enough to treat it as the real project world, not just a sketch.
