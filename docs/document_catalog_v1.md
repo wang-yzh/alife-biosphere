@@ -18,6 +18,8 @@ checked first before making cross-cutting decisions.
 
 - `README.md`: docs-library entry map and status guide
 - `ant_sandbox_status_v1.md`: branch-level status for the active sandbox line
+- `ant_sandbox_handoff_plan_v1.md`: onboarding, guardrails, first-week plan,
+  and next-milestone handoff contract
 - `ant_sandbox_north_star_v1.md`: one-page statement of the sandbox target
 - `ant_sandbox_world_design_v2.md`: current sandbox world design
 - `ant_sandbox_build_plan_v2.md`: current milestone ordering for the active
@@ -224,14 +226,15 @@ They are best used selectively after the control layer is clear.
 
 1. `README.md`
 2. `ant_sandbox_status_v1.md`
-3. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
-4. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
-5. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
-6. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
-7. `ant_sandbox_world_design_v2.md`
-8. `ant_sandbox_build_plan_v2.md`
-9. `ant_sandbox_m7_scale_up_spec_v1.md`
-10. `ant_sandbox_long_horizon_construction_route_v1.md`
+3. `ant_sandbox_handoff_plan_v1.md`
+4. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
+5. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
+6. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
+7. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
+8. `ant_sandbox_world_design_v2.md`
+9. `ant_sandbox_build_plan_v2.md`
+10. `ant_sandbox_m7_scale_up_spec_v1.md`
+11. `ant_sandbox_long_horizon_construction_route_v1.md`
 
 ### Evidence and honesty pass
 

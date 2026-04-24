@@ -115,6 +115,7 @@ It is:
 
 The next current planning set is:
 
+- `ant_sandbox_handoff_plan_v1.md`
 - `ant_sandbox_world_design_v2.md`
 - `ant_sandbox_build_plan_v2.md`
 - `ant_sandbox_m7_scale_up_spec_v1.md`
