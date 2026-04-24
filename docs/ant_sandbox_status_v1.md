@@ -46,6 +46,7 @@ and a multi-seed validation matrix over:
 | `M10C mutation and ablation controls` | `pass` | the branch now supports bounded point mutation plus `clone / mutate / resample` comparison runs, with generation-level summaries and mutation event bookkeeping |
 | `M11 infinite experiment runtime` | `pass` | the branch can checkpoint, reload, resume, and fork a live sandbox world with provenance metadata |
 | `M12 checkpoint observer` | `pass` | the branch can open a saved checkpoint as a branch-aware observer and can optionally continue replay from that checkpoint to a later target tick |
+| `M13 branch comparison ledger` | `pass` | the branch can group related checkpoints into branch families and emit JSON plus Markdown reports with provenance, outcome metrics, spatial signatures, and pairwise deltas |
 
 ## Current Lifecycle Snapshot
 
@@ -118,6 +119,7 @@ The next current planning set is:
 - `ant_sandbox_open_evolution_engineering_plan_v1.md`
 - `ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md`
 - `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+- `ant_sandbox_m13_branch_comparison_slice_2026-04-24.md`
 - `ant_sandbox_m13_branch_comparison_spec_v1.md`
 - `ant_sandbox_m14_niche_substrate_spec_v1.md`
 - `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`

@@ -2,6 +2,7 @@
 
 from .config import AntAgentConfig, AntSandboxConfig, ColonyConfig, FoodPatchConfig, NestConfig, TerrainConfig
 from .checkpoint import AntSandboxCheckpoint, load_checkpoint, write_checkpoint
+from .comparison import build_branch_comparison_payload, render_branch_comparison_markdown, write_branch_comparison
 from .observer import (
     build_ant_checkpoint_observer_payload,
     build_ant_observer_payload,
@@ -30,10 +31,12 @@ __all__ = [
     "AntSandboxWorld",
     "DEFAULT_VALIDATION_SEEDS",
     "build_ant_checkpoint_observer_payload",
+    "build_branch_comparison_payload",
     "build_ant_observer_payload",
     "build_showcase_config",
     "initialize_world",
     "load_checkpoint",
+    "render_branch_comparison_markdown",
     "run_simulation",
     "run_world_until",
     "run_validation_cases",
@@ -42,6 +45,7 @@ __all__ = [
     "summarize_inheritance_dynamics",
     "summarize_validation_status",
     "step_world",
+    "write_branch_comparison",
     "write_checkpoint",
     "write_ant_live_observer_html",
     "write_ant_observer_html",
