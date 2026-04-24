@@ -38,6 +38,7 @@ current probe setup:
 - `Genome v1` scaffolding with explicit genome ids and generation tracking
 - bounded point mutation plus `clone / mutate / resample` ablation controls
 - checkpoint / resume / fork runtime for long-run experiment branches
+- checkpoint-aware observer for saved and forked branches
 
 The current visible world also includes:
 
@@ -134,6 +135,24 @@ Outputs are written under:
 
 - [outputs/ant_sandbox_infinite_experiment](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_infinite_experiment)
 
+### Checkpoint Observer
+
+Open a saved branch directly:
+
+```bash
+python scripts/run_ant_sandbox_checkpoint_observer.py --checkpoint outputs/ant_sandbox_infinite_experiment/root/checkpoint_final.json
+```
+
+Continue replay from a saved branch:
+
+```bash
+python scripts/run_ant_sandbox_checkpoint_observer.py --checkpoint outputs/ant_sandbox_infinite_experiment/root/checkpoint_final.json --target-tick 2400
+```
+
+Outputs are written under:
+
+- [outputs/ant_sandbox_checkpoint_observer](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_checkpoint_observer)
+
 ## Run Probes
 
 General showcase probe:
@@ -215,6 +234,7 @@ Main runnable scripts:
 - [run_ant_sandbox_probe.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_probe.py)
 - [run_ant_sandbox_validation_matrix.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_validation_matrix.py)
 - [run_ant_sandbox_infinite_experiment.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_infinite_experiment.py)
+- [run_ant_sandbox_checkpoint_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_checkpoint_observer.py)
 
 ## Documentation
 
@@ -224,15 +244,16 @@ Shortest re-entry path for the current ant sandbox line:
 2. [docs/ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
 3. [docs/ant_sandbox_handoff_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_handoff_plan_v1.md)
 4. [docs/ant_sandbox_open_evolution_engineering_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
-5. [docs/ant_sandbox_m12_checkpoint_observer_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m12_checkpoint_observer_spec_v1.md)
-6. [docs/ant_sandbox_m13_branch_comparison_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m13_branch_comparison_spec_v1.md)
-7. [docs/ant_sandbox_m14_niche_substrate_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m14_niche_substrate_spec_v1.md)
-8. [docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md)
-9. [docs/ant_sandbox_m16_successor_life_layer_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_spec_v1.md)
-10. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
-11. [docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md)
-12. [docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md)
-13. [docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md)
+5. [docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md)
+6. [docs/ant_sandbox_m12_checkpoint_observer_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m12_checkpoint_observer_spec_v1.md)
+7. [docs/ant_sandbox_m13_branch_comparison_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m13_branch_comparison_spec_v1.md)
+8. [docs/ant_sandbox_m14_niche_substrate_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m14_niche_substrate_spec_v1.md)
+9. [docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md)
+10. [docs/ant_sandbox_m16_successor_life_layer_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_spec_v1.md)
+11. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
+12. [docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md)
+13. [docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md)
+14. [docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md)
 
 If you need the full document catalog:
 
@@ -244,7 +265,6 @@ The current near-term work is not culture, learning, or heavy social systems.
 
 It is:
 
-- M12 checkpoint-aware observer
 - M13 branch comparison ledger
 - M14 ant-created niche substrate
 - M15 open-endedness metrics

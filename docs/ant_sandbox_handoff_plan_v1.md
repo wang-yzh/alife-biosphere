@@ -128,12 +128,12 @@ observer and checkpoint fork have been run locally.
 
 ## Handoff Decision
 
-The next maintainer should continue from `M11`, not from mutation.
+The next maintainer should continue from `M12`, not from mutation or from
+adding new organisms prematurely.
 
-The correct immediate sequence is:
+The current immediate sequence is:
 
 ```text
-M12 checkpoint observer
 M13 branch comparison ledger
 M14 niche and resource expansion
 M15 open-endedness metrics
@@ -364,7 +364,7 @@ A receiver has successfully taken over when they can:
 - explain the current project in one paragraph
 - run the observer
 - run and fork a checkpointed experiment
-- identify the next milestone as M12 or M13
+- identify the next milestone as M13
 - state why mutation is not currently the main priority
 - update docs when changing the project direction
 

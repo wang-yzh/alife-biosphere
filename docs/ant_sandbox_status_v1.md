@@ -45,6 +45,7 @@ and a multi-seed validation matrix over:
 | `M10B genome contract` | `pass` | the branch now wraps inherited instinct traits in an explicit genome structure with `genome_id`, `parent_genome_id`, `generation`, and mutation bookkeeping, while keeping mutation disabled |
 | `M10C mutation and ablation controls` | `pass` | the branch now supports bounded point mutation plus `clone / mutate / resample` comparison runs, with generation-level summaries and mutation event bookkeeping |
 | `M11 infinite experiment runtime` | `pass` | the branch can checkpoint, reload, resume, and fork a live sandbox world with provenance metadata |
+| `M12 checkpoint observer` | `pass` | the branch can open a saved checkpoint as a branch-aware observer and can optionally continue replay from that checkpoint to a later target tick |
 
 ## Current Lifecycle Snapshot
 
@@ -97,7 +98,6 @@ Still provisional:
 - observer integration of longer-run lifecycle overlays
 - inheritance beyond parent, lineage, and genome bookkeeping
 - stronger mutation baselines and longer-run trait drift under selection pressure
-- observer replay directly from forked checkpoint branches
 - automated branch comparison for niche discovery or collapse
 
 ## Next Phase
@@ -106,7 +106,6 @@ The next active phase is no longer "prove the small sandbox works".
 
 It is:
 
-- checkpoint-aware observation of saved and forked branches
 - branch comparison before stronger open-ended evolution claims
 - ant-created niche substrate before successor organisms
 - open-endedness metrics that do not collapse into one fitness score
@@ -117,6 +116,7 @@ The next current planning set is:
 
 - `ant_sandbox_handoff_plan_v1.md`
 - `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md`
 - `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
 - `ant_sandbox_m13_branch_comparison_spec_v1.md`
 - `ant_sandbox_m14_niche_substrate_spec_v1.md`

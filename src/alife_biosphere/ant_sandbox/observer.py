@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from .checkpoint import load_checkpoint
 from .config import AntSandboxConfig
 from .simulation import step_world
 from .world import AntSandboxWorld, initialize_world, terrain_kind
@@ -48,6 +49,46 @@ def _event_dicts(world: AntSandboxWorld, tick: int, event_type: str) -> list[dic
         for event in world.events
         if event.tick == tick and event.event_type == event_type
     ]
+
+
+def _quiet_summary(world: AntSandboxWorld, tick: int) -> dict[str, int]:
+    return {
+        "ticks": tick,
+        "alive": world.alive_count(),
+        "carrying": world.carrying_count(),
+        "nest_food": world.delivered_food_total(),
+        "food_remaining": world.food_remaining(),
+        "events": len(world.events),
+        "moves": 0,
+        "pickups": 0,
+        "unloads": 0,
+        "births": 0,
+        "deaths": 0,
+        "feeds": 0,
+        "upkeep": 0,
+        "food_reseeds": 0,
+        "contested_sources": 0,
+        "hostility_contacts": 0,
+        "combat_starts": 0,
+        "combat_pairs": 0,
+        "frozen_ants": 0,
+        "contest_entries": 0,
+        "contesting_ants": sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "contest"),
+        "avoidance_turns": sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "avoid"),
+        "hungry_ants": sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "hungry"),
+        "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
+        "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
+        "home_trail_cells": sum(len(field) for field in world.home_trail.values()),
+    }
+
+
+def _summary_for_tick(world: AntSandboxWorld, tick: int) -> dict[str, int]:
+    for event in reversed(world.events):
+        if event.tick == tick and event.event_type == "tick_summary":
+            return dict(event.payload)
+        if event.tick < tick:
+            break
+    return _quiet_summary(world, tick)
 
 
 def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -> dict[str, object]:
@@ -156,21 +197,22 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
     }
 
 
-def build_ant_observer_payload(
+def _observer_payload(
     config: AntSandboxConfig,
-    title: str = "Ant Sandbox World",
+    world: AntSandboxWorld,
+    frames: list[dict[str, object]],
+    *,
+    title: str,
+    total_ticks: int,
+    generated_at: str,
+    extra: dict[str, object] | None = None,
 ) -> dict[str, object]:
-    world = initialize_world(config)
-    frames = []
-    for tick in range(1, config.ticks + 1):
-        summary = step_world(world, config, tick)
-        frames.append(_frame_payload(world, summary, tick))
-    return {
+    payload = {
         "title": title,
-        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "generated_at": generated_at,
         "width": config.width,
         "height": config.height,
-        "total_ticks": config.ticks,
+        "total_ticks": total_ticks,
         "terrain": _terrain_points(world),
         "nest": {
             "x": world.nest.x,
@@ -193,6 +235,69 @@ def build_ant_observer_payload(
         ],
         "frames": frames,
     }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
+def build_ant_observer_payload(
+    config: AntSandboxConfig,
+    title: str = "Ant Sandbox World",
+) -> dict[str, object]:
+    world = initialize_world(config)
+    frames = []
+    for tick in range(1, config.ticks + 1):
+        summary = step_world(world, config, tick)
+        frames.append(_frame_payload(world, summary, tick))
+    return _observer_payload(
+        config,
+        world,
+        frames,
+        title=title,
+        total_ticks=config.ticks,
+        generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+
+def build_ant_checkpoint_observer_payload(
+    checkpoint_path: str | Path,
+    *,
+    title: str = "Ant Sandbox Branch",
+    target_tick: int | None = None,
+) -> dict[str, object]:
+    checkpoint_file = Path(checkpoint_path).resolve()
+    checkpoint = load_checkpoint(checkpoint_file)
+    config = checkpoint.config
+    world = checkpoint.world
+    loaded_tick = world.tick
+    final_tick = loaded_tick if target_tick is None else target_tick
+    if final_tick < loaded_tick:
+        raise ValueError("target_tick must be greater than or equal to the checkpoint tick")
+
+    frames = [_frame_payload(world, _summary_for_tick(world, loaded_tick), loaded_tick)]
+    replayed_from_checkpoint = final_tick > loaded_tick
+    for tick in range(loaded_tick + 1, final_tick + 1):
+        summary = step_world(world, config, tick)
+        frames.append(_frame_payload(world, summary, tick))
+
+    return _observer_payload(
+        config,
+        world,
+        frames,
+        title=title,
+        total_ticks=final_tick,
+        generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        extra={
+            "source_checkpoint": str(checkpoint_file),
+            "checkpoint_metadata": dict(checkpoint.metadata),
+            "loaded_tick": loaded_tick,
+            "target_tick": final_tick,
+            "replayed_from_checkpoint": replayed_from_checkpoint,
+            "config_seed": config.seed,
+            "config_inheritance_mode": config.ants.inheritance_mode,
+            "config_mutation_rate": config.ants.mutation_rate,
+        },
+    )
 
 
 def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -> str:
@@ -495,6 +600,10 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <h2>Moment</h2>
         <div id="moment-log" class="log"></div>
       </section>
+      <section class="section" id="branch-section">
+        <h2>Branch</h2>
+        <div id="branch-meta" class="selected-ant"></div>
+      </section>
       <section class="section">
         <h2>Colonies</h2>
         <div id="colony-log" class="log"></div>
@@ -526,6 +635,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     const avoidEl = document.getElementById('avoid');
     const generatedAtEl = document.getElementById('generated-at');
     const momentLog = document.getElementById('moment-log');
+    const branchSection = document.getElementById('branch-section');
+    const branchMetaEl = document.getElementById('branch-meta');
     const colonyLog = document.getElementById('colony-log');
     const selectedAntEl = document.getElementById('selected-ant');
 
@@ -545,7 +656,32 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     let hoverAntId = null;
     let pinnedAntId = null;
 
-    generatedAtEl.textContent = `Generated ${{data.generated_at}}${{data.live ? ' · live export' : ''}}`;
+    const checkpointMode = data.replayed_from_checkpoint ? ' · checkpoint continuation' : (data.source_checkpoint ? ' · checkpoint snapshot' : '');
+    generatedAtEl.textContent = `Generated ${{data.generated_at}}${{data.live ? ' · live export' : ''}}${{checkpointMode}}`;
+
+    if (data.source_checkpoint || data.checkpoint_metadata) {{
+      const metadata = data.checkpoint_metadata || {{}};
+      const branchRows = [
+        ['mode', data.replayed_from_checkpoint ? 'continuation replay' : 'checkpoint snapshot'],
+        ['branch', metadata.branch_id || 'none'],
+        ['run', metadata.run_id || 'none'],
+        ['parent branch', metadata.parent_branch_id || 'none'],
+        ['parent run', metadata.parent_run_id || 'none'],
+        ['forked from tick', metadata.forked_from_tick ?? 'none'],
+        ['loaded tick', data.loaded_tick ?? 'none'],
+        ['target tick', data.target_tick ?? data.total_ticks],
+        ['seed', data.config_seed ?? 'config'],
+        ['inheritance', data.config_inheritance_mode || 'config'],
+        ['mutation rate', data.config_mutation_rate ?? 'config'],
+        ['checkpoint', data.source_checkpoint || 'none'],
+      ];
+      branchMetaEl.innerHTML = `
+        <strong>${{metadata.branch_id || 'Checkpoint Branch'}}</strong>
+        ${{branchRows.map(([label, value]) => `<div class="tiny">${{label}} = ${{value}}</div>`).join('')}}
+      `;
+    }} else {{
+      branchSection.style.display = 'none';
+    }}
 
     function toCanvasX(x) {{
       return (x + 0.5) * widthScale;
@@ -876,12 +1012,12 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     }}
 
     timeline.max = String(frames.length);
-    if (data.live) {{
+    if (data.live || frames.length <= 1) {{
       playButton.disabled = true;
       backButton.disabled = true;
       forwardButton.disabled = true;
       timeline.disabled = true;
-      playButton.textContent = data.complete ? 'Done' : 'Live';
+      playButton.textContent = data.live ? (data.complete ? 'Done' : 'Live') : 'Snapshot';
     }} else {{
       timeline.addEventListener('input', () => render(Number(timeline.value) - 1));
       playButton.addEventListener('click', () => setPlaying(!playing));
