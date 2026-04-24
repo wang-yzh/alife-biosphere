@@ -124,6 +124,10 @@ def summarize_behavior_roles(
     events = result.events
     trait_map = {
         ant.ant_id: {
+            "genome_id": ant.genome_id,
+            "parent_genome_id": ant.parent_genome_id,
+            "generation": ant.generation,
+            "mutation_count": ant.mutation_count,
             "range_bias": ant.range_bias,
             "trail_affinity": ant.trail_affinity,
             "harvest_drive": ant.harvest_drive,
@@ -177,6 +181,10 @@ def summarize_behavior_roles(
             "colony_id": final_state.colony_id,
             "final_x": final_state.x,
             "final_y": final_state.y,
+            "genome_id": trait_map.get(ant_id, {}).get("genome_id"),
+            "parent_genome_id": trait_map.get(ant_id, {}).get("parent_genome_id"),
+            "generation": trait_map.get(ant_id, {}).get("generation", 0),
+            "mutation_count": trait_map.get(ant_id, {}).get("mutation_count", 0),
             "range_bias": round(trait_map.get(ant_id, {}).get("range_bias", 0.0), 4),
             "trail_affinity": round(trait_map.get(ant_id, {}).get("trail_affinity", 0.0), 4),
             "harvest_drive": round(trait_map.get(ant_id, {}).get("harvest_drive", 0.0), 4),
@@ -292,4 +300,64 @@ def summarize_food_source_competition(result: AntSandboxResult) -> dict[str, obj
     return {
         "per_source": per_source,
         "top_competition_sources": top_sources[:3],
+    }
+
+
+def summarize_inheritance_dynamics(result: AntSandboxResult) -> dict[str, object]:
+    alive_ants = [ant for ant in result.world.ants if ant.alive]
+    all_ants = list(result.world.ants)
+    birth_events = [event for event in result.events if event.event_type == "ant_birth"]
+    return {
+        "max_generation": max((ant.generation for ant in all_ants), default=0),
+        "alive_generation_distribution": {
+            str(generation): sum(1 for ant in alive_ants if ant.generation == generation)
+            for generation in sorted({ant.generation for ant in alive_ants})
+        },
+        "births_by_generation": {
+            str(generation): sum(1 for ant in all_ants if ant.birth_tick > 0 and ant.generation == generation)
+            for generation in sorted({ant.generation for ant in all_ants if ant.birth_tick > 0})
+        },
+        "alive_lineages": len({ant.lineage_id for ant in alive_ants if ant.lineage_id}),
+        "alive_genomes": len({ant.genome_id for ant in alive_ants}),
+        "mutated_births": sum(1 for event in birth_events if event.payload.get("mutation_applied")),
+        "mean_traits_by_colony": {
+            colony_id: {
+                "range_bias": round(
+                    sum(ant.range_bias for ant in alive_ants if ant.colony_id == colony_id)
+                    / max(1, sum(1 for ant in alive_ants if ant.colony_id == colony_id)),
+                    4,
+                ),
+                "trail_affinity": round(
+                    sum(ant.trail_affinity for ant in alive_ants if ant.colony_id == colony_id)
+                    / max(1, sum(1 for ant in alive_ants if ant.colony_id == colony_id)),
+                    4,
+                ),
+                "harvest_drive": round(
+                    sum(ant.harvest_drive for ant in alive_ants if ant.colony_id == colony_id)
+                    / max(1, sum(1 for ant in alive_ants if ant.colony_id == colony_id)),
+                    4,
+                ),
+            }
+            for colony_id in result.world.colonies
+        },
+        "mean_traits_by_generation": {
+            str(generation): {
+                "range_bias": round(
+                    sum(ant.range_bias for ant in alive_ants if ant.generation == generation)
+                    / max(1, sum(1 for ant in alive_ants if ant.generation == generation)),
+                    4,
+                ),
+                "trail_affinity": round(
+                    sum(ant.trail_affinity for ant in alive_ants if ant.generation == generation)
+                    / max(1, sum(1 for ant in alive_ants if ant.generation == generation)),
+                    4,
+                ),
+                "harvest_drive": round(
+                    sum(ant.harvest_drive for ant in alive_ants if ant.generation == generation)
+                    / max(1, sum(1 for ant in alive_ants if ant.generation == generation)),
+                    4,
+                ),
+            }
+            for generation in sorted({ant.generation for ant in alive_ants})
+        },
     }

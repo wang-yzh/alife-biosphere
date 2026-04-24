@@ -34,6 +34,8 @@ current probe setup:
 - disturbance recovery
 - simple lifecycle with starvation and old-age death
 - nest-food-driven reproduction with parent and lineage tracking
+- `Genome v1` scaffolding with explicit genome ids and generation tracking
+- bounded point mutation plus `clone / mutate / resample` ablation controls
 
 The current visible world also includes:
 
@@ -121,6 +123,12 @@ This probe now reports both behavior and lifecycle summaries, including:
 - `deaths_by_colony`
 - `final_population_by_colony`
 
+Inheritance ablation probe:
+
+```bash
+python scripts/run_ant_sandbox_inheritance_probe.py
+```
+
 Pheromone comparison:
 
 ```bash
@@ -154,6 +162,7 @@ python scripts/run_ant_sandbox_validation_matrix.py
 Probe outputs are written under:
 
 - [outputs/ant_sandbox_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_probe)
+- [outputs/ant_sandbox_inheritance_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_inheritance_probe)
 - [outputs/ant_sandbox_pheromone_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_pheromone_probe)
 - [outputs/ant_sandbox_persistence_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_persistence_probe)
 - [outputs/ant_sandbox_validation_matrix](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_validation_matrix)
@@ -184,10 +193,12 @@ Shortest re-entry path for the current ant sandbox line:
 1. [docs/README.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/README.md)
 2. [docs/ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
 3. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
-4. [docs/ant_sandbox_world_design_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_world_design_v2.md)
-5. [docs/ant_sandbox_build_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_build_plan_v2.md)
-6. [docs/ant_sandbox_m7_scale_up_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m7_scale_up_spec_v1.md)
-7. [docs/ant_sandbox_long_horizon_construction_route_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_long_horizon_construction_route_v1.md)
+4. [docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md)
+5. [docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md)
+6. [docs/ant_sandbox_world_design_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_world_design_v2.md)
+7. [docs/ant_sandbox_build_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_build_plan_v2.md)
+8. [docs/ant_sandbox_m7_scale_up_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m7_scale_up_spec_v1.md)
+9. [docs/ant_sandbox_long_horizon_construction_route_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_long_horizon_construction_route_v1.md)
 
 If you need the full document catalog:
 
@@ -202,7 +213,7 @@ It is:
 - stronger long-run three-colony lifecycle balance
 - clearer resource pressure and turnover under scarcity
 - better obstacle routing under extended runs
-- a clean inheritance contract before mutation
+- comparison and ablation under bounded mutation
 - inherited instinct variation only after lineage and comparison metrics are stable
 - conflict as optional later pressure rather than the current branch center
 

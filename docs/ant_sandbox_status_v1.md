@@ -42,6 +42,8 @@ and a multi-seed validation matrix over:
 | `M5 role differentiation` | `pass` | the branch now produces multiple role-like behavior clusters from trace summaries |
 | `M6 disturbance recovery` | `pass` | the branch now recovers a substantial fraction of prior function after local-space disturbance in the current probe setup |
 | `M10A simple lifecycle` | `pass` | the branch now supports starvation and old-age death plus nest-food-driven reproduction with parent and lineage bookkeeping, without mutation |
+| `M10B genome contract` | `pass` | the branch now wraps inherited instinct traits in an explicit genome structure with `genome_id`, `parent_genome_id`, `generation`, and mutation bookkeeping, while keeping mutation disabled |
+| `M10C mutation and ablation controls` | `pass` | the branch now supports bounded point mutation plus `clone / mutate / resample` comparison runs, with generation-level summaries and mutation event bookkeeping |
 
 ## Current Lifecycle Snapshot
 
@@ -55,6 +57,22 @@ Latest showcase lifecycle probe:
 - `final_population_by_colony={'wei': 11, 'shu': 12, 'wu': 10}`
 - `pickups=1049`
 - `unloads=1009`
+
+## Current Mutation Signal
+
+Three-mode inheritance probe over seeds `7, 11, 13`:
+
+- `clone`: `mean_unloads=1032.3333`, `mean_alive=34.3333`, `mean_mutated_births=0.0`
+- `mutate`: `mean_unloads=1097.6667`, `mean_alive=40.6667`, `mean_mutated_births=19.6667`
+- `resample`: `mean_unloads=1103.6667`, `mean_alive=36.6667`, `mean_mutated_births=0.0`
+
+Current reading:
+
+```text
+bounded mutation is now real and measurable,
+but the branch is still in the first comparison stage rather than making
+strong evolutionary claims
+```
 
 ## Important Caution
 
@@ -76,8 +94,8 @@ Still provisional:
 - stronger role interpretation
 - disturbance recovery under harder settings
 - observer integration of longer-run lifecycle overlays
-- inheritance beyond parent and lineage bookkeeping
-- mutation and trait drift under selection pressure
+- inheritance beyond parent, lineage, and genome bookkeeping
+- stronger mutation baselines and longer-run trait drift under selection pressure
 
 ## Next Phase
 
@@ -87,8 +105,8 @@ It is:
 
 - longer-run three-colony lifecycle balance
 - stronger resource pressure and turnover under scarcity
-- inheritance contract before mutation
-- mutation only after lineage and comparison metrics are stable
+- controlled mutation and ablation after the genome contract
+- longer-run lineage comparison after the first mutation controls
 - combat as optional later pressure rather than the current branch center
 
 The next current planning set is:
@@ -111,5 +129,7 @@ It is now a real early ant sandbox with:
 - starvation and old-age death
 - nest-food-driven reproduction
 - parent and lineage tracking across births
+- explicit genome ids and generation tracking
+- bounded mutation and ablation controls
 
 That is enough to treat it as the real project world, not just a sketch.

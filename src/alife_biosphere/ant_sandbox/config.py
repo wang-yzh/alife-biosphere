@@ -94,6 +94,9 @@ class AntAgentConfig:
     allow_spawning: bool = True
     spawn_food_cost: int = 8
     spawn_interval: int = 10
+    inheritance_mode: str = "clone"
+    mutation_rate: float = 0.0
+    mutation_step: float = 0.05
     pheromone_enabled: bool = True
     pheromone_sense_radius: int = 10
     pheromone_weight: float = 4.5
@@ -144,6 +147,12 @@ class AntAgentConfig:
             raise ValueError("spawn_food_cost must be non-negative")
         if self.spawn_interval <= 0:
             raise ValueError("spawn_interval must be positive")
+        if self.inheritance_mode not in {"clone", "mutate", "resample"}:
+            raise ValueError("inheritance_mode must be clone, mutate, or resample")
+        if not 0.0 <= self.mutation_rate <= 1.0:
+            raise ValueError("mutation_rate must be between 0 and 1")
+        if self.mutation_step < 0:
+            raise ValueError("mutation_step must be non-negative")
         if self.pheromone_sense_radius < 0:
             raise ValueError("pheromone_sense_radius must be non-negative")
         if self.pheromone_weight < 0:

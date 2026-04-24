@@ -75,6 +75,11 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
             "birth_tick": ant.birth_tick,
             "parent_id": ant.parent_id,
             "lineage_id": ant.lineage_id,
+            "genome_id": ant.genome_id,
+            "parent_genome_id": ant.parent_genome_id,
+            "generation": ant.generation,
+            "mutation_count": ant.mutation_count,
+            "mutation_log": list(ant.mutation_log),
             "range_bias": ant.range_bias,
             "trail_affinity": ant.trail_affinity,
             "harvest_drive": ant.harvest_drive,
@@ -839,6 +844,9 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
           <div class="tiny">age = ${{selected.age}}</div>
           <div class="tiny">born = ${{selected.birth_tick}} · parent = ${{selected.parent_id || 'founder'}}</div>
           <div class="tiny">lineage = ${{selected.lineage_id || selected.ant_id}}</div>
+          <div class="tiny">genome = ${{selected.genome_id}} · parent genome = ${{selected.parent_genome_id || 'founder'}}</div>
+          <div class="tiny">generation = ${{selected.generation}} · mutations = ${{selected.mutation_count}}</div>
+          <div class="tiny">mutation log = ${{selected.mutation_log.length ? selected.mutation_log.join(' | ') : 'none'}}</div>
           <div class="tiny">range = ${{selected.range_bias.toFixed(2)}}</div>
           <div class="tiny">trail = ${{selected.trail_affinity.toFixed(2)}}</div>
           <div class="tiny">harvest = ${{selected.harvest_drive.toFixed(2)}}</div>

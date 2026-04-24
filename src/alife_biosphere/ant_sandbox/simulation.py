@@ -7,7 +7,7 @@ from math import atan2, cos, dist, sin, tau
 from ..events import Event
 from ..rng import make_rng
 from .config import AntSandboxConfig
-from .world import AntSandboxWorld, Colony, FoodPatch, Nest, SandboxAnt, initialize_world, terrain_effect, terrain_kind
+from .world import AntSandboxWorld, Colony, FoodPatch, InstinctGenome, Nest, SandboxAnt, initialize_world, sample_instinct_genome, terrain_effect, terrain_kind
 
 
 @dataclass(frozen=True)
@@ -1189,6 +1189,9 @@ def _kill_ant(world: AntSandboxWorld, ant: SandboxAnt, tick: int, reason: str) -
                 "reason": reason,
                 "colony_id": ant.colony_id,
                 "lineage_id": ant.lineage_id,
+                "genome_id": ant.genome_id,
+                "generation": ant.generation,
+                "mutation_count": ant.mutation_count,
             },
         )
     )
@@ -1237,6 +1240,84 @@ def _reproduction_parent(world: AntSandboxWorld, colony_id: str) -> SandboxAnt |
     return max(candidates, key=lambda ant: (ant.delivered_food, ant.energy, ant.age, ant.ant_id))
 
 
+def _clone_genome_for_birth(parent: SandboxAnt, world: AntSandboxWorld, colony_id: str) -> InstinctGenome:
+    return InstinctGenome(
+        genome_id=world.allocate_genome_id(colony_id),
+        parent_genome_id=parent.genome_id,
+        generation=parent.generation + 1,
+        range_bias=parent.range_bias,
+        trail_affinity=parent.trail_affinity,
+        harvest_drive=parent.harvest_drive,
+        mutation_count=parent.mutation_count,
+        mutation_log=list(parent.mutation_log),
+    )
+
+
+def _mutate_genome_for_birth(
+    parent: SandboxAnt,
+    world: AntSandboxWorld,
+    config: AntSandboxConfig,
+    tick: int,
+) -> tuple[InstinctGenome, bool, list[str]]:
+    genome = _clone_genome_for_birth(parent, world, parent.colony_id)
+    if config.ants.mutation_rate <= 0 or config.ants.mutation_step <= 0:
+        return genome, False, []
+    rng = make_rng(config.seed, f"ant-sandbox:{tick}:{parent.colony_id}:{genome.genome_id}:mutation")
+    if rng.random() > config.ants.mutation_rate:
+        return genome, False, []
+    trait_name = rng.choice(["range_bias", "trail_affinity", "harvest_drive"])
+    original = getattr(genome, trait_name)
+    mutated = original
+    for _ in range(8):
+        delta = rng.uniform(-config.ants.mutation_step, config.ants.mutation_step)
+        candidate = round(max(0.0, min(1.0, original + delta)), 4)
+        if candidate != original:
+            mutated = candidate
+            break
+    if mutated == original:
+        return genome, False, []
+    setattr(genome, trait_name, mutated)
+    genome.mutation_count += 1
+    entry = f"{trait_name}:{original:.4f}->{mutated:.4f}"
+    genome.mutation_log = (list(parent.mutation_log) + [entry])[-8:]
+    return genome, True, [entry]
+
+
+def _resample_genome_for_birth(
+    parent: SandboxAnt,
+    colony: Colony,
+    world: AntSandboxWorld,
+    config: AntSandboxConfig,
+    tick: int,
+) -> InstinctGenome:
+    colony_cfg = next(cfg for cfg in config.resolved_colonies() if cfg.colony_id == colony.colony_id)
+    rng = make_rng(config.seed, f"ant-sandbox:{tick}:{colony.colony_id}:{world.next_ant_index}:resample-index")
+    local_index = rng.randint(0, max(0, colony_cfg.ant_count - 1))
+    return sample_instinct_genome(
+        config,
+        colony_cfg,
+        local_index,
+        genome_id=world.allocate_genome_id(colony.colony_id),
+        rng_tag=f"ant-sandbox:{tick}:{colony.colony_id}:{world.next_ant_index}:resample-traits",
+        parent_genome_id=parent.genome_id,
+        generation=parent.generation + 1,
+    )
+
+
+def _birth_genome(
+    parent: SandboxAnt,
+    colony: Colony,
+    world: AntSandboxWorld,
+    config: AntSandboxConfig,
+    tick: int,
+) -> tuple[InstinctGenome, bool, list[str]]:
+    if config.ants.inheritance_mode == "resample":
+        return _resample_genome_for_birth(parent, colony, world, config, tick), False, []
+    if config.ants.inheritance_mode == "mutate":
+        return _mutate_genome_for_birth(parent, world, config, tick)
+    return _clone_genome_for_birth(parent, world, colony.colony_id), False, []
+
+
 def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> int:
     if not config.ants.allow_spawning:
         return 0
@@ -1258,6 +1339,7 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> i
             if (x, y) in world.occupied_cells:
                 continue
             ant_id = world.allocate_ant_id(colony.colony_id)
+            genome, mutation_applied, mutation_entries = _birth_genome(parent, colony, world, config, tick)
             ant = SandboxAnt(
                 ant_id=ant_id,
                 colony_id=colony.colony_id,
@@ -1265,9 +1347,7 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> i
                 y=max(0, min(world.height - 1, y)),
                 heading=0.0,
                 energy=config.ants.initial_energy,
-                range_bias=parent.range_bias,
-                trail_affinity=parent.trail_affinity,
-                harvest_drive=parent.harvest_drive,
+                genome=genome,
                 birth_tick=tick,
                 parent_id=parent.ant_id,
                 lineage_id=parent.lineage_id or parent.ant_id,
@@ -1289,6 +1369,13 @@ def _spawn_ant(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> i
                         "parent_id": parent.ant_id,
                         "lineage_id": ant.lineage_id,
                         "birth_tick": tick,
+                        "genome_id": ant.genome_id,
+                        "parent_genome_id": ant.parent_genome_id,
+                        "generation": ant.generation,
+                        "mutation_count": ant.mutation_count,
+                        "inheritance_mode": config.ants.inheritance_mode,
+                        "mutation_applied": mutation_applied,
+                        "mutation_entries": mutation_entries,
                     },
                 )
             )

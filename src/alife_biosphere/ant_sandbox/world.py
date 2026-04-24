@@ -57,6 +57,21 @@ class FoodPatch:
 
 
 @dataclass
+class InstinctGenome:
+    genome_id: str
+    parent_genome_id: str | None = None
+    generation: int = 0
+    range_bias: float = 0.5
+    trail_affinity: float = 0.5
+    harvest_drive: float = 0.5
+    mutation_count: int = 0
+    mutation_log: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+@dataclass
 class SandboxAnt:
     ant_id: str
     colony_id: str
@@ -64,9 +79,7 @@ class SandboxAnt:
     y: int
     heading: float
     energy: float
-    range_bias: float
-    trail_affinity: float
-    harvest_drive: float
+    genome: InstinctGenome
     carrying_food: bool = False
     target_patch_id: str | None = None
     outbound_commit_ticks: int = 0
@@ -84,6 +97,85 @@ class SandboxAnt:
     lineage_id: str | None = None
     delivered_food: int = 0
 
+    @property
+    def genome_id(self) -> str:
+        return self.genome.genome_id
+
+    @property
+    def parent_genome_id(self) -> str | None:
+        return self.genome.parent_genome_id
+
+    @property
+    def generation(self) -> int:
+        return self.genome.generation
+
+    @property
+    def mutation_count(self) -> int:
+        return self.genome.mutation_count
+
+    @property
+    def mutation_log(self) -> list[str]:
+        return self.genome.mutation_log
+
+    @property
+    def range_bias(self) -> float:
+        return self.genome.range_bias
+
+    @range_bias.setter
+    def range_bias(self, value: float) -> None:
+        self.genome.range_bias = value
+
+    @property
+    def trail_affinity(self) -> float:
+        return self.genome.trail_affinity
+
+    @trail_affinity.setter
+    def trail_affinity(self, value: float) -> None:
+        self.genome.trail_affinity = value
+
+    @property
+    def harvest_drive(self) -> float:
+        return self.genome.harvest_drive
+
+    @harvest_drive.setter
+    def harvest_drive(self, value: float) -> None:
+        self.genome.harvest_drive = value
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "ant_id": self.ant_id,
+            "colony_id": self.colony_id,
+            "x": self.x,
+            "y": self.y,
+            "heading": self.heading,
+            "energy": self.energy,
+            "genome": self.genome.to_dict(),
+            "genome_id": self.genome_id,
+            "parent_genome_id": self.parent_genome_id,
+            "generation": self.generation,
+            "mutation_count": self.mutation_count,
+            "mutation_log": list(self.mutation_log),
+            "range_bias": self.range_bias,
+            "trail_affinity": self.trail_affinity,
+            "harvest_drive": self.harvest_drive,
+            "carrying_food": self.carrying_food,
+            "target_patch_id": self.target_patch_id,
+            "outbound_commit_ticks": self.outbound_commit_ticks,
+            "combat_with_id": self.combat_with_id,
+            "combat_ticks_remaining": self.combat_ticks_remaining,
+            "combat_cooldown_ticks": self.combat_cooldown_ticks,
+            "behavior_state": self.behavior_state,
+            "contest_patch_id": self.contest_patch_id,
+            "starvation_ticks": self.starvation_ticks,
+            "recent_positions": list(self.recent_positions),
+            "age": self.age,
+            "birth_tick": self.birth_tick,
+            "alive": self.alive,
+            "parent_id": self.parent_id,
+            "lineage_id": self.lineage_id,
+            "delivered_food": self.delivered_food,
+        }
+
 
 @dataclass
 class AntSandboxWorld:
@@ -95,6 +187,7 @@ class AntSandboxWorld:
     ants: list[SandboxAnt]
     tick: int = 0
     next_ant_index: int = 0
+    next_genome_index: int = 0
     occupied_cells: set[tuple[int, int]] = field(default_factory=set)
     events: list[Event] = field(default_factory=list)
     food_trail: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
@@ -130,6 +223,12 @@ class AntSandboxWorld:
         self.next_ant_index += 1
         return ant_id
 
+    def allocate_genome_id(self, colony_id: str | None = None) -> str:
+        prefix = colony_id or "genome"
+        genome_id = f"{prefix}_g{self.next_genome_index:03d}"
+        self.next_genome_index += 1
+        return genome_id
+
     def summary(self) -> dict[str, int]:
         return {
             "ticks": self.tick,
@@ -148,7 +247,7 @@ class AntSandboxWorld:
             "nest": asdict(self.nest),
             "colonies": {colony_id: {"display_name": colony.display_name, "color": colony.color, "nest": asdict(colony.nest)} for colony_id, colony in self.colonies.items()},
             "food_patches": [asdict(patch) for patch in self.food_patches],
-            "ants": [asdict(ant) for ant in self.ants],
+            "ants": [ant.to_dict() for ant in self.ants],
             "food_trail": {
                 colony_id: {f"{x},{y}": value for (x, y), value in field.items()}
                 for colony_id, field in self.food_trail.items()
@@ -159,6 +258,7 @@ class AntSandboxWorld:
             },
             "stale_field": {f"{x},{y}": value for (x, y), value in self.stale_field.items()},
             "terrain": {f"{x},{y}": kind for (x, y), kind in self.terrain.items()},
+            "next_genome_index": self.next_genome_index,
         }
 
 
@@ -172,6 +272,37 @@ def _distance(a_x: int, a_y: int, b_x: int, b_y: int) -> float:
 
 def _clamp_unit(value: float) -> float:
     return min(1.0, max(0.0, value))
+
+
+def sample_instinct_genome(
+    config: AntSandboxConfig,
+    colony_cfg: ColonyConfig,
+    local_index: int,
+    genome_id: str,
+    rng_tag: str,
+    *,
+    parent_genome_id: str | None = None,
+    generation: int = 0,
+    mutation_count: int = 0,
+    mutation_log: list[str] | None = None,
+) -> InstinctGenome:
+    trait_rng = make_rng(config.seed, rng_tag)
+    count_scale = local_index / max(1, colony_cfg.ant_count - 1)
+    range_bias = _clamp_unit(0.12 + 0.76 * count_scale + trait_rng.uniform(-0.12, 0.12))
+    trail_phase = ((local_index * 7) % max(1, colony_cfg.ant_count)) / max(1, colony_cfg.ant_count - 1)
+    trail_affinity = _clamp_unit(0.15 + 0.7 * trail_phase + trait_rng.uniform(-0.15, 0.15))
+    harvest_phase = ((local_index * 13) % max(1, colony_cfg.ant_count)) / max(1, colony_cfg.ant_count - 1)
+    harvest_drive = _clamp_unit(0.18 + 0.66 * harvest_phase + trait_rng.uniform(-0.16, 0.16))
+    return InstinctGenome(
+        genome_id=genome_id,
+        parent_genome_id=parent_genome_id,
+        generation=generation,
+        range_bias=round(range_bias, 4),
+        trail_affinity=round(trail_affinity, 4),
+        harvest_drive=round(harvest_drive, 4),
+        mutation_count=mutation_count,
+        mutation_log=list(mutation_log or []),
+    )
 
 
 def terrain_kind(world: AntSandboxWorld, x: int, y: int) -> str:
@@ -370,13 +501,13 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
             while (spawn_x, spawn_y) in occupied_cells:
                 local_index += 1
                 spawn_x, spawn_y = unique_cells[local_index % len(unique_cells)]
-            trait_rng = make_rng(config.seed, f"ant-sandbox:{colony_cfg.colony_id}:traits:{global_index}")
-            count_scale = local_index / max(1, colony_cfg.ant_count - 1)
-            range_bias = _clamp_unit(0.12 + 0.76 * count_scale + trait_rng.uniform(-0.12, 0.12))
-            trail_phase = ((local_index * 7) % max(1, colony_cfg.ant_count)) / max(1, colony_cfg.ant_count - 1)
-            trail_affinity = _clamp_unit(0.15 + 0.7 * trail_phase + trait_rng.uniform(-0.15, 0.15))
-            harvest_phase = ((local_index * 13) % max(1, colony_cfg.ant_count)) / max(1, colony_cfg.ant_count - 1)
-            harvest_drive = _clamp_unit(0.18 + 0.66 * harvest_phase + trait_rng.uniform(-0.16, 0.16))
+            genome = sample_instinct_genome(
+                config,
+                colony_cfg,
+                local_index,
+                genome_id=f"{colony_cfg.colony_id}_g{local_index:03d}",
+                rng_tag=f"ant-sandbox:{colony_cfg.colony_id}:traits:{global_index}",
+            )
             ant = SandboxAnt(
                 ant_id=f"{colony_cfg.colony_id}_{local_index:03d}",
                 colony_id=colony_cfg.colony_id,
@@ -384,9 +515,7 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
                 y=spawn_y,
                 heading=round(angle, 6),
                 energy=config.ants.initial_energy,
-                range_bias=round(range_bias, 4),
-                trail_affinity=round(trail_affinity, 4),
-                harvest_drive=round(harvest_drive, 4),
+                genome=genome,
                 lineage_id=f"{colony_cfg.colony_id}_{local_index:03d}",
             )
             ants.append(ant)
@@ -399,6 +528,7 @@ def initialize_world(config: AntSandboxConfig) -> AntSandboxWorld:
         food_patches=food_patches,
         ants=ants,
         next_ant_index=len(ants),
+        next_genome_index=len(ants),
         occupied_cells=occupied_cells,
         terrain=terrain,
         food_trail={colony_id: {} for colony_id in colonies},

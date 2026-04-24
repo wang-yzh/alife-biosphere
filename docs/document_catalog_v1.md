@@ -28,6 +28,10 @@ checked first before making cross-cutting decisions.
   future route after the current scale-up and lifecycle work
 - `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`: first simple lifecycle
   slice with births, deaths, and lineage bookkeeping
+- `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`: first explicit genome
+  contract for inherited instinct traits, with mutation still disabled
+- `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`: first bounded
+  point-mutation and `clone / mutate / resample` comparison slice
 - `document_catalog_v1.md`: full library catalog by role
 - `drift_cleanup_report_2026-04-20.md`: cleanup log for the working-copy
   library
@@ -219,10 +223,12 @@ They are best used selectively after the control layer is clear.
 1. `README.md`
 2. `ant_sandbox_status_v1.md`
 3. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
-4. `ant_sandbox_world_design_v2.md`
-5. `ant_sandbox_build_plan_v2.md`
-6. `ant_sandbox_m7_scale_up_spec_v1.md`
-7. `ant_sandbox_long_horizon_construction_route_v1.md`
+4. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
+5. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
+6. `ant_sandbox_world_design_v2.md`
+7. `ant_sandbox_build_plan_v2.md`
+8. `ant_sandbox_m7_scale_up_spec_v1.md`
+9. `ant_sandbox_long_horizon_construction_route_v1.md`
 
 ### Evidence and honesty pass
 

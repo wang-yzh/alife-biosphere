@@ -30,6 +30,11 @@ def test_ant_sandbox_observer_payload_contains_world_frames() -> None:
     assert "birth_tick" in first["ants"][0]
     assert "parent_id" in first["ants"][0]
     assert "lineage_id" in first["ants"][0]
+    assert "genome_id" in first["ants"][0]
+    assert "parent_genome_id" in first["ants"][0]
+    assert "generation" in first["ants"][0]
+    assert "mutation_count" in first["ants"][0]
+    assert "mutation_log" in first["ants"][0]
     assert "contest_entries" in first
     assert "contesting_ants" in first
     assert "avoidance_turns" in first

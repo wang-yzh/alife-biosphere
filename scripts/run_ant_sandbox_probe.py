@@ -12,6 +12,7 @@ if str(SRC) not in sys.path:
 from alife_biosphere.ant_sandbox import build_showcase_config
 from alife_biosphere.ant_sandbox import initialize_world
 from alife_biosphere.ant_sandbox import summarize_food_source_competition
+from alife_biosphere.ant_sandbox import summarize_inheritance_dynamics
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 
 
@@ -31,6 +32,7 @@ def main() -> None:
     tick_summaries = [event.payload for event in result.events if event.event_type == "tick_summary"]
     birth_events = [event for event in result.events if event.event_type == "ant_birth"]
     death_events = [event for event in result.events if event.event_type == "ant_death"]
+    inheritance = summarize_inheritance_dynamics(result)
     derived = {
         "births": len(birth_events),
         "deaths": len(death_events),
@@ -88,6 +90,10 @@ def main() -> None:
         "nest_food": world.delivered_food_total(),
         "colony_food": {colony_id: colony.nest.stored_food for colony_id, colony in world.colonies.items()},
         "food_remaining": world.food_remaining(),
+        "inheritance_mode": config.ants.inheritance_mode,
+        "mutation_rate": config.ants.mutation_rate,
+        "mutation_step": config.ants.mutation_step,
+        **inheritance,
         "final_summary": tick_summaries[-1] if tick_summaries else {},
     }
     (output_dir / "derived_summary.json").write_text(json.dumps(derived, indent=2), encoding="utf-8")

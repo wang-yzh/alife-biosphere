@@ -512,9 +512,107 @@ def test_birth_clones_parent_traits_without_mutation() -> None:
     assert child.parent_id == parent.ant_id
     assert child.lineage_id == parent.lineage_id
     assert child.birth_tick == birth.tick
+    assert child.genome_id != parent.genome_id
+    assert child.parent_genome_id == parent.genome_id
+    assert child.generation == parent.generation + 1
+    assert child.mutation_count == parent.mutation_count == 0
+    assert birth.payload["genome_id"] == child.genome_id
+    assert birth.payload["parent_genome_id"] == parent.genome_id
+    assert birth.payload["generation"] == child.generation
     assert child.range_bias == parent.range_bias
     assert child.trail_affinity == parent.trail_affinity
     assert child.harvest_drive == parent.harvest_drive
+
+
+def test_founders_start_with_generation_zero_genomes() -> None:
+    world = initialize_world(AntSandboxConfig())
+    assert world.ants
+    assert all(ant.generation == 0 for ant in world.ants)
+    assert all(ant.parent_genome_id is None for ant in world.ants)
+    assert len({ant.genome_id for ant in world.ants}) == len(world.ants)
+
+
+def test_mutate_mode_records_bounded_point_mutation() -> None:
+    config = AntSandboxConfig(
+        seed=13,
+        ticks=2,
+        colonies=(),
+        nest=NestConfig(x=12, y=12, radius=2, initial_stored_food=5, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("food_a", x=30, y=12, radius=2, amount=10, max_amount=10, regrowth_rate=0, relocate_on_depletion=False),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=2,
+            allow_spawning=True,
+            spawn_food_cost=1,
+            spawn_interval=1,
+            inheritance_mode="mutate",
+            mutation_rate=1.0,
+            mutation_step=0.08,
+            initial_energy=10.0,
+            max_energy=10.0,
+            metabolism_cost=0.01,
+            hunger_return_threshold=0.0,
+            pheromone_enabled=False,
+        ),
+    )
+    result = run_simulation(config)
+    birth = next(event for event in result.events if event.event_type == "ant_birth")
+    parent = next(ant for ant in result.world.ants if ant.ant_id == birth.payload["parent_id"])
+    child = next(ant for ant in result.world.ants if ant.ant_id == birth.organism_id)
+
+    trait_deltas = sum(
+        1
+        for attr in ("range_bias", "trail_affinity", "harvest_drive")
+        if getattr(child, attr) != getattr(parent, attr)
+    )
+    assert birth.payload["inheritance_mode"] == "mutate"
+    assert birth.payload["mutation_applied"] is True
+    assert trait_deltas == 1
+    assert child.mutation_count == parent.mutation_count + 1
+    assert child.mutation_log
+
+
+def test_resample_mode_breaks_trait_copy_but_keeps_parent_chain() -> None:
+    config = AntSandboxConfig(
+        seed=19,
+        ticks=2,
+        colonies=(),
+        nest=NestConfig(x=12, y=12, radius=2, initial_stored_food=5, colony_upkeep_per_ant_tick=0.0),
+        food_patches=(
+            FoodPatchConfig("food_a", x=30, y=12, radius=2, amount=10, max_amount=10, regrowth_rate=0, relocate_on_depletion=False),
+        ),
+        terrain=TerrainConfig(enabled=False),
+        ants=AntAgentConfig(
+            ant_count=1,
+            max_population=2,
+            allow_spawning=True,
+            spawn_food_cost=1,
+            spawn_interval=1,
+            inheritance_mode="resample",
+            initial_energy=10.0,
+            max_energy=10.0,
+            metabolism_cost=0.01,
+            hunger_return_threshold=0.0,
+            pheromone_enabled=False,
+        ),
+    )
+    result = run_simulation(config)
+    birth = next(event for event in result.events if event.event_type == "ant_birth")
+    parent = next(ant for ant in result.world.ants if ant.ant_id == birth.payload["parent_id"])
+    child = next(ant for ant in result.world.ants if ant.ant_id == birth.organism_id)
+
+    assert birth.payload["inheritance_mode"] == "resample"
+    assert birth.payload["mutation_applied"] is False
+    assert child.parent_genome_id == parent.genome_id
+    assert child.generation == parent.generation + 1
+    assert (
+        child.range_bias != parent.range_bias
+        or child.trail_affinity != parent.trail_affinity
+        or child.harvest_drive != parent.harvest_drive
+    )
 
 
 def test_combat_freezes_both_ants_until_resolution() -> None:
