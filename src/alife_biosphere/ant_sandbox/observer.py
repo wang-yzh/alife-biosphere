@@ -43,6 +43,35 @@ def _terrain_points(world: AntSandboxWorld) -> list[dict[str, object]]:
     ]
 
 
+def _corpse_points(world: AntSandboxWorld) -> list[dict[str, object]]:
+    return [
+        {
+            "corpse_id": corpse.corpse_id,
+            "x": corpse.x,
+            "y": corpse.y,
+            "colony_id": corpse.colony_id,
+            "death_tick": corpse.death_tick,
+            "energy_value": round(corpse.energy_value, 4),
+            "decay_ticks_remaining": corpse.decay_ticks_remaining,
+            "death_reason": corpse.death_reason,
+        }
+        for corpse in world.corpses
+    ]
+
+
+def _residue_points(world: AntSandboxWorld, minimum: float = 0.03) -> list[dict[str, object]]:
+    return [
+        {
+            "x": x,
+            "y": y,
+            "value": round(float(entry["value"]), 4),
+            "source_type": str(entry.get("source_type", "unknown")),
+        }
+        for (x, y), entry in sorted(world.residue_field.items(), key=lambda item: (item[0][1], item[0][0]))
+        if float(entry["value"]) >= minimum
+    ]
+
+
 def _event_dicts(world: AntSandboxWorld, tick: int, event_type: str) -> list[dict[str, object]]:
     return [
         event.to_dict()
@@ -76,6 +105,9 @@ def _quiet_summary(world: AntSandboxWorld, tick: int) -> dict[str, int]:
         "contesting_ants": sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "contest"),
         "avoidance_turns": sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "avoid"),
         "hungry_ants": sum(1 for ant in world.ants if ant.alive and ant.behavior_state == "hungry"),
+        "corpse_count": world.corpse_count(),
+        "residue_cell_count": world.residue_cell_count(),
+        "residue_total_value": world.residue_total_value(),
         "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
         "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
         "home_trail_cells": sum(len(field) for field in world.home_trail.values()),
@@ -178,7 +210,12 @@ def _frame_payload(world: AntSandboxWorld, summary: dict[str, int], tick: int) -
         "contesting_ants": summary["contesting_ants"],
         "avoidance_turns": summary["avoidance_turns"],
         "hungry_ants": summary["hungry_ants"],
+        "corpse_count": summary.get("corpse_count", world.corpse_count()),
+        "residue_cell_count": summary.get("residue_cell_count", world.residue_cell_count()),
+        "residue_total_value": summary.get("residue_total_value", world.residue_total_value()),
         "ants": ants,
+        "corpses": _corpse_points(world),
+        "residue_points": _residue_points(world),
         "food_patches": food_patches,
         "colony_stats": colony_stats,
         "food_trail_layers": _trail_layers(world.food_trail, world.colonies),
@@ -334,6 +371,10 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       --rock: rgba(92, 86, 81, 0.78);
       --birth: rgba(51, 165, 116, 0.9);
       --death: rgba(156, 52, 43, 0.86);
+      --corpse: rgba(101, 55, 44, 0.94);
+      --residue-trail: rgba(74, 132, 115, 0.18);
+      --residue-nest: rgba(182, 126, 58, 0.22);
+      --residue-corpse: rgba(132, 66, 56, 0.24);
       --shadow: 0 18px 48px rgba(35, 26, 17, 0.12);
       --accent: #26493b;
     }}
@@ -584,6 +625,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <span><i class="dot" style="background: rgba(173, 48, 48, 0.9)"></i>combat</span>
         <span><i class="dot" style="background: var(--food-trail)"></i>food trail</span>
         <span><i class="dot" style="background: var(--home-trail)"></i>home trail</span>
+        <span><i class="dot" style="background: var(--corpse)"></i>corpse</span>
+        <span><i class="dot" style="background: var(--residue-corpse)"></i>residue</span>
       </div>
       <canvas id="world" width="960" height="720"></canvas>
     </section>
@@ -595,6 +638,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         <div class="card"><h3>Food Left</h3><strong id="food-left"></strong></div>
         <div class="card"><h3>Contest</h3><strong id="contest"></strong></div>
         <div class="card"><h3>Avoid</h3><strong id="avoid"></strong></div>
+        <div class="card"><h3>Corpses</h3><strong id="corpse-count"></strong></div>
+        <div class="card"><h3>Residue</h3><strong id="residue-cells"></strong></div>
       </div>
       <section class="section">
         <h2>Moment</h2>
@@ -633,6 +678,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     const foodLeftEl = document.getElementById('food-left');
     const contestEl = document.getElementById('contest');
     const avoidEl = document.getElementById('avoid');
+    const corpseCountEl = document.getElementById('corpse-count');
+    const residueCellsEl = document.getElementById('residue-cells');
     const generatedAtEl = document.getElementById('generated-at');
     const momentLog = document.getElementById('moment-log');
     const branchSection = document.getElementById('branch-section');
@@ -647,6 +694,12 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       dense_grass: 'rgba(106, 141, 84, 0.42)',
       sand: 'rgba(214, 184, 129, 0.44)',
       rock: 'rgba(92, 86, 81, 0.78)',
+    }};
+    const residuePalette = {{
+      trail: 'rgba(74, 132, 115, 0.16)',
+      nest: 'rgba(182, 126, 58, 0.22)',
+      corpse: 'rgba(132, 66, 56, 0.24)',
+      unknown: 'rgba(99, 87, 73, 0.16)',
     }};
 
     let index = 0;
@@ -728,6 +781,16 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       }}
     }}
 
+    function drawResidue(frame) {{
+      for (const point of frame.residue_points) {{
+        const fill = residuePalette[point.source_type] || residuePalette.unknown;
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.arc(toCanvasX(point.x), toCanvasY(point.y), 2.8 + point.value * 1.35, 0, Math.PI * 2);
+        ctx.fill();
+      }}
+    }}
+
     function drawTrails(frame) {{
       for (const layer of frame.home_trail_layers) {{
         for (const point of layer.points) {{
@@ -806,6 +869,25 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
         ctx.fillStyle = 'rgba(58, 82, 28, 0.58)';
         ctx.font = '11px Menlo, monospace';
         ctx.fillText(`${{patch.amount}} · ${{patch.nearby_ants}} · v${{patch.value_score.toFixed(1)}}`, toCanvasX(patch.x) - 34, toCanvasY(patch.y) + 4);
+      }}
+    }}
+
+    function drawCorpses(frame) {{
+      for (const corpse of frame.corpses) {{
+        const x = toCanvasX(corpse.x);
+        const y = toCanvasY(corpse.y);
+        ctx.strokeStyle = 'rgba(101, 55, 44, 0.92)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(x - 4.5, y - 4.5);
+        ctx.lineTo(x + 4.5, y + 4.5);
+        ctx.moveTo(x + 4.5, y - 4.5);
+        ctx.lineTo(x - 4.5, y + 4.5);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255, 248, 239, 0.6)';
+        ctx.beginPath();
+        ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+        ctx.fill();
       }}
     }}
 
@@ -905,9 +987,11 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
     function drawFrame(frame) {{
       drawBackground();
       drawTerrain();
+      drawResidue(frame);
       drawTrails(frame);
       drawFood(frame);
       drawNests();
+      drawCorpses(frame);
       drawAnts(frame);
     }}
 
@@ -922,6 +1006,8 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       foodLeftEl.textContent = frame.food_remaining;
       contestEl.textContent = frame.contesting_ants;
       avoidEl.textContent = frame.avoidance_turns;
+      corpseCountEl.textContent = frame.corpse_count;
+      residueCellsEl.textContent = frame.residue_cell_count;
       drawFrame(frame);
       momentLog.innerHTML = '';
       colonyLog.innerHTML = '';
@@ -937,6 +1023,7 @@ def _html_shell(data_json: str, title: str, auto_reload_ms: int | None = None) -
       if (frame.combat_start_events.length) logItems.push(`combat starts +${{frame.combat_start_events.length}}`);
       if (frame.combat_pairs) logItems.push(`combat pairs ${{frame.combat_pairs}}`);
       if (frame.depleted_source_events.length) logItems.push(`sources depleted +${{frame.depleted_source_events.length}}`);
+      if (frame.corpse_count) logItems.push(`corpses ${{frame.corpse_count}} · residue ${{frame.residue_cell_count}}`);
       if (frame.births) logItems.push(`ant births +${{frame.births}}`);
       if (frame.death_events.length) logItems.push(`ant deaths +${{frame.death_events.length}}`);
       if (frame.moves) logItems.push(`moves +${{frame.moves}}`);

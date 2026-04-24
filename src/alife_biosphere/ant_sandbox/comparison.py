@@ -99,6 +99,7 @@ def _branch_summary(checkpoint_path: str | Path) -> dict[str, object]:
         "depleted_source_count": sum(1 for event in world.events if event.event_type == "food_source_depleted"),
         "contested_source_count": sum(1 for event in world.events if event.event_type == "food_source_contested"),
         "combat_start_count": sum(1 for event in world.events if event.event_type == "combat_start"),
+        "corpse_count": world.corpse_count(),
         "max_generation": int(inheritance["max_generation"]),
         "genome_count": len({ant.genome_id for ant in world.ants}),
         "mutated_birth_count": int(inheritance["mutated_births"]),
@@ -121,6 +122,8 @@ def _branch_summary(checkpoint_path: str | Path) -> dict[str, object]:
         },
         "total_trail_cell_count": sum(len(field) for field in world.food_trail.values())
         + sum(len(field) for field in world.home_trail.values()),
+        "residue_cell_count": world.residue_cell_count(),
+        "residue_total_value": world.residue_total_value(),
         "top_food_source": _top_food_source(world.events, competition),
     }
     return {
@@ -175,6 +178,8 @@ def _family_summary(anchor_path: str, branches: list[dict[str, object]], branch_
                 "generation_delta": second["outcomes"]["max_generation"] - first["outcomes"]["max_generation"],
                 "trail_cell_delta": second["spatial"]["total_trail_cell_count"] - first["spatial"]["total_trail_cell_count"],
                 "lineage_count_delta": second["outcomes"]["unique_lineage_count"] - first["outcomes"]["unique_lineage_count"],
+                "corpse_count_delta": second["outcomes"]["corpse_count"] - first["outcomes"]["corpse_count"],
+                "residue_cell_delta": second["spatial"]["residue_cell_count"] - first["spatial"]["residue_cell_count"],
             }
         )
     return {
@@ -284,8 +289,8 @@ def render_branch_comparison_markdown(payload: dict[str, object]) -> str:
                 "",
                 "### Spatial Signature Table",
                 "",
-                "| Branch | Occupied Cells | Total Trail Cells | Top Food Source |",
-                "| --- | ---: | ---: | --- |",
+                "| Branch | Occupied Cells | Total Trail Cells | Residue Cells | Corpses | Top Food Source |",
+                "| --- | ---: | ---: | ---: | ---: | --- |",
             ]
         )
         for branch in family["branches"]:
@@ -296,6 +301,8 @@ def render_branch_comparison_markdown(payload: dict[str, object]) -> str:
                 f"{branch['provenance']['branch_id']} | "
                 f"{spatial['occupied_cell_count']} | "
                 f"{spatial['total_trail_cell_count']} | "
+                f"{spatial['residue_cell_count']} | "
+                f"{branch['outcomes']['corpse_count']} | "
                 f"{top_source} |"
             )
         lines.extend(["", "### Pairwise Divergence Notes", ""])
@@ -309,7 +316,9 @@ def render_branch_comparison_markdown(payload: dict[str, object]) -> str:
                     f"nest food {delta['nest_food_delta']:+d}, "
                     f"max generation {delta['generation_delta']:+d}, "
                     f"trail cells {delta['trail_cell_delta']:+d}, "
-                    f"lineages {delta['lineage_count_delta']:+d}"
+                    f"lineages {delta['lineage_count_delta']:+d}, "
+                    f"corpses {delta['corpse_count_delta']:+d}, "
+                    f"residue cells {delta['residue_cell_delta']:+d}"
                 )
         else:
             lines.append("- only one branch in this family")

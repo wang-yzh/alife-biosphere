@@ -7,7 +7,19 @@ from math import atan2, cos, dist, sin, tau
 from ..events import Event
 from ..rng import make_rng
 from .config import AntSandboxConfig
-from .world import AntSandboxWorld, Colony, FoodPatch, InstinctGenome, Nest, SandboxAnt, initialize_world, sample_instinct_genome, terrain_effect, terrain_kind
+from .world import (
+    AntSandboxWorld,
+    Colony,
+    Corpse,
+    FoodPatch,
+    InstinctGenome,
+    Nest,
+    SandboxAnt,
+    initialize_world,
+    sample_instinct_genome,
+    terrain_effect,
+    terrain_kind,
+)
 
 
 @dataclass(frozen=True)
@@ -934,6 +946,7 @@ def _unload_food(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConf
     ant.delivered_food += 1
     ant.outbound_commit_ticks = 14
     home_nest.stored_food += 1
+    _deposit_residue(world, ant.x, ant.y, config.ants.nest_residue_deposit, "nest")
     _set_behavior_state(world, ant, "forage", tick)
     world.emit(
         Event(
@@ -959,6 +972,7 @@ def _feed_at_nest(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxCon
     home_nest.stored_food -= 1
     ant.energy = min(config.ants.max_energy, ant.energy + config.ants.nest_feed_amount)
     ant.starvation_ticks = 0
+    _deposit_residue(world, ant.x, ant.y, config.ants.nest_residue_deposit * 0.6, "nest")
     world.emit(
         Event(
             tick=tick,
@@ -1029,7 +1043,7 @@ def _apply_disturbance(world: AntSandboxWorld, config: AntSandboxConfig, tick: i
                 _distance(ant.x, ant.y, colony.nest.x, colony.nest.y) <= config.disturbance_kill_radius
                 for colony in world.colonies.values()
             ):
-                _kill_ant(world, ant, tick, "disturbance")
+                _kill_ant(world, ant, config, tick, "disturbance")
                 killed += 1
         world.emit(
             Event(
@@ -1054,7 +1068,76 @@ def _decay_trails(world: AntSandboxWorld, config: AntSandboxConfig) -> None:
     }
 
 
+def _deposit_residue(world: AntSandboxWorld, x: int, y: int, amount: float, source_type: str) -> None:
+    if amount <= 0:
+        return
+    key = (x, y)
+    if key not in world.residue_field:
+        world.residue_field[key] = {"value": round(amount, 6), "source_type": source_type}
+        return
+    world.residue_field[key] = {
+        "value": round(float(world.residue_field[key]["value"]) + amount, 6),
+        "source_type": source_type,
+    }
+
+
+def _decay_substrates(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> None:
+    if config.ants.residue_enabled:
+        residue_decay = max(0.0, 1.0 - config.ants.residue_decay)
+        world.residue_field = {
+            cell: {
+                "value": round(float(entry["value"]) * residue_decay, 6),
+                "source_type": str(entry.get("source_type", "unknown")),
+            }
+            for cell, entry in world.residue_field.items()
+            if float(entry["value"]) * residue_decay > 0.015
+        }
+    else:
+        world.residue_field = {}
+
+    if not config.ants.corpse_enabled:
+        world.corpses = []
+        return
+
+    remaining_corpses: list[Corpse] = []
+    for corpse in world.corpses:
+        release = 0.0
+        if config.ants.residue_enabled:
+            release = min(corpse.energy_value, config.ants.corpse_residue_release)
+            if release > 0:
+                _deposit_residue(world, corpse.x, corpse.y, release, "corpse")
+        corpse.energy_value = round(max(0.0, corpse.energy_value - release), 4)
+        corpse.decay_ticks_remaining -= 1
+        if corpse.decay_ticks_remaining <= 0 or corpse.energy_value <= 0.02:
+            world.emit(
+                Event(
+                    tick=tick,
+                    event_type="corpse_expire",
+                    organism_id=corpse.source_ant_id,
+                    habitat_id=corpse.colony_id,
+                    payload={
+                        "corpse_id": corpse.corpse_id,
+                        "x": corpse.x,
+                        "y": corpse.y,
+                        "colony_id": corpse.colony_id,
+                        "death_tick": corpse.death_tick,
+                    },
+                )
+            )
+            continue
+        remaining_corpses.append(corpse)
+    world.corpses = remaining_corpses
+
+
 def _deposit_trail(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int) -> None:
+    if config.ants.residue_enabled and config.ants.trail_residue_deposit > 0:
+        _deposit_residue(
+            world,
+            ant.x,
+            ant.y,
+            config.ants.trail_residue_deposit * _terrain_trail_factor(world, ant.x, ant.y),
+            "trail",
+        )
     if not config.ants.pheromone_enabled:
         return
     key = (ant.x, ant.y)
@@ -1166,7 +1249,8 @@ def _count_hostility_contacts(world: AntSandboxWorld, config: AntSandboxConfig) 
     return contacts
 
 
-def _kill_ant(world: AntSandboxWorld, ant: SandboxAnt, tick: int, reason: str) -> None:
+def _kill_ant(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int, reason: str) -> None:
+    had_food = ant.carrying_food
     ant.alive = False
     ant.carrying_food = False
     ant.behavior_state = "dead"
@@ -1195,6 +1279,47 @@ def _kill_ant(world: AntSandboxWorld, ant: SandboxAnt, tick: int, reason: str) -
             },
         )
     )
+    _create_corpse(world, ant, config, tick, reason, had_food)
+
+
+def _create_corpse(world: AntSandboxWorld, ant: SandboxAnt, config: AntSandboxConfig, tick: int, reason: str, had_food: bool) -> None:
+    if not config.ants.corpse_enabled:
+        return
+    corpse = Corpse(
+        corpse_id=f"corpse_{ant.ant_id}_{tick}",
+        source_ant_id=ant.ant_id,
+        x=ant.x,
+        y=ant.y,
+        colony_id=ant.colony_id,
+        death_tick=tick,
+        energy_value=round(0.7 + (0.45 if had_food else 0.0) + max(0.0, ant.energy) * 0.2, 4),
+        decay_ticks_remaining=config.ants.corpse_decay_ticks,
+        death_reason=reason,
+    )
+    if config.ants.residue_enabled:
+        initial_release = min(corpse.energy_value, config.ants.corpse_residue_release * 0.75)
+        if initial_release > 0:
+            _deposit_residue(world, corpse.x, corpse.y, initial_release, "corpse")
+            corpse.energy_value = round(max(0.0, corpse.energy_value - initial_release), 4)
+    world.corpses.append(corpse)
+    world.emit(
+        Event(
+            tick=tick,
+            event_type="corpse_create",
+            organism_id=ant.ant_id,
+            habitat_id=ant.colony_id,
+            payload={
+                "corpse_id": corpse.corpse_id,
+                "x": corpse.x,
+                "y": corpse.y,
+                "colony_id": corpse.colony_id,
+                "death_tick": corpse.death_tick,
+                "energy_value": corpse.energy_value,
+                "decay_ticks_remaining": corpse.decay_ticks_remaining,
+                "death_reason": reason,
+            },
+        )
+    )
 
 
 def _update_starvation_state(
@@ -1210,7 +1335,7 @@ def _update_starvation_state(
     _set_behavior_state(world, ant, "hungry", tick)
     if ant.starvation_ticks <= config.ants.starvation_grace_ticks:
         return False
-    _kill_ant(world, ant, tick, "starvation")
+    _kill_ant(world, ant, config, tick, "starvation")
     return True
 
 
@@ -1398,6 +1523,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
     contested_sources = 0
     hostility_contacts = 0
     combat_starts = 0
+    _decay_substrates(world, config, tick)
     _apply_disturbance(world, config, tick)
     _decay_trails(world, config)
     _decay_stale_field(world)
@@ -1413,7 +1539,7 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         ant.age += 1
         ant.energy = max(0.0, ant.energy - config.ants.metabolism_cost)
         if ant.age > config.ants.max_age:
-            _kill_ant(world, ant, tick, "old_age")
+            _kill_ant(world, ant, config, tick, "old_age")
             deaths += 1
             continue
         if ant.combat_ticks_remaining > 0:
@@ -1492,6 +1618,9 @@ def step_world(world: AntSandboxWorld, config: AntSandboxConfig, tick: int) -> d
         "contesting_ants": contesting_ants,
         "avoidance_turns": avoidance_turns,
         "hungry_ants": hungry_ants,
+        "corpse_count": world.corpse_count(),
+        "residue_cell_count": world.residue_cell_count(),
+        "residue_total_value": world.residue_total_value(),
         "max_source_pressure": round(max((patch.competition_pressure for patch in world.food_patches), default=0.0), 4),
         "food_trail_cells": sum(len(field) for field in world.food_trail.values()),
         "home_trail_cells": sum(len(field) for field in world.home_trail.values()),

@@ -67,6 +67,11 @@ def main() -> None:
         "combat_starts": sum(1 for event in result.events if event.event_type == "combat_start"),
         "combat_ends": sum(1 for event in result.events if event.event_type == "combat_end"),
         "combat_pairs": sum(summary["combat_pairs"] for summary in tick_summaries),
+        "corpse_creations": sum(1 for event in result.events if event.event_type == "corpse_create"),
+        "corpse_expirations": sum(1 for event in result.events if event.event_type == "corpse_expire"),
+        "corpse_count": world.corpse_count(),
+        "residue_cell_count": world.residue_cell_count(),
+        "residue_total_value": world.residue_total_value(),
         "colony_pickups": {
             colony_id: sum(
                 1

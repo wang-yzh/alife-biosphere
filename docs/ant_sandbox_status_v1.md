@@ -47,6 +47,7 @@ and a multi-seed validation matrix over:
 | `M11 infinite experiment runtime` | `pass` | the branch can checkpoint, reload, resume, and fork a live sandbox world with provenance metadata |
 | `M12 checkpoint observer` | `pass` | the branch can open a saved checkpoint as a branch-aware observer and can optionally continue replay from that checkpoint to a later target tick |
 | `M13 branch comparison ledger` | `pass` | the branch can group related checkpoints into branch families and emit JSON plus Markdown reports with provenance, outcome metrics, spatial signatures, and pairwise deltas |
+| `M14 niche substrate` | `pass` | the branch now generates corpse and residue substrates from ant death, trail use, nest unloads, and nest feeding, and those substrates survive checkpoints and appear in observer plus branch comparison outputs |
 
 ## Current Lifecycle Snapshot
 
@@ -100,6 +101,7 @@ Still provisional:
 - inheritance beyond parent, lineage, and genome bookkeeping
 - stronger mutation baselines and longer-run trait drift under selection pressure
 - automated branch comparison for niche discovery or collapse
+- stronger substrate diversity beyond corpse and residue
 
 ## Next Phase
 
@@ -108,7 +110,6 @@ The next active phase is no longer "prove the small sandbox works".
 It is:
 
 - branch comparison before stronger open-ended evolution claims
-- ant-created niche substrate before successor organisms
 - open-endedness metrics that do not collapse into one fitness score
 - successor life only after a measurable ant-created substrate exists
 - combat as optional later pressure rather than the current branch center
@@ -121,6 +122,7 @@ The next current planning set is:
 - `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
 - `ant_sandbox_m13_branch_comparison_slice_2026-04-24.md`
 - `ant_sandbox_m13_branch_comparison_spec_v1.md`
+- `ant_sandbox_m14_niche_substrate_slice_2026-04-24.md`
 - `ant_sandbox_m14_niche_substrate_spec_v1.md`
 - `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`

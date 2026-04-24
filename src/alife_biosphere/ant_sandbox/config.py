@@ -168,6 +168,13 @@ class AntAgentConfig:
     combat_duration: int = 6
     combat_cooldown: int = 4
     combat_decision_threshold: float = 1.2
+    corpse_enabled: bool = True
+    corpse_decay_ticks: int = 64
+    residue_enabled: bool = True
+    residue_decay: float = 0.03
+    trail_residue_deposit: float = 0.008
+    nest_residue_deposit: float = 0.16
+    corpse_residue_release: float = 0.14
 
     def __post_init__(self) -> None:
         if self.ant_count <= 0:
@@ -234,6 +241,16 @@ class AntAgentConfig:
             raise ValueError("combat_cooldown must be non-negative")
         if self.combat_decision_threshold < 0:
             raise ValueError("combat_decision_threshold must be non-negative")
+        if self.corpse_decay_ticks <= 0:
+            raise ValueError("corpse_decay_ticks must be positive")
+        if self.residue_decay < 0:
+            raise ValueError("residue_decay must be non-negative")
+        if self.trail_residue_deposit < 0:
+            raise ValueError("trail_residue_deposit must be non-negative")
+        if self.nest_residue_deposit < 0:
+            raise ValueError("nest_residue_deposit must be non-negative")
+        if self.corpse_residue_release < 0:
+            raise ValueError("corpse_residue_release must be non-negative")
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "AntAgentConfig":
@@ -277,6 +294,19 @@ class AntAgentConfig:
             combat_cooldown=int(_payload_value(payload, "combat_cooldown", default.combat_cooldown)),
             combat_decision_threshold=float(
                 _payload_value(payload, "combat_decision_threshold", default.combat_decision_threshold)
+            ),
+            corpse_enabled=bool(_payload_value(payload, "corpse_enabled", default.corpse_enabled)),
+            corpse_decay_ticks=int(_payload_value(payload, "corpse_decay_ticks", default.corpse_decay_ticks)),
+            residue_enabled=bool(_payload_value(payload, "residue_enabled", default.residue_enabled)),
+            residue_decay=float(_payload_value(payload, "residue_decay", default.residue_decay)),
+            trail_residue_deposit=float(
+                _payload_value(payload, "trail_residue_deposit", default.trail_residue_deposit)
+            ),
+            nest_residue_deposit=float(
+                _payload_value(payload, "nest_residue_deposit", default.nest_residue_deposit)
+            ),
+            corpse_residue_release=float(
+                _payload_value(payload, "corpse_residue_release", default.corpse_residue_release)
             ),
         )
 

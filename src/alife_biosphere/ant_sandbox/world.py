@@ -100,6 +100,33 @@ class FoodPatch:
 
 
 @dataclass
+class Corpse:
+    corpse_id: str
+    source_ant_id: str
+    x: int
+    y: int
+    colony_id: str
+    death_tick: int
+    energy_value: float
+    decay_ticks_remaining: int
+    death_reason: str
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> "Corpse":
+        return cls(
+            corpse_id=str(payload["corpse_id"]),
+            source_ant_id=str(payload["source_ant_id"]),
+            x=int(payload["x"]),
+            y=int(payload["y"]),
+            colony_id=str(payload["colony_id"]),
+            death_tick=int(payload["death_tick"]),
+            energy_value=float(payload["energy_value"]),
+            decay_ticks_remaining=int(payload["decay_ticks_remaining"]),
+            death_reason=str(payload["death_reason"]),
+        )
+
+
+@dataclass
 class InstinctGenome:
     genome_id: str
     parent_genome_id: str | None = None
@@ -270,6 +297,7 @@ class AntSandboxWorld:
     colonies: dict[str, Colony]
     food_patches: list[FoodPatch]
     ants: list[SandboxAnt]
+    corpses: list[Corpse] = field(default_factory=list)
     tick: int = 0
     next_ant_index: int = 0
     next_genome_index: int = 0
@@ -278,6 +306,7 @@ class AntSandboxWorld:
     food_trail: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
     home_trail: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
     stale_field: dict[tuple[int, int], float] = field(default_factory=dict)
+    residue_field: dict[tuple[int, int], dict[str, object]] = field(default_factory=dict)
     terrain: dict[tuple[int, int], str] = field(default_factory=dict)
     navigation_cache: dict[str, dict[tuple[int, int], float]] = field(default_factory=dict)
 
@@ -295,6 +324,15 @@ class AntSandboxWorld:
 
     def delivered_food_total(self) -> int:
         return sum(colony.nest.stored_food for colony in self.colonies.values())
+
+    def corpse_count(self) -> int:
+        return len(self.corpses)
+
+    def residue_cell_count(self) -> int:
+        return len(self.residue_field)
+
+    def residue_total_value(self) -> float:
+        return round(sum(float(entry["value"]) for entry in self.residue_field.values()), 4)
 
     def colony_nest(self, colony_id: str) -> Nest:
         return self.colonies[colony_id].nest
@@ -321,6 +359,9 @@ class AntSandboxWorld:
             "carrying": self.carrying_count(),
             "nest_food": self.delivered_food_total(),
             "food_remaining": self.food_remaining(),
+            "corpse_count": self.corpse_count(),
+            "residue_cell_count": self.residue_cell_count(),
+            "residue_total_value": self.residue_total_value(),
             "events": len(self.events),
         }
 
@@ -335,6 +376,7 @@ class AntSandboxWorld:
             "colonies": {colony_id: {"display_name": colony.display_name, "color": colony.color, "nest": asdict(colony.nest)} for colony_id, colony in self.colonies.items()},
             "food_patches": [asdict(patch) for patch in self.food_patches],
             "ants": [ant.to_dict() for ant in self.ants],
+            "corpses": [asdict(corpse) for corpse in self.corpses],
             "occupied_cells": [[x, y] for x, y in sorted(self.occupied_cells)],
             "events": [event.to_dict() for event in self.events],
             "food_trail": {
@@ -346,6 +388,13 @@ class AntSandboxWorld:
                 for colony_id, field in self.home_trail.items()
             },
             "stale_field": {f"{x},{y}": value for (x, y), value in self.stale_field.items()},
+            "residue_field": {
+                f"{x},{y}": {
+                    "value": round(float(entry["value"]), 6),
+                    "source_type": str(entry.get("source_type", "unknown")),
+                }
+                for (x, y), entry in self.residue_field.items()
+            },
             "terrain": {f"{x},{y}": kind for (x, y), kind in self.terrain.items()},
         }
 
@@ -375,6 +424,7 @@ class AntSandboxWorld:
             colonies=colonies,
             food_patches=[FoodPatch.from_dict(dict(patch)) for patch in payload.get("food_patches", [])],
             ants=ants,
+            corpses=[Corpse.from_dict(dict(corpse)) for corpse in payload.get("corpses", [])],
             tick=int(payload.get("tick", 0)),
             next_ant_index=int(payload.get("next_ant_index", len(ants))),
             next_genome_index=int(payload.get("next_genome_index", len(ants))),
@@ -389,6 +439,7 @@ class AntSandboxWorld:
                 for colony_id, field in dict(payload.get("home_trail", {})).items()
             },
             stale_field=_cell_float_map(dict(payload.get("stale_field", {}))),
+            residue_field=_residue_cell_map(dict(payload.get("residue_field", {}))),
             terrain={_cell_from_key(key): str(kind) for key, kind in dict(payload.get("terrain", {})).items()},
             navigation_cache={},
         )
@@ -406,6 +457,16 @@ def _cell_from_sequence(cell: object) -> tuple[int, int]:
 
 def _cell_float_map(payload: dict[str, object]) -> dict[tuple[int, int], float]:
     return {_cell_from_key(key): float(value) for key, value in payload.items()}
+
+
+def _residue_cell_map(payload: dict[str, object]) -> dict[tuple[int, int], dict[str, object]]:
+    return {
+        _cell_from_key(key): {
+            "value": float(dict(value).get("value", 0.0)),
+            "source_type": str(dict(value).get("source_type", "unknown")),
+        }
+        for key, value in payload.items()
+    }
 
 
 def _clamp_cell(value: int, lower: int, upper: int) -> int:
