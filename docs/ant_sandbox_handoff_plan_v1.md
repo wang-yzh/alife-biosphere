@@ -137,6 +137,7 @@ M12 checkpoint observer
 M13 branch comparison ledger
 M14 niche and resource expansion
 M15 open-endedness metrics
+M16 first successor life layer
 ```
 
 This ordering matters.
@@ -144,6 +145,15 @@ This ordering matters.
 If the project adds mutation, combat, or more species before branch visibility
 and comparison exist, the results will become anecdotal. The system will look
 more complex but become less interpretable.
+
+The controlling post-`M11` engineering plan is:
+
+- `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+- `ant_sandbox_m13_branch_comparison_spec_v1.md`
+- `ant_sandbox_m14_niche_substrate_spec_v1.md`
+- `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+- `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 
 ## M12 Checkpoint Observer
 

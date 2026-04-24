@@ -20,14 +20,24 @@ checked first before making cross-cutting decisions.
 - `ant_sandbox_status_v1.md`: branch-level status for the active sandbox line
 - `ant_sandbox_handoff_plan_v1.md`: onboarding, guardrails, first-week plan,
   and next-milestone handoff contract
+- `ant_sandbox_open_evolution_engineering_plan_v1.md`: current post-M11
+  engineering plan for open-ended ecological evolution
+- `ant_sandbox_m12_checkpoint_observer_spec_v1.md`: implementation spec for
+  rendering checkpointed and forked branches
+- `ant_sandbox_m13_branch_comparison_spec_v1.md`: implementation spec for
+  comparing alternate futures from shared checkpoints
+- `ant_sandbox_m14_niche_substrate_spec_v1.md`: implementation spec for
+  ant-created environmental substrates that can support future niches
+- `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`: implementation spec for
+  branch divergence, niche occupancy, persistence, and dependency metrics
+- `ant_sandbox_m16_successor_life_layer_spec_v1.md`: implementation spec for
+  the first non-ant life layer dependent on ant-created substrate
 - `ant_sandbox_north_star_v1.md`: one-page statement of the sandbox target
 - `ant_sandbox_world_design_v2.md`: current sandbox world design
-- `ant_sandbox_build_plan_v2.md`: current milestone ordering for the active
-  sandbox line
+- `ant_sandbox_build_plan_v2.md`: scale-up record for the larger terrain-aware
+  sandbox phase
 - `ant_sandbox_m7_scale_up_spec_v1.md`: scale-up freeze for the current
   world-first branch
-- `ant_sandbox_long_horizon_construction_route_v1.md`: dependency-ordered
-  future route after the current scale-up and lifecycle work
 - `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`: first simple lifecycle
   slice with births, deaths, and lineage bookkeeping
 - `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`: first explicit genome
@@ -121,6 +131,9 @@ They are no longer the shortest current control path.
   resource-competition slice, making food sources contested ecological objects
 - `ant_sandbox_r2_three_tribe_shared_world_slice_2026-04-23.md`: first
   three-tribe shared-world slice with separate nests, ledgers, and trail layers
+- `ant_sandbox_long_horizon_construction_route_v1.md`: historical
+  competition/conflict route, now superseded as active milestone order by the
+  open-evolution engineering plan
 - `inheritance_architecture_v0.md`: first inheritance mechanism proposal
 - `adaptive_cycle_and_trust_mechanisms_v1.md`: resilience and trust mechanism
   note
@@ -227,14 +240,16 @@ They are best used selectively after the control layer is clear.
 1. `README.md`
 2. `ant_sandbox_status_v1.md`
 3. `ant_sandbox_handoff_plan_v1.md`
-4. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
-5. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
-6. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
-7. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
-8. `ant_sandbox_world_design_v2.md`
-9. `ant_sandbox_build_plan_v2.md`
-10. `ant_sandbox_m7_scale_up_spec_v1.md`
-11. `ant_sandbox_long_horizon_construction_route_v1.md`
+4. `ant_sandbox_open_evolution_engineering_plan_v1.md`
+5. `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+6. `ant_sandbox_m13_branch_comparison_spec_v1.md`
+7. `ant_sandbox_m14_niche_substrate_spec_v1.md`
+8. `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+9. `ant_sandbox_m16_successor_life_layer_spec_v1.md`
+10. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
+11. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
+12. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
+13. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
 
 ### Evidence and honesty pass
 

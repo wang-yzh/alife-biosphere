@@ -106,16 +106,22 @@ The next active phase is no longer "prove the small sandbox works".
 
 It is:
 
-- longer-run three-colony lifecycle balance
-- stronger resource pressure and turnover under scarcity
-- controlled mutation and ablation after the genome contract
-- checkpointed long-run branches before stronger open-ended evolution claims
-- longer-run lineage and branch comparison after the runtime layer
+- checkpoint-aware observation of saved and forked branches
+- branch comparison before stronger open-ended evolution claims
+- ant-created niche substrate before successor organisms
+- open-endedness metrics that do not collapse into one fitness score
+- successor life only after a measurable ant-created substrate exists
 - combat as optional later pressure rather than the current branch center
 
 The next current planning set is:
 
 - `ant_sandbox_handoff_plan_v1.md`
+- `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+- `ant_sandbox_m13_branch_comparison_spec_v1.md`
+- `ant_sandbox_m14_niche_substrate_spec_v1.md`
+- `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+- `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 - `ant_sandbox_world_design_v2.md`
 - `ant_sandbox_build_plan_v2.md`
 - `ant_sandbox_m7_scale_up_spec_v1.md`

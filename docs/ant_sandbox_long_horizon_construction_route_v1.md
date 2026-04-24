@@ -1,5 +1,21 @@
 # Ant Sandbox Long-Horizon Construction Route v1
 
+## Status Note
+
+This document is now a historical route for the competition/conflict branch.
+
+The active post-`M11` open-evolution route is:
+
+- `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+- `ant_sandbox_m13_branch_comparison_spec_v1.md`
+- `ant_sandbox_m14_niche_substrate_spec_v1.md`
+- `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+- `ant_sandbox_m16_successor_life_layer_spec_v1.md`
+
+Use this file only as background for competition and conflict ideas. Do not use
+it as the active milestone order.
+
 ## Purpose
 
 This document turns the user-facing long-horizon vision into a practical build

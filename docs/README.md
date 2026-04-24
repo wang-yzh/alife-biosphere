@@ -28,14 +28,16 @@ order:
 1. `../README.md`
 2. `ant_sandbox_status_v1.md`
 3. `ant_sandbox_handoff_plan_v1.md`
-4. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
-5. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
-6. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
-7. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
-8. `ant_sandbox_world_design_v2.md`
-9. `ant_sandbox_build_plan_v2.md`
-10. `ant_sandbox_m7_scale_up_spec_v1.md`
-11. `ant_sandbox_long_horizon_construction_route_v1.md`
+4. `ant_sandbox_open_evolution_engineering_plan_v1.md`
+5. `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+6. `ant_sandbox_m13_branch_comparison_spec_v1.md`
+7. `ant_sandbox_m14_niche_substrate_spec_v1.md`
+8. `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+9. `ant_sandbox_m16_successor_life_layer_spec_v1.md`
+10. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
+11. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
+12. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
+13. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
 
 ## Current Control Documents
 
@@ -45,9 +47,14 @@ These are the documents that currently coordinate the active branch:
 - `ant_sandbox_world_design_v2.md`
 - `ant_sandbox_build_plan_v2.md`
 - `ant_sandbox_m7_scale_up_spec_v1.md`
-- `ant_sandbox_long_horizon_construction_route_v1.md`
 - `ant_sandbox_status_v1.md`
 - `ant_sandbox_handoff_plan_v1.md`
+- `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+- `ant_sandbox_m13_branch_comparison_spec_v1.md`
+- `ant_sandbox_m14_niche_substrate_spec_v1.md`
+- `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+- `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 - `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
 - `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
 - `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
@@ -95,10 +102,10 @@ These are still useful, but they are not the shortest entry path:
 - `ant_sandbox_m7_m8_scale_up_slice_2026-04-22.md`
 - `ant_sandbox_r1_food_source_competition_slice_2026-04-22.md`
 - `ant_sandbox_r2_three_tribe_shared_world_slice_2026-04-23.md`
+- `ant_sandbox_long_horizon_construction_route_v1.md`
 - `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
 - `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
 - `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
-- `ant_sandbox_handoff_plan_v1.md`
 - `ecology_north_star_v1.md`
 - `world_design_v2.md`
 - `observable_phenomena_and_failure_modes_v1.md`
@@ -159,6 +166,12 @@ When the ant-sandbox branch changes materially, update these files together:
 - `document_catalog_v1.md`
 - `ant_sandbox_status_v1.md`
 - `ant_sandbox_handoff_plan_v1.md`
+- `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+- `ant_sandbox_m13_branch_comparison_spec_v1.md`
+- `ant_sandbox_m14_niche_substrate_spec_v1.md`
+- `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+- `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 - `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
 - `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
 - `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`

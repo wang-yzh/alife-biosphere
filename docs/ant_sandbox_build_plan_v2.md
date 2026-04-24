@@ -1,5 +1,19 @@
 # Ant Sandbox Build Plan v2
 
+## Status Note
+
+This file remains the scale-up record for `M7` through the larger terrain-aware
+sandbox work.
+
+For the active post-`M11` open-evolution engineering route, use:
+
+- `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
+- `ant_sandbox_m13_branch_comparison_spec_v1.md`
+- `ant_sandbox_m14_niche_substrate_spec_v1.md`
+- `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+- `ant_sandbox_m16_successor_life_layer_spec_v1.md`
+
 ## Purpose
 
 This plan begins after the current branch has already passed:
