@@ -100,6 +100,8 @@ def _branch_summary(checkpoint_path: str | Path) -> dict[str, object]:
         "contested_source_count": sum(1 for event in world.events if event.event_type == "food_source_contested"),
         "combat_start_count": sum(1 for event in world.events if event.event_type == "combat_start"),
         "corpse_count": world.corpse_count(),
+        "corpse_create_count": sum(1 for event in world.events if event.event_type == "corpse_create"),
+        "corpse_expire_count": sum(1 for event in world.events if event.event_type == "corpse_expire"),
         "max_generation": int(inheritance["max_generation"]),
         "genome_count": len({ant.genome_id for ant in world.ants}),
         "mutated_birth_count": int(inheritance["mutated_births"]),

@@ -34,6 +34,9 @@ checked first before making cross-cutting decisions.
   and residue substrate slice for ant-created ecological material
 - `ant_sandbox_m14_niche_substrate_spec_v1.md`: implementation spec for
   ant-created environmental substrates that can support future niches
+- `ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md`: implemented
+  metrics layer for divergence, occupancy, persistence, dependency, and
+  non-collapse reporting
 - `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`: implementation spec for
   branch divergence, niche occupancy, persistence, and dependency metrics
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`: implementation spec for
@@ -253,12 +256,13 @@ They are best used selectively after the control layer is clear.
 8. `ant_sandbox_m13_branch_comparison_spec_v1.md`
 9. `ant_sandbox_m14_niche_substrate_slice_2026-04-24.md`
 10. `ant_sandbox_m14_niche_substrate_spec_v1.md`
-11. `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
-12. `ant_sandbox_m16_successor_life_layer_spec_v1.md`
-13. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
-14. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
-15. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
-16. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
+11. `ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md`
+12. `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
+13. `ant_sandbox_m16_successor_life_layer_spec_v1.md`
+14. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
+15. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
+16. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
+17. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
 
 ### Evidence and honesty pass
 

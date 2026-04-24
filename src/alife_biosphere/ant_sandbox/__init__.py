@@ -3,6 +3,12 @@
 from .config import AntAgentConfig, AntSandboxConfig, ColonyConfig, FoodPatchConfig, NestConfig, TerrainConfig
 from .checkpoint import AntSandboxCheckpoint, load_checkpoint, write_checkpoint
 from .comparison import build_branch_comparison_payload, render_branch_comparison_markdown, write_branch_comparison
+from .open_endedness import (
+    build_open_endedness_payload,
+    build_open_endedness_payload_from_checkpoints,
+    render_open_endedness_markdown,
+    write_open_endedness_report,
+)
 from .observer import (
     build_ant_checkpoint_observer_payload,
     build_ant_observer_payload,
@@ -34,10 +40,13 @@ __all__ = [
     "build_ant_checkpoint_observer_payload",
     "build_branch_comparison_payload",
     "build_ant_observer_payload",
+    "build_open_endedness_payload",
+    "build_open_endedness_payload_from_checkpoints",
     "build_showcase_config",
     "initialize_world",
     "load_checkpoint",
     "render_branch_comparison_markdown",
+    "render_open_endedness_markdown",
     "run_simulation",
     "run_world_until",
     "run_validation_cases",
@@ -48,6 +57,7 @@ __all__ = [
     "step_world",
     "write_branch_comparison",
     "write_checkpoint",
+    "write_open_endedness_report",
     "write_ant_live_observer_html",
     "write_ant_observer_html",
 ]

@@ -128,13 +128,12 @@ observer and checkpoint fork have been run locally.
 
 ## Handoff Decision
 
-The next maintainer should continue from `M15`, not from mutation or from
+The next maintainer should continue from `M16`, not from mutation or from
 adding new organisms prematurely.
 
 The current immediate sequence is:
 
 ```text
-M15 open-endedness metrics
 M16 first successor life layer
 ```
 
@@ -153,6 +152,7 @@ The controlling post-`M11` engineering plan is:
 - `ant_sandbox_m13_branch_comparison_spec_v1.md`
 - `ant_sandbox_m14_niche_substrate_slice_2026-04-24.md`
 - `ant_sandbox_m14_niche_substrate_spec_v1.md`
+- `ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md`
 - `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 
