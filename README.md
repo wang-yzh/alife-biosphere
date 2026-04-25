@@ -64,10 +64,10 @@ Latest showcase lifecycle snapshot:
 
 For the current branch-level status page, see:
 
-- [ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
-- [ant_sandbox_handoff_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_handoff_plan_v1.md)
-- [ant_sandbox_open_evolution_engineering_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
-- [ant_sandbox_open_evolution_engineering_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v2.md)
+- [ant_sandbox_status_v1.md](docs/ant_sandbox_status_v1.md)
+- [ant_sandbox_handoff_plan_v1.md](docs/ant_sandbox_handoff_plan_v1.md)
+- [ant_sandbox_open_evolution_engineering_plan_v1.md](docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
+- [ant_sandbox_open_evolution_engineering_plan_v2.md](docs/ant_sandbox_open_evolution_engineering_plan_v2.md)
 
 ## Quick Start
 
@@ -99,7 +99,7 @@ python scripts/run_ant_sandbox_observer.py
 
 Open:
 
-- [outputs/ant_sandbox_observer/observer.html](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_observer/observer.html)
+- [outputs/ant_sandbox_observer/observer.html](outputs/ant_sandbox_observer/observer.html)
 
 This is the best entry point if you want to inspect colony traffic, food
 competition, terrain routing, wall behavior, and lifecycle turnover.
@@ -114,7 +114,7 @@ python scripts/run_ant_sandbox_live_observer.py
 
 Open:
 
-- [outputs/ant_sandbox_live_observer/live_observer.html](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_live_observer/live_observer.html)
+- [outputs/ant_sandbox_live_observer/live_observer.html](outputs/ant_sandbox_live_observer/live_observer.html)
 
 This is useful for monitoring a single run while it is advancing.
 
@@ -140,7 +140,7 @@ python scripts/run_ant_sandbox_infinite_experiment.py --checkpoint outputs/ant_s
 
 Outputs are written under:
 
-- [outputs/ant_sandbox_infinite_experiment](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_infinite_experiment)
+- [outputs/ant_sandbox_infinite_experiment](outputs/ant_sandbox_infinite_experiment)
 
 ### Checkpoint Observer
 
@@ -158,7 +158,7 @@ python scripts/run_ant_sandbox_checkpoint_observer.py --checkpoint outputs/ant_s
 
 Outputs are written under:
 
-- [outputs/ant_sandbox_checkpoint_observer](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_checkpoint_observer)
+- [outputs/ant_sandbox_checkpoint_observer](outputs/ant_sandbox_checkpoint_observer)
 
 ### Branch Comparison
 
@@ -176,7 +176,7 @@ python scripts/run_ant_sandbox_branch_comparison.py --input-dir outputs/ant_sand
 
 Outputs are written under:
 
-- [outputs/ant_sandbox_branch_comparison](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_branch_comparison)
+- [outputs/ant_sandbox_branch_comparison](outputs/ant_sandbox_branch_comparison)
 
 ### Open-Endedness Metrics
 
@@ -194,7 +194,7 @@ python scripts/run_ant_sandbox_open_endedness_metrics.py --input-dir outputs/ant
 
 Outputs are written under:
 
-- [outputs/ant_sandbox_open_endedness](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_open_endedness)
+- [outputs/ant_sandbox_open_endedness](outputs/ant_sandbox_open_endedness)
 
 ### Multi-Niche Open Evolution Campaign
 
@@ -206,7 +206,7 @@ python scripts/run_ant_sandbox_multi_niche_open_evolution.py --campaign-id m17_s
 
 Outputs are written under:
 
-- [outputs/ant_sandbox_multi_niche_open_evolution](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_multi_niche_open_evolution)
+- [outputs/ant_sandbox_multi_niche_open_evolution](outputs/ant_sandbox_multi_niche_open_evolution)
 
 ## Run Probes
 
@@ -263,60 +263,60 @@ python scripts/run_ant_sandbox_validation_matrix.py
 
 Probe outputs are written under:
 
-- [outputs/ant_sandbox_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_probe)
-- [outputs/ant_sandbox_inheritance_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_inheritance_probe)
-- [outputs/ant_sandbox_pheromone_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_pheromone_probe)
-- [outputs/ant_sandbox_persistence_probe](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_persistence_probe)
-- [outputs/ant_sandbox_validation_matrix](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_validation_matrix)
+- [outputs/ant_sandbox_probe](outputs/ant_sandbox_probe)
+- [outputs/ant_sandbox_inheritance_probe](outputs/ant_sandbox_inheritance_probe)
+- [outputs/ant_sandbox_pheromone_probe](outputs/ant_sandbox_pheromone_probe)
+- [outputs/ant_sandbox_persistence_probe](outputs/ant_sandbox_persistence_probe)
+- [outputs/ant_sandbox_validation_matrix](outputs/ant_sandbox_validation_matrix)
 
 ## Repository Map
 
 Core ant sandbox implementation:
 
-- [config.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/config.py)
-- [world.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/world.py)
-- [simulation.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/simulation.py)
-- [observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/observer.py)
-- [reporting.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/reporting.py)
-- [validation.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/validation.py)
-- [showcase.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/showcase.py)
-- [checkpoint.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/checkpoint.py)
-- [comparison.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/comparison.py)
-- [open_endedness.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/open_endedness.py)
-- [campaign.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/campaign.py)
+- [config.py](src/alife_biosphere/ant_sandbox/config.py)
+- [world.py](src/alife_biosphere/ant_sandbox/world.py)
+- [simulation.py](src/alife_biosphere/ant_sandbox/simulation.py)
+- [observer.py](src/alife_biosphere/ant_sandbox/observer.py)
+- [reporting.py](src/alife_biosphere/ant_sandbox/reporting.py)
+- [validation.py](src/alife_biosphere/ant_sandbox/validation.py)
+- [showcase.py](src/alife_biosphere/ant_sandbox/showcase.py)
+- [checkpoint.py](src/alife_biosphere/ant_sandbox/checkpoint.py)
+- [comparison.py](src/alife_biosphere/ant_sandbox/comparison.py)
+- [open_endedness.py](src/alife_biosphere/ant_sandbox/open_endedness.py)
+- [campaign.py](src/alife_biosphere/ant_sandbox/campaign.py)
 
 Main runnable scripts:
 
-- [run_ant_sandbox_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_observer.py)
-- [run_ant_sandbox_live_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_live_observer.py)
-- [run_ant_sandbox_probe.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_probe.py)
-- [run_ant_sandbox_validation_matrix.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_validation_matrix.py)
-- [run_ant_sandbox_infinite_experiment.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_infinite_experiment.py)
-- [run_ant_sandbox_checkpoint_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_checkpoint_observer.py)
-- [run_ant_sandbox_branch_comparison.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_branch_comparison.py)
-- [run_ant_sandbox_open_endedness_metrics.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_open_endedness_metrics.py)
-- [run_ant_sandbox_multi_niche_open_evolution.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_multi_niche_open_evolution.py)
+- [run_ant_sandbox_observer.py](scripts/run_ant_sandbox_observer.py)
+- [run_ant_sandbox_live_observer.py](scripts/run_ant_sandbox_live_observer.py)
+- [run_ant_sandbox_probe.py](scripts/run_ant_sandbox_probe.py)
+- [run_ant_sandbox_validation_matrix.py](scripts/run_ant_sandbox_validation_matrix.py)
+- [run_ant_sandbox_infinite_experiment.py](scripts/run_ant_sandbox_infinite_experiment.py)
+- [run_ant_sandbox_checkpoint_observer.py](scripts/run_ant_sandbox_checkpoint_observer.py)
+- [run_ant_sandbox_branch_comparison.py](scripts/run_ant_sandbox_branch_comparison.py)
+- [run_ant_sandbox_open_endedness_metrics.py](scripts/run_ant_sandbox_open_endedness_metrics.py)
+- [run_ant_sandbox_multi_niche_open_evolution.py](scripts/run_ant_sandbox_multi_niche_open_evolution.py)
 
 ## Documentation
 
 Shortest re-entry path for the current ant sandbox line:
 
-1. [docs/README.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/README.md)
-2. [docs/ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
-3. [docs/ant_sandbox_handoff_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_handoff_plan_v1.md)
-4. [docs/ant_sandbox_open_evolution_engineering_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v2.md)
-5. [docs/ant_sandbox_open_evolution_engineering_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
-6. [docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md)
-7. [docs/ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md)
-8. [docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md)
-9. [docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md)
-10. [docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md)
-11. [docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md)
-12. [docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md)
+1. [docs/README.md](docs/README.md)
+2. [docs/ant_sandbox_status_v1.md](docs/ant_sandbox_status_v1.md)
+3. [docs/ant_sandbox_handoff_plan_v1.md](docs/ant_sandbox_handoff_plan_v1.md)
+4. [docs/ant_sandbox_open_evolution_engineering_plan_v2.md](docs/ant_sandbox_open_evolution_engineering_plan_v2.md)
+5. [docs/ant_sandbox_open_evolution_engineering_plan_v1.md](docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
+6. [docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md](docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md)
+7. [docs/ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md](docs/ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md)
+8. [docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md](docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md)
+9. [docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md](docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md)
+10. [docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md](docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md)
+11. [docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md](docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md)
+12. [docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md](docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md)
 
 If you need the full document catalog:
 
-- [docs/document_catalog_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/document_catalog_v1.md)
+- [docs/document_catalog_v1.md](docs/document_catalog_v1.md)
 
 ## Near-Term Roadmap
 
@@ -338,6 +338,6 @@ the current product direction on the active ant-sandbox branch.
 
 Development workflow files:
 
-- [CONTRIBUTING.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/CONTRIBUTING.md)
-- [.github/workflows/ci.yml](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/.github/workflows/ci.yml)
-- [.github/pull_request_template.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/.github/pull_request_template.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [.github/workflows/ci.yml](.github/workflows/ci.yml)
+- [.github/pull_request_template.md](.github/pull_request_template.md)
