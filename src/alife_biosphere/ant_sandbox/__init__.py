@@ -2,6 +2,7 @@
 
 from .config import AntAgentConfig, AntSandboxConfig, ColonyConfig, FoodPatchConfig, NestConfig, TerrainConfig
 from .checkpoint import AntSandboxCheckpoint, load_checkpoint, write_checkpoint
+from .campaign import run_multi_niche_open_evolution_campaign
 from .comparison import build_branch_comparison_payload, render_branch_comparison_markdown, write_branch_comparison
 from .open_endedness import (
     build_open_endedness_payload,
@@ -46,6 +47,7 @@ __all__ = [
     "build_showcase_config",
     "initialize_world",
     "load_checkpoint",
+    "run_multi_niche_open_evolution_campaign",
     "render_branch_comparison_markdown",
     "render_open_endedness_markdown",
     "run_simulation",

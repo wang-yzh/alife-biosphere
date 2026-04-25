@@ -44,6 +44,9 @@ checked first before making cross-cutting decisions.
   ecological dependency
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`: implementation spec for
   the first non-ant life layer dependent on ant-created substrate
+- `ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md`: implemented
+  campaign workflow for root branch, fork family, observers, comparison, and
+  open-endedness outputs
 - `ant_sandbox_north_star_v1.md`: one-page statement of the sandbox target
 - `ant_sandbox_world_design_v2.md`: current sandbox world design
 - `ant_sandbox_build_plan_v2.md`: scale-up record for the larger terrain-aware
@@ -263,10 +266,11 @@ They are best used selectively after the control layer is clear.
 12. `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
 13. `ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md`
 14. `ant_sandbox_m16_successor_life_layer_spec_v1.md`
-15. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
-16. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
-17. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
-18. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
+15. `ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md`
+16. `ant_sandbox_m10a_lifecycle_slice_2026-04-24.md`
+17. `ant_sandbox_m10b_genome_v1_slice_2026-04-24.md`
+18. `ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md`
+19. `ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md`
 
 ### Evidence and honesty pass
 

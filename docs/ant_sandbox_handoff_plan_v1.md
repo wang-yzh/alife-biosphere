@@ -128,13 +128,15 @@ observer and checkpoint fork have been run locally.
 
 ## Handoff Decision
 
-The next maintainer should continue from `M17`, not from mutation or from
+The next maintainer should continue from post-`M17` expansion, not from mutation or from
 adding new organisms prematurely.
 
 The current immediate sequence is:
 
 ```text
-M17 multi-niche open evolution run
+broaden campaign coverage
+-> broaden successor ecology beyond one decomposer layer
+-> preserve observer/comparison/metric discipline
 ```
 
 This ordering matters.
@@ -156,6 +158,7 @@ The controlling post-`M11` engineering plan is:
 - `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
 - `ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md`
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`
+- `ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md`
 
 ## M12 Checkpoint Observer
 

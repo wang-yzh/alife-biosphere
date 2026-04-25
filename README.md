@@ -43,6 +43,7 @@ current probe setup:
 - corpse and residue substrate for future derived niches
 - open-endedness metrics layer with explicit status labels and no single score
 - first successor life layer through corpse-dependent decomposer patches
+- multi-niche open evolution campaign orchestration across root and fork branches
 
 The current visible world also includes:
 
@@ -193,6 +194,18 @@ Outputs are written under:
 
 - [outputs/ant_sandbox_open_endedness](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_open_endedness)
 
+### Multi-Niche Open Evolution Campaign
+
+Run a root branch plus fork family, then emit observers, comparison, and metrics:
+
+```bash
+python scripts/run_ant_sandbox_multi_niche_open_evolution.py --campaign-id m17_smoke --root-tick 40 --fork-additional-ticks 20 --fork-seeds 11 29
+```
+
+Outputs are written under:
+
+- [outputs/ant_sandbox_multi_niche_open_evolution](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/outputs/ant_sandbox_multi_niche_open_evolution)
+
 ## Run Probes
 
 General showcase probe:
@@ -268,6 +281,7 @@ Core ant sandbox implementation:
 - [checkpoint.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/checkpoint.py)
 - [comparison.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/comparison.py)
 - [open_endedness.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/open_endedness.py)
+- [campaign.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/src/alife_biosphere/ant_sandbox/campaign.py)
 
 Main runnable scripts:
 
@@ -279,6 +293,7 @@ Main runnable scripts:
 - [run_ant_sandbox_checkpoint_observer.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_checkpoint_observer.py)
 - [run_ant_sandbox_branch_comparison.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_branch_comparison.py)
 - [run_ant_sandbox_open_endedness_metrics.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_open_endedness_metrics.py)
+- [run_ant_sandbox_multi_niche_open_evolution.py](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/scripts/run_ant_sandbox_multi_niche_open_evolution.py)
 
 ## Documentation
 
@@ -298,10 +313,11 @@ Shortest re-entry path for the current ant sandbox line:
 12. [docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md)
 13. [docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md)
 14. [docs/ant_sandbox_m16_successor_life_layer_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_spec_v1.md)
-15. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
-16. [docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md)
-17. [docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md)
-18. [docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md)
+15. [docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md)
+16. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
+17. [docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md)
+18. [docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md)
+19. [docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md)
 
 If you need the full document catalog:
 
@@ -318,6 +334,7 @@ It is:
 - M14 is now in place as the first substrate layer for derived niches
 - M15 is now in place as the open-endedness metrics layer
 - M16 is now in place as the first successor life layer
+- M17 is now in place as the forked multi-niche campaign layer
 - conflict as optional later pressure rather than the current branch center
 
 ## Legacy Note

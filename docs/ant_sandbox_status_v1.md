@@ -50,6 +50,7 @@ and a multi-seed validation matrix over:
 | `M14 niche substrate` | `pass` | the branch now generates corpse and residue substrates from ant death, trail use, nest unloads, and nest feeding, and those substrates survive checkpoints and appear in observer plus branch comparison outputs |
 | `M15 open-endedness metrics` | `pass` | the branch now converts checkpoint-family comparison outputs into five explicit metric families with status labels, while avoiding any single universal fitness score |
 | `M16 successor life layer` | `pass` | the branch now supports a weak decomposer patch layer that emerges from corpse substrate, feeds locally, enriches residue, survives checkpoints, appears in the observer, and upgrades the first dependency edge to an implemented metric |
+| `M17 multi-niche open evolution run` | `pass` | the branch now has a campaign workflow that runs a root branch plus fork family, emits observer artifacts for every branch, and produces comparison plus open-endedness outputs as one integrated experiment package |
 
 ## Current Lifecycle Snapshot
 
@@ -105,6 +106,7 @@ Still provisional:
 - automated branch comparison for niche discovery or collapse
 - stronger substrate diversity beyond corpse and residue
 - successor diversity still limited to one weak decomposer layer
+- long-run campaign validation still narrow in branch count and seed coverage
 
 ## Next Phase
 
@@ -115,6 +117,7 @@ It is:
 - branch comparison before stronger open-ended evolution claims
 - open-endedness metrics that do not collapse into one fitness score
 - multi-niche successor ecology beyond the first decomposer layer
+- broader campaign coverage and richer dependency chains
 - combat as optional later pressure rather than the current branch center
 
 The next current planning set is:
@@ -131,6 +134,7 @@ The next current planning set is:
 - `ant_sandbox_m15_open_endedness_metrics_spec_v1.md`
 - `ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md`
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`
+- `ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md`
 - `ant_sandbox_world_design_v2.md`
 - `ant_sandbox_build_plan_v2.md`
 - `ant_sandbox_m7_scale_up_spec_v1.md`
