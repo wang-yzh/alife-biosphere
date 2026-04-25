@@ -299,22 +299,59 @@ def _observer_payload(
     return payload
 
 
-def build_ant_observer_payload(
+def build_ant_replay_observer_payload(
     config: AntSandboxConfig,
+    world: AntSandboxWorld,
+    *,
     title: str = "Ant Sandbox World",
+    target_tick: int | None = None,
+    include_loaded_frame: bool = True,
+    extra: dict[str, object] | None = None,
 ) -> dict[str, object]:
-    world = initialize_world(config)
-    frames = []
-    for tick in range(1, config.ticks + 1):
+    loaded_tick = world.tick
+    final_tick = loaded_tick if target_tick is None else target_tick
+    if final_tick < loaded_tick:
+        raise ValueError("target_tick must be greater than or equal to the current world tick")
+
+    frames: list[dict[str, object]] = []
+    if include_loaded_frame:
+        frames.append(_frame_payload(world, _summary_for_tick(world, loaded_tick), loaded_tick))
+    for tick in range(loaded_tick + 1, final_tick + 1):
         summary = step_world(world, config, tick)
         frames.append(_frame_payload(world, summary, tick))
+
+    merged_extra = {
+        "loaded_tick": loaded_tick,
+        "target_tick": final_tick,
+        "config_seed": config.seed,
+        "config_inheritance_mode": config.ants.inheritance_mode,
+        "config_mutation_rate": config.ants.mutation_rate,
+    }
+    if extra:
+        merged_extra.update(extra)
     return _observer_payload(
         config,
         world,
         frames,
         title=title,
-        total_ticks=config.ticks,
+        total_ticks=final_tick,
         generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        extra=merged_extra,
+    )
+
+
+def build_ant_observer_payload(
+    config: AntSandboxConfig,
+    title: str = "Ant Sandbox World",
+    extra: dict[str, object] | None = None,
+) -> dict[str, object]:
+    return build_ant_replay_observer_payload(
+        config,
+        initialize_world(config),
+        title=title,
+        target_tick=config.ticks,
+        include_loaded_frame=False,
+        extra=extra,
     )
 
 
@@ -330,31 +367,16 @@ def build_ant_checkpoint_observer_payload(
     world = checkpoint.world
     loaded_tick = world.tick
     final_tick = loaded_tick if target_tick is None else target_tick
-    if final_tick < loaded_tick:
-        raise ValueError("target_tick must be greater than or equal to the checkpoint tick")
-
-    frames = [_frame_payload(world, _summary_for_tick(world, loaded_tick), loaded_tick)]
-    replayed_from_checkpoint = final_tick > loaded_tick
-    for tick in range(loaded_tick + 1, final_tick + 1):
-        summary = step_world(world, config, tick)
-        frames.append(_frame_payload(world, summary, tick))
-
-    return _observer_payload(
+    return build_ant_replay_observer_payload(
         config,
         world,
-        frames,
         title=title,
-        total_ticks=final_tick,
-        generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        target_tick=final_tick,
+        include_loaded_frame=True,
         extra={
             "source_checkpoint": str(checkpoint_file),
             "checkpoint_metadata": dict(checkpoint.metadata),
-            "loaded_tick": loaded_tick,
-            "target_tick": final_tick,
-            "replayed_from_checkpoint": replayed_from_checkpoint,
-            "config_seed": config.seed,
-            "config_inheritance_mode": config.ants.inheritance_mode,
-            "config_mutation_rate": config.ants.mutation_rate,
+            "replayed_from_checkpoint": final_tick > loaded_tick,
         },
     )
 

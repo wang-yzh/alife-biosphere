@@ -7,10 +7,9 @@ from pathlib import Path
 
 from .checkpoint import load_checkpoint, write_checkpoint
 from .comparison import build_branch_comparison_payload, write_branch_comparison
-from .observer import build_ant_checkpoint_observer_payload, write_ant_observer_html
+from .observer import build_ant_observer_payload, build_ant_replay_observer_payload, write_ant_observer_html
 from .open_endedness import build_open_endedness_payload, write_open_endedness_report
 from .showcase import build_showcase_config
-from .simulation import run_world_until
 from .world import initialize_world
 
 
@@ -82,6 +81,7 @@ def _export_branch(
     parent_checkpoint: Path | None = None,
     forked_from_tick: int | None = None,
     observer_title: str = "Ant Sandbox Branch",
+    observer_payload: dict[str, object] | None = None,
 ) -> dict[str, object]:
     branch_dir = output_dir / "branches" / branch_id
     metadata = {
@@ -113,7 +113,15 @@ def _export_branch(
 
     observer_dir = output_dir / "observers" / branch_id
     observer_dir.mkdir(parents=True, exist_ok=True)
-    observer_payload = build_ant_checkpoint_observer_payload(checkpoint_path, title=observer_title)
+    if observer_payload is None:
+        observer_payload = build_ant_observer_payload(
+            config,
+            title=observer_title,
+            extra={
+                "checkpoint_metadata": metadata,
+                "replayed_from_checkpoint": False,
+            },
+        )
     write_ant_observer_html(observer_dir / "observer.html", observer_payload)
     _write_json(observer_dir / "observer_data.json", observer_payload)
 
@@ -157,8 +165,27 @@ def run_multi_niche_open_evolution_campaign(
     root_config = replace(base_config, ants=ants_config)
 
     root_world = initialize_world(root_config)
-    run_world_until(root_world, root_config, root_tick)
     root_branch_id = f"{resolved_campaign_id}_root"
+    root_metadata = {
+        "run_id": run_id,
+        "branch_id": root_branch_id,
+        "parent_run_id": None,
+        "parent_branch_id": None,
+        "parent_checkpoint": None,
+        "forked_from_tick": None,
+        "note": "multi_niche_open_evolution_campaign",
+    }
+    root_observer_payload = build_ant_replay_observer_payload(
+        root_config,
+        root_world,
+        title="Ant Sandbox Branch - Root",
+        target_tick=root_tick,
+        include_loaded_frame=False,
+        extra={
+            "checkpoint_metadata": root_metadata,
+            "replayed_from_checkpoint": False,
+        },
+    )
     root_branch = _export_branch(
         root_output,
         root_branch_id,
@@ -166,6 +193,7 @@ def run_multi_niche_open_evolution_campaign(
         config=root_config,
         world=root_world,
         observer_title="Ant Sandbox Branch - Root",
+        observer_payload=root_observer_payload,
     )
 
     fork_branches: list[dict[str, object]] = []
@@ -173,8 +201,28 @@ def run_multi_niche_open_evolution_campaign(
     for seed in fork_seeds:
         loaded = load_checkpoint(root_checkpoint)
         fork_config = replace(loaded.config, seed=seed, ticks=loaded.world.tick + fork_additional_ticks)
-        run_world_until(loaded.world, fork_config, fork_config.ticks)
         branch_id = f"{resolved_campaign_id}_seed_{seed}"
+        fork_metadata = {
+            "run_id": run_id,
+            "branch_id": branch_id,
+            "parent_run_id": run_id,
+            "parent_branch_id": root_branch_id,
+            "parent_checkpoint": str(root_checkpoint.resolve()),
+            "forked_from_tick": loaded.metadata["tick"],
+            "note": "multi_niche_open_evolution_campaign",
+        }
+        fork_observer_payload = build_ant_replay_observer_payload(
+            fork_config,
+            loaded.world,
+            title=f"Ant Sandbox Branch - Seed {seed}",
+            target_tick=fork_config.ticks,
+            include_loaded_frame=True,
+            extra={
+                "checkpoint_metadata": fork_metadata,
+                "source_checkpoint": str(root_checkpoint.resolve()),
+                "replayed_from_checkpoint": True,
+            },
+        )
         fork_branch = _export_branch(
             root_output,
             branch_id,
@@ -186,6 +234,7 @@ def run_multi_niche_open_evolution_campaign(
             parent_checkpoint=root_checkpoint,
             forked_from_tick=loaded.metadata["tick"],
             observer_title=f"Ant Sandbox Branch - Seed {seed}",
+            observer_payload=fork_observer_payload,
         )
         fork_branches.append(fork_branch)
 

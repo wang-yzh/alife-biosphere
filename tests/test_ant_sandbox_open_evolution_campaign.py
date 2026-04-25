@@ -21,6 +21,9 @@ def test_multi_niche_campaign_generates_branch_family_outputs(tmp_path: Path) ->
     assert Path(manifest["open_endedness_json"]).exists()
     assert Path(tmp_path / "campaign" / "campaign_manifest.json").exists()
     assert Path(tmp_path / "campaign" / "campaign_summary.md").exists()
+    root_observer = json.loads(Path(manifest["root_branch"]["observer_data"]).read_text(encoding="utf-8"))
+    assert len(root_observer["frames"]) > 1
+    assert root_observer["frames"][0]["tick"] == 1
 
 
 def test_multi_niche_campaign_manifest_references_metrics_and_comparison(tmp_path: Path) -> None:
@@ -38,3 +41,6 @@ def test_multi_niche_campaign_manifest_references_metrics_and_comparison(tmp_pat
     assert open_metrics["comparison_id"] == comparison["comparison_id"]
     assert "metric_families" in open_metrics
     assert "ecological_dependency" in open_metrics["metric_families"]
+    fork_observer = json.loads(Path(manifest["fork_branches"][0]["observer_data"]).read_text(encoding="utf-8"))
+    assert len(fork_observer["frames"]) > 1
+    assert fork_observer["frames"][0]["tick"] == manifest["fork_branches"][0]["start_tick"]
