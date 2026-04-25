@@ -1,5 +1,19 @@
 # Ant Sandbox Open Evolution Engineering Plan v1
 
+## Status Note
+
+This plan is now complete as an implementation route.
+
+It covered:
+
+```text
+M12 -> M13 -> M14 -> M15 -> M16 -> M17
+```
+
+The active post-`M17` planning file is:
+
+- `ant_sandbox_open_evolution_engineering_plan_v2.md`
+
 ## Purpose
 
 This is the engineering plan for moving the ant sandbox from a stable colony

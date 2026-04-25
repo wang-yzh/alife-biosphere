@@ -44,6 +44,7 @@ current probe setup:
 - open-endedness metrics layer with explicit status labels and no single score
 - first successor life layer through corpse-dependent decomposer patches
 - multi-niche open evolution campaign orchestration across root and fork branches
+- stabilized showcase economy with lower late-stage starvation pressure
 
 The current visible world also includes:
 
@@ -54,18 +55,19 @@ The current visible world also includes:
 
 Latest showcase lifecycle snapshot:
 
-- `births=52`
-- `deaths=51`
-- `death_reasons={'old_age': 9, 'starvation': 42}`
-- `final_population_by_colony={'wei': 11, 'shu': 12, 'wu': 10}`
-- `pickups=1049`
-- `unloads=1009`
+- `births=50`
+- `deaths=46`
+- `death_reasons={'old_age': 20, 'starvation': 26}`
+- `final_population_by_colony={'wei': 15, 'shu': 9, 'wu': 12}`
+- `pickups=1117`
+- `unloads=1086`
 
 For the current branch-level status page, see:
 
 - [ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
 - [ant_sandbox_handoff_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_handoff_plan_v1.md)
 - [ant_sandbox_open_evolution_engineering_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
+- [ant_sandbox_open_evolution_engineering_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v2.md)
 
 ## Quick Start
 
@@ -302,22 +304,15 @@ Shortest re-entry path for the current ant sandbox line:
 1. [docs/README.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/README.md)
 2. [docs/ant_sandbox_status_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_status_v1.md)
 3. [docs/ant_sandbox_handoff_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_handoff_plan_v1.md)
-4. [docs/ant_sandbox_open_evolution_engineering_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
-5. [docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md)
-6. [docs/ant_sandbox_m12_checkpoint_observer_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m12_checkpoint_observer_spec_v1.md)
-7. [docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md)
-8. [docs/ant_sandbox_m13_branch_comparison_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m13_branch_comparison_spec_v1.md)
-9. [docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md)
-10. [docs/ant_sandbox_m14_niche_substrate_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m14_niche_substrate_spec_v1.md)
-11. [docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md)
-12. [docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m15_open_endedness_metrics_spec_v1.md)
-13. [docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md)
-14. [docs/ant_sandbox_m16_successor_life_layer_spec_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_spec_v1.md)
-15. [docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md)
-16. [docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10a_lifecycle_slice_2026-04-24.md)
-17. [docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10b_genome_v1_slice_2026-04-24.md)
-18. [docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m10c_mutation_ablation_slice_2026-04-24.md)
-19. [docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m11_infinite_experiment_runtime_slice_2026-04-24.md)
+4. [docs/ant_sandbox_open_evolution_engineering_plan_v2.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v2.md)
+5. [docs/ant_sandbox_open_evolution_engineering_plan_v1.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_open_evolution_engineering_plan_v1.md)
+6. [docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md)
+7. [docs/ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md)
+8. [docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md)
+9. [docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m15_open_endedness_metrics_slice_2026-04-24.md)
+10. [docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m14_niche_substrate_slice_2026-04-24.md)
+11. [docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m13_branch_comparison_slice_2026-04-24.md)
+12. [docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md](/Users/qlqwpy/Documents/游乐园/alife_biosphere_working_copy_20260420_230919/docs/ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md)
 
 If you need the full document catalog:
 
@@ -329,11 +324,9 @@ The current near-term work is not culture, learning, or heavy social systems.
 
 It is:
 
-- M15 open-endedness metrics
-- M16 first successor life layer after substrate evidence exists
-- M14 is now in place as the first substrate layer for derived niches
-- M15 is now in place as the open-endedness metrics layer
-- M16 is now in place as the first successor life layer
+- M18 economic stabilization
+- M19 fungus layer
+- M20 dual dependency-chain campaign
 - M17 is now in place as the forked multi-niche campaign layer
 - conflict as optional later pressure rather than the current branch center
 

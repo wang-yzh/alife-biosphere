@@ -51,19 +51,20 @@ and a multi-seed validation matrix over:
 | `M15 open-endedness metrics` | `pass` | the branch now converts checkpoint-family comparison outputs into five explicit metric families with status labels, while avoiding any single universal fitness score |
 | `M16 successor life layer` | `pass` | the branch now supports a weak decomposer patch layer that emerges from corpse substrate, feeds locally, enriches residue, survives checkpoints, appears in the observer, and upgrades the first dependency edge to an implemented metric |
 | `M17 multi-niche open evolution run` | `pass` | the branch now has a campaign workflow that runs a root branch plus fork family, emits observer artifacts for every branch, and produces comparison plus open-endedness outputs as one integrated experiment package |
+| `M18 economic stabilization` | `pass` | the default showcase economy now runs with slightly lower upkeep, slightly lower metabolism, more initial reserve, and earlier hunger return, which reduces late-stage starvation pressure without erasing ecological scarcity |
 
 ## Current Lifecycle Snapshot
 
 Latest showcase lifecycle probe:
 
-- `births=52`
-- `deaths=51`
-- `death_reasons={'old_age': 9, 'starvation': 42}`
-- `births_by_colony={'wei': 16, 'shu': 17, 'wu': 19}`
-- `deaths_by_colony={'wei': 16, 'shu': 16, 'wu': 19}`
-- `final_population_by_colony={'wei': 11, 'shu': 12, 'wu': 10}`
-- `pickups=1049`
-- `unloads=1009`
+- `births=50`
+- `deaths=46`
+- `death_reasons={'old_age': 20, 'starvation': 26}`
+- `births_by_colony={'wei': 21, 'shu': 11, 'wu': 18}`
+- `deaths_by_colony={'wei': 17, 'shu': 13, 'wu': 16}`
+- `final_population_by_colony={'wei': 15, 'shu': 9, 'wu': 12}`
+- `pickups=1117`
+- `unloads=1086`
 
 ## Current Mutation Signal
 
@@ -107,6 +108,7 @@ Still provisional:
 - stronger substrate diversity beyond corpse and residue
 - successor diversity still limited to one weak decomposer layer
 - long-run campaign validation still narrow in branch count and seed coverage
+- late-horizon decline still exists even though starvation pressure is lower
 
 ## Next Phase
 
@@ -114,8 +116,7 @@ The next active phase is no longer "prove the small sandbox works".
 
 It is:
 
-- branch comparison before stronger open-ended evolution claims
-- open-endedness metrics that do not collapse into one fitness score
+- economic stabilization before adding more successor load
 - multi-niche successor ecology beyond the first decomposer layer
 - broader campaign coverage and richer dependency chains
 - combat as optional later pressure rather than the current branch center
@@ -123,6 +124,7 @@ It is:
 The next current planning set is:
 
 - `ant_sandbox_handoff_plan_v1.md`
+- `ant_sandbox_open_evolution_engineering_plan_v2.md`
 - `ant_sandbox_open_evolution_engineering_plan_v1.md`
 - `ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md`
 - `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
@@ -135,6 +137,7 @@ The next current planning set is:
 - `ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md`
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 - `ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md`
+- `ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md`
 - `ant_sandbox_world_design_v2.md`
 - `ant_sandbox_build_plan_v2.md`
 - `ant_sandbox_m7_scale_up_spec_v1.md`

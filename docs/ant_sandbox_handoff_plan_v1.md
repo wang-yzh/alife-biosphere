@@ -134,9 +134,9 @@ adding new organisms prematurely.
 The current immediate sequence is:
 
 ```text
-broaden campaign coverage
--> broaden successor ecology beyond one decomposer layer
--> preserve observer/comparison/metric discipline
+M18 economic stabilization
+-> M19 fungus layer
+-> M20 dual dependency-chain campaign
 ```
 
 This ordering matters.
@@ -148,6 +148,7 @@ more complex but become less interpretable.
 The controlling post-`M11` engineering plan is:
 
 - `ant_sandbox_open_evolution_engineering_plan_v1.md`
+- `ant_sandbox_open_evolution_engineering_plan_v2.md`
 - `ant_sandbox_m12_checkpoint_observer_slice_2026-04-24.md`
 - `ant_sandbox_m12_checkpoint_observer_spec_v1.md`
 - `ant_sandbox_m13_branch_comparison_slice_2026-04-24.md`
@@ -159,6 +160,7 @@ The controlling post-`M11` engineering plan is:
 - `ant_sandbox_m16_successor_life_layer_slice_2026-04-24.md`
 - `ant_sandbox_m16_successor_life_layer_spec_v1.md`
 - `ant_sandbox_m17_multi_niche_open_evolution_slice_2026-04-25.md`
+- `ant_sandbox_m18_economic_stabilization_slice_2026-04-25.md`
 
 ## M12 Checkpoint Observer
 

@@ -16,6 +16,23 @@ from alife_biosphere.ant_sandbox import summarize_inheritance_dynamics
 from alife_biosphere.ant_sandbox.simulation import run_simulation
 
 
+def _window_summaries(events: list[object], tick_limit: int, window_size: int = 300) -> list[dict[str, int]]:
+    summaries: list[dict[str, int]] = []
+    for start in range(1, tick_limit + 1, window_size):
+        end = min(tick_limit, start + window_size - 1)
+        summaries.append(
+            {
+                "tick_start": start,
+                "tick_end": end,
+                "births": sum(1 for event in events if event.event_type == "ant_birth" and start <= event.tick <= end),
+                "deaths": sum(1 for event in events if event.event_type == "ant_death" and start <= event.tick <= end),
+                "unloads": sum(1 for event in events if event.event_type == "food_unload" and start <= event.tick <= end),
+                "feeds": sum(1 for event in events if event.event_type == "nest_feed" and start <= event.tick <= end),
+            }
+        )
+    return summaries
+
+
 def main() -> None:
     config = build_showcase_config()
     result = run_simulation(config)
@@ -104,6 +121,7 @@ def main() -> None:
         "inheritance_mode": config.ants.inheritance_mode,
         "mutation_rate": config.ants.mutation_rate,
         "mutation_step": config.ants.mutation_step,
+        "window_summaries": _window_summaries(result.events, config.ticks),
         **inheritance,
         "final_summary": tick_summaries[-1] if tick_summaries else {},
     }
